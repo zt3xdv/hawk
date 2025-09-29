@@ -1,0 +1,41 @@
+{
+  "name": "hawk",
+  "version": "0.0.1",
+  "module": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "build": "node bundler/Build.js",
+    "fast-build": "node bundler/Build.js fast",
+    "watch": "node bundler/Build.js dev",
+    "build-engine": "node engine/Build.js",
+    "fast-build-engine": "node engine/Build.js fast",
+    "watch-engine": "node engine/Build.js dev"
+  },
+  "keywords": [],
+  "author": "tsumugi_dev",
+  "license": "Apache License 2.0",
+  "description": "Hangout game using Hawk engine.",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "eventemitter2": "^6.4.9",
+    "express": "^5.1.0",
+    "mime-types": "^3.0.1",
+    "msgpackr": "^1.11.5",
+    "phaser": "^3.90.0",
+    "phaser3spectorjs": "^0.0.8",
+    "pngjs": "^7.0.0",
+    "rollup-plugin-progress": "^1.1.2",
+    "socket.io-client": "^4.8.1",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "chokidar": "^4.0.3",
+    "cjstoesm": "^3.0.0",
+    "rollup": "^2.79.2",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}
