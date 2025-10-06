@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import Player from '../entities/Player.js';
 import { escapeHtml, getAuth, apiPost, getAssets, loadPack } from '../utils/Utils.js';
 import { API } from '../../utils/Constants.js';
+import Floor from '../objects/Floor.js';
 
 export default class DashScene extends Phaser.Scene {
   constructor() {
@@ -18,16 +19,20 @@ export default class DashScene extends Phaser.Scene {
   }
 
   create() {
-    for (let i = 0; i < 16; i++) {
-      const s = 32;
-      this.add.image((i % 4) * 32, Math.floor(i / 4) * 32, 'dirt', Math.floor(Math.random() * 4)).setOrigin(0);
-    }
+    this.floor             = new Floor(this, {
+      mapPixelWidth: 4 * 32,
+      mapPixelHeight: 4 * 32
+    });
     
     (async () => {
       const data = await apiPost(API.check, getAuth());
       const id = data.id || "000_000000";
       
       this.player = new Player(this, id + "_b", id, data.username || "___", "", 64, 82, data.game.avatar || "");
+      this.player.sprite.setInteractive({ draggable: true });
+      this.player.sprite.on('drag', (pointer, dragX, dragY) => {
+        this.player.setPosition(dragX, dragY);
+      });
     })();
   }
 

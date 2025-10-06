@@ -5,7 +5,7 @@ export async function renderProfile() {
   app.innerHTML = `
     <div style="width: 100%;">
       <div class="profile-header" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-        <img id="profileAvatar" src="" width="64" height="64" style="border-radius:50%;object-fit:cover;background:#222;">
+        <img id="profileAvatar" src="/assets/generic-profile.png" width="64" height="64" style="border-radius:50%;object-fit:cover;background:#222;">
         <div>
           <div id="profileUsername" style="font-weight:700;font-size:18px"></div>
           <div id="profileDisplayName" style="color:#666;margin-top:4px"></div>
@@ -14,10 +14,10 @@ export async function renderProfile() {
       </div>
 
       <div>
-        <span id="profileFieldBio">—</span>
-        <p id="profileActions" style="margin-top:40px;">
-          <a class="button-green" id="editProfileBtn" href="/profile-settings">Edit profile</a>
-          <a class="button-green" id="editAvatarBtn" href="/avatar">Edit in-game avatar</a>
+        <span id="profileFieldBio">No bio.</span>
+        <p id="profileActions" style="margin-top:40px; display: flex; gap: 5px;">
+          <a class="btn mini" id="editProfileBtn" href="/profile-settings">Edit profile</a>
+          <a class="btn mini" id="editAvatarBtn" href="/avatar">Edit in-game avatar</a>
         </p>
       </div>
     </div>

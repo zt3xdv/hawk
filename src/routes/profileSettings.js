@@ -7,7 +7,7 @@ export async function renderProfileSettings() {
       <h2>Edit Profile</h2>
 
       <div class="header-row" id="headerRow">
-        <div class="avatar-wrap"><canvas id="settingsAvatarPreview" width="128" height="128"></canvas></div>
+        <div class="avatar-wrap"><canvas id="settingsAvatarPreview" width=128 height=128></canvas></div>
         <div class="header-meta">
           <div id="settingsUsername" class="username"></div>
           <div id="settingsDisplayName" class="displayname"></div>
@@ -19,45 +19,44 @@ export async function renderProfileSettings() {
         <div class="profile-section">
           <label for="settingsDisplayNameInput">Display name</label>
           <input id="settingsDisplayNameInput" type="text" />
-          <button id="settingsSaveDisplayName" class="button-green">Save</button>
+          <button id="settingsSaveDisplayName" class="btn mini">Save</button>
           <div id="settingsDisplayNameMsg" class="message" aria-live="polite"></div>
         </div>
 
         <div class="profile-section">
           <label for="settingsUsernameInput">Username</label>
           <input id="settingsUsernameInput" type="text" />
-          <button id="settingsSaveUsername" class="button-green">Save</button>
+          <button id="settingsSaveUsername" class="btn mini">Save</button>
           <div id="settingsUsernameMsg" class="message" aria-live="polite"></div>
         </div>
 
         <div class="profile-section">
           <label for="settingsPasswordInput">Password</label>
           <input id="settingsPasswordInput" type="password" />
-          <button id="settingsSavePassword" class="button-green">Save</button>
+          <button id="settingsSavePassword" class="btn mini">Save</button>
           <div id="settingsPasswordMsg" class="message" aria-live="polite"></div>
         </div>
 
         <div class="profile-section">
           <label for="settingsBioInput">Bio</label>
           <input id="settingsBioInput" type="bio" />
-          <button id="settingsSaveBio" class="button-green">Save</button>
+          <button id="settingsSaveBio" class="btn mini">Save</button>
           <div id="settingsBioMsg" class="message" aria-live="polite"></div>
         </div>
 
         <div class="avatar-block">
-          <label for="settingsAvatarInput">Avatar (ideal 128×128)</label>
-          <input id="settingsAvatarInput" type="file" accept="image/*" />
           <div class="avatar-row" style="margin-top:8px;">
             <canvas id="settingsAvatarPreviewSmall" width="128" height="128"></canvas>
             <div>
+              <input id="settingsAvatarInput" type="file" accept="image/*" />
               <button id="settingsUploadAvatar" class="uploadBtn">Upload avatar</button>
               <div id="settingsAvatarMsg" class="message" aria-live="polite"></div>
             </div>
           </div>
         </div>
 
-        <div style="grid-column:1 / -1; margin-top:8px;">
-          <a class="button-green" href="/profile">Back to profile</a>
+        <div id="profileActions" style="margin-top:40px; display: flex; gap: 5px;">
+          <a class="btn mini" href="/profile">Back to profile</a>
         </div>
       </div>
     </div>

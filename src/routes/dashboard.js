@@ -1,26 +1,30 @@
 import Game from "../game/Game.js";
 import Preview from "../game/Preview.js";
 import { escapeHtml } from '../game/utils/Utils.js';
+import { DISCORD_SERVER } from '../utils/Constants.js';
 
 export function renderDashboard() {
   const app = document.getElementById('app');
   app.innerHTML = `
-<main class="main">
-  <div class="header">
-    <div>
-      <h3>Welcome again <span class="wave">👋</span>.</h3>
-    </div>
-    <div class="actions">
-      <button class="btn" id="play">
-        <span class="btn-text">Play</span>
-        <span class="btn-spinner" aria-hidden="true" style="display:none">Loading... <span class="loader"></span></span>
-      </button>
-    </div>
+  <div class="main-header">
+    <button class="btn" id="discord">
+      <span class="btn-text">Join our <strong>Discord</strong> server</span>
+    </button>
+    <button class="btn" id="support">
+      <span class="btn-text">Support us (Soon)</span>
+    </button>
   </div>
   
-  <div class="card" id="preview" style="display:flex;flex-direction:column;gap:10px">
-  </div>
-</main>
+  <hr>
+  
+  <div class="card" id="preview" style="display:flex;flex-direction:column;gap:10px"></div>
+  
+  <button class="btn" id="play">
+    <span class="btn-text">Play on <strong>English/Spanish #1</strong></span>
+    <span class="btn-spinner" aria-hidden="true" style="display:none">Loading... <span class="loader"></span></span>
+  </button>
+  
+  <hr>
 
   <div class="card" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -45,6 +49,8 @@ export function renderDashboard() {
   const previewEl = document.getElementById('preview');
   const preview = new Preview(previewEl);
 
+  const discordBtn = document.getElementById('discord');
+
   const playBtn = document.getElementById('play');
   const btnText = playBtn.querySelector('.btn-text');
   const btnSpinner = playBtn.querySelector('.btn-spinner');
@@ -60,6 +66,10 @@ export function renderDashboard() {
       btnSpinner.style.display = 'none';
     }
   }
+  
+  discordBtn.addEventListener("click", () => {
+    location.href = DISCORD_SERVER;
+  });
 
   playBtn.addEventListener('click', () => {
     setBtnLoading(true);

@@ -56,7 +56,7 @@ export default class Player {
 
   updateMovement(direction) {
     const speed = 200;
-    this.sprite.body.setVelocity(direction.x * speed, direction.y * speed);
+    this.sprite.body.setVelocity(Math.floor(direction.x * speed), Math.floor(direction.y * speed));
     this.sprite.setDepth(this.sprite.y + 16);
     this.nameText.setPosition(Math.floor(this.sprite.x - Math.floor(this.sprite.width / 2)), Math.floor(this.sprite.y - 30));
   }

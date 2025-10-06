@@ -7,7 +7,8 @@ export default class Floor extends Phaser.GameObjects.Container {
     mapPixelHeight = 2048,
     cellSize = 32,
     tilemapWidth = null,
-    tilemapHeight = null
+    tilemapHeight = null,
+    baseTilemap = null
   } = {}) {
     super(scene, 0, 0);
     this.scene = scene;

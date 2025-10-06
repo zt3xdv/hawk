@@ -10,8 +10,7 @@ import { pack, unpack } from 'msgpackr';
 
 class HawkServer {
   constructor(server) {
-    // server: HTTP/S server instance
-    this.wss = new WebSocketServer({ server, path: '/ws' });
+    this.wss = new WebSocketServer({ server, path: '/' });
 
     this.players = {};
     this.map = [];

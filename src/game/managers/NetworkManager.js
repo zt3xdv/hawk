@@ -8,10 +8,11 @@ export default class NetworkManager {
     this.players = {};
     this.ws = null;
     this.connect();
+    this.last = { type: null, data: null };
   }
 
   connect() {
-    this.ws = new WebSocket("/ws");
+    this.ws = new WebSocket("/");
 
     this.ws.addEventListener('open', () => {});
     this.ws.addEventListener('message', async (evt) => {
@@ -22,6 +23,7 @@ export default class NetworkManager {
         msg = unpack(buffer);
       } catch (e) { return; }
       const { type, data } = msg;
+      this.last = { type, data };
       switch (type) {
         case 'addPlayer':
           this.addPlayer(data);
@@ -47,7 +49,8 @@ export default class NetworkManager {
           break;
         case 'playerMoved':
           if (!this.scene.player || data.id == this.scene.player.id) return;
-          if (this.players[data.id]) this.players[data.id].setPosition(data.x, data.y, true);
+          const p = this.players[data.id];
+          if (p) p.setPosition(data.x, data.y, true);
           break;
         case 'removePlayer':
           if (this.players[data]) {
@@ -93,6 +96,7 @@ export default class NetworkManager {
   }
 
   send(type, data) {
+    this.last = { type, data };
     const payload = pack({ type, data });
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(payload);

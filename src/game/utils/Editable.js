@@ -63,7 +63,7 @@ class Editable {
       const newX = targetTopLeftX + element.displayWidth * originX;
       const newY = targetTopLeftY + element.displayHeight * originY;
 
-      elementRaw.setPosition(newX, newY);
+      elementRaw.setPosition(Math.floor(newX), Math.floor(newY));
       Editable._updateTooltipPosition(element);
     });
   }

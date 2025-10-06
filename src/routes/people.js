@@ -181,7 +181,7 @@ async function renderSent(list) {
     const wrapper = document.createElement('div'); wrapper.className = 'friends-row';
     const left = document.createElement('div');
     const who = r.requesterId;
-    const whoData = await apiPost("/api/auth/data", { id: who });
+    const whoData = await apiPost("/api/auth/profile", { id: who });
     const whoName = whoData.username || "Unknown";
     
     left.innerHTML = `<div class="friends-name">From ${escapeHtml(String(whoName))}</div><div class="friends-meta">Request ID: ${escapeHtml(String(r.id || ''))}</div>`;
@@ -199,7 +199,7 @@ async function renderSent(list) {
     const wrapper = document.createElement('div'); wrapper.className = 'friends-row';
     const left = document.createElement('div');
     const who = r.requestedId;
-    const whoData = await apiPost("/api/auth/data", { id: who });
+    const whoData = await apiPost("/api/auth/profile", { id: who });
     const whoName = whoData.username || "Unknown";
     
     left.innerHTML = `<div class="friends-name">To ${escapeHtml(String(whoName))}</div><div class="friends-meta">Request ID: ${escapeHtml(String(r.id || ''))}</div>`;

@@ -75,13 +75,13 @@ async function postAvatar(base64Image, username = null, password = null, { timeo
 export function renderAvatar() {
   const app = document.getElementById("app");
   app.innerHTML = `
-    <main class="avatar-page" aria-labelledby="avatar-title">
-      <h1 id="avatar-title" class="sr-only">Avatar</h1>
+    <main class="avatar-page">
+      <h2 id="avatar-title">Avatar</h2>
 
-      <section class="avatar-section" aria-describedby="avatar-desc">
+      <section class="avatar-section">
         <div class="header-row">
           <div>
-            <p id="avatar-desc" class="lead">Upload an avatar (32×32) for your character.</p>
+            <p id="avatar-desc" class="lead">Upload an avatar for your character.</p>
             <p class="muted">Accepted: images. Max 5 MB.</p>
           </div>
         </div>
@@ -92,13 +92,13 @@ export function renderAvatar() {
         </label>
 
         <div class="preview-row" aria-live="polite">
-          <canvas id="avatarPreview" width="32" height="32" class="avatar-canvas" title="32x32 preview"></canvas>
+          <canvas id="avatarPreview" width="32" height="32" class="avatar-canvas"></canvas>
           <div class="preview-text">Preview</div>
         </div>
 
         <div class="controls">
           <button id="uploadAvatarBtn" class="uploadBtn">Upload avatar</button>
-          <div id="avatarMessage" class="message" aria-live="assertive"></div>
+          <div id="avatarMessage" class="message"></div>
         </div>
       </section>
     </main>

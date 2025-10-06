@@ -2,10 +2,6 @@ import { router } from './router.js';
 import Features from './game/device/Features.js';
 import Cache from './utils/Cache.js';
 import { list } from './utils/Icons.js';
-import { routes, getPathFromLocation, setPageMetadata } from './routes/routes.js';
-
-const route = routes[getPathFromLocation()] || routes["404"];
-setPageMetadata(route);
 
 window.addEventListener('DOMContentLoaded', async () => {
   const loading = document.getElementById("loading");
@@ -39,7 +35,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     loading.remove();
   } else {
     loading.querySelector("#tip").innerText = "Loading assets...";
-    await Cache.load("1.0.3", [
+    await Cache.load("1.0.5", [
       "assets/entities/bee.png",
       "assets/fonts/at01.ttf",
       "assets/game/props.png",
@@ -64,7 +60,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       "logo.png",
       ...list
     ], (data) => {
-      loading.querySelector("#tip").innerText = "Loading assets... (" + data.percentage + "%)";
+      loading.querySelector("#loading-bar-percentage-int").innerText = data.percentage + "%";
+      loading.querySelector("#loading-bar div").style.width = data.percentage + "%";
     });
     
     loading.classList.add('hidden');

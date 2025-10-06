@@ -10,6 +10,7 @@ import { log } from './src/utils/Utils.js';
 import HawkServer from './src/server/Hawk.js';
 import config from './config.json' with { type: 'json' };
 import { readFile } from 'fs/promises';
+import { routes } from './src/routes/list.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,18 +28,13 @@ friendsRoutes.setApp(app);
 gameRoutes.setApp(app);
 app.get(/.*/, async (req, res) => {
   try {
-    // Lee el contenido del archivo JavaScript
-    const jsContent = await readFile(path.join(__dirname, 'dist', 'hawk.min.js'), 'utf8');
-
-    // Lee el contenido del archivo HTML
     const htmlPath = path.join(__dirname, 'index.html');
     let htmlContent = await readFile(htmlPath, 'utf8');
 
-    // Reemplaza el marcador de posición con el contenido JavaScript
-    const scriptToInject = `<script>${jsContent}</script>`;
-    htmlContent = htmlContent.replace('<hawk></hawk>', scriptToInject);
-
-    // Envía la respuesta HTML modificada al cliente
+    const route = routes[req.path] || routes["404"];
+    htmlContent = htmlContent.replace('route_description', route?.description || "Sign up and join our community!");
+    htmlContent = htmlContent.replace('route_title', route?.title ? ('Hawk - ' + route.title) : 'Hawk');
+    
     res.setHeader('Content-Type', 'text/html');
     res.send(htmlContent);
 

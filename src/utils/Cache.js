@@ -32,7 +32,6 @@ export default class Cache {
     Cache.#instance = this;
   }
 
-  // ---------- IndexedDB helpers ----------
   static async #openDB() {
     if (this.#db) return this.#db;
     return new Promise((resolve, reject) => {
@@ -52,12 +51,11 @@ export default class Cache {
       };
       req.onerror = () => reject(req.error);
       req.onblocked = () => {
-        // ignore blocked for simplicity
       };
     });
   }
 
-  static async #putFileToDB(path, value /* ArrayBuffer or string */, meta = {}) {
+  static async #putFileToDB(path, value, meta = {}) {
     const db = await this.#openDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.#FILES_STORE, 'readwrite');
@@ -129,7 +127,6 @@ export default class Cache {
     });
   }
 
-  // ---------- Utility helpers ----------
   static #arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
     const chunkSize = 0x8000;
@@ -148,18 +145,14 @@ export default class Cache {
     return s.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(s);
   }
 
-  // ---------- Public API ----------
-  // ---------- Public API ----------
   static async load(version, fileList = [], callback = null) {
     if (this.#currentVersion === version) return;
     this.#data = {};
     this.#fileList = [...fileList];
 
-    // Ensure DB open
     try {
       await this.#openDB();
     } catch (e) {
-      // If DB unavailable, fall back to in-memory-only behavior
       console.warn('IndexedDB unavailable, falling back to memory-only cache.', e);
       await this.#loadNetworkAndPopulate(version, fileList, false, callback);
       return;
@@ -168,10 +161,8 @@ export default class Cache {
     const storedVersion = await this.#getMeta('version');
 
     if (storedVersion === version) {
-      // load all from DB
       try {
         const map = await this.#getAllFilesFromDB();
-        // Only keep requested files (in case DB has extras)
         let loadedCount = 0;
         const totalFiles = fileList.length;
         for (const path of fileList) {
@@ -189,13 +180,11 @@ export default class Cache {
         this.#currentVersion = version;
         return;
       } catch (e) {
-        // If reading DB fails, fallback to re-downloading
         console.warn('Failed to read cache from DB, reloading from network.', e);
         await this.#loadNetworkAndPopulate(version, fileList, true, callback);
         return;
       }
     } else {
-      // Different version: fetch network and populate DB
       await this.#loadNetworkAndPopulate(version, fileList, true, callback);
     }
   }
@@ -218,7 +207,7 @@ export default class Cache {
           }
         }
       } catch (error) {
-        // fallback to text
+
         try {
           const response2 = await fetch(filePath);
           if (!response2.ok) throw new Error('fallback failed');
@@ -245,20 +234,15 @@ export default class Cache {
 
     await Promise.all(promises);
 
-    // Update meta in DB with new version atomically (best-effort)
     if (writeToDB) {
       try {
         await this.#putMeta('version', version);
       } catch (e) {
         console.warn('Failed to write version meta to DB', e);
       }
-    } else {
-      // If not writing to DB, still don't set DB meta
     }
 
     this.#currentVersion = version;
-
-    // If writeToDB==true, consider removing DB entries not present in fileList.
   }
 
   static get(filePath) {
