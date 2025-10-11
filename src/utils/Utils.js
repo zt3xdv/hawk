@@ -127,3 +127,7 @@ export function escapeHtml(str) {
     return map[s];
   });
 }
+
+export function generateOcUrl(args) {
+  return "https://images.weserv.nl/?url=" + encodeURIComponent("87.106.208.203:13221/og" + args) + "&output=png"
+}
