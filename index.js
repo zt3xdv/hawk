@@ -144,7 +144,7 @@ app.get(/.*/, async (req, res) => {
     const route = routes[req.path] || routes["404"];
     htmlContent = htmlContent.replace('route_description', route?.description || "Sign up and join our community!");
     htmlContent = htmlContent.replace('route_title', route?.title ? ('Hawk - ' + route.title) : 'Hawk');
-    htmlContent = htmlContent.replace('route_ogimage', route?.title ? generateOcUrl("?title=" + route.title + "&description=" + route.description) : generateOcUrl());
+    htmlContent = htmlContent.replace('route_ogimage', route?.title ? generateOgUrl("?title=" + route.title + "&description=" + route.description) : generateOgUrl());
     
     res.setHeader('Content-Type', 'text/html');
     res.send(htmlContent);
