@@ -128,6 +128,6 @@ export function escapeHtml(str) {
   });
 }
 
-export function generateOcUrl(args) {
+export function generateOgUrl(args = "") {
   return "https://images.weserv.nl/?url=" + encodeURIComponent("87.106.208.203:13221/og" + args) + "&output=png"
 }
