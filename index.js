@@ -16,7 +16,6 @@ import SocketServer from './src/server/Socket.js';
 import satori from 'satori';
 import pkg from 'canvas-image';
 import fs from 'fs';
-import svg2png from 'svg2png';
 const { loadImage } = pkg;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -130,10 +129,8 @@ app.get('/og', async (req, res) => {
 
     const svgBuffer = Buffer.from(svg, 'utf8');
 
-    const pngBuffer = await svg2png(svgBuffer, { width: 1200, height: 630 });
-
     res.set('Content-Type', 'image/png');
-    res.send(pngBuffer);
+    res.send(svgBuffer);
   } catch (err) {
     console.error(err);
     res.status(500).send('Internal error.');
