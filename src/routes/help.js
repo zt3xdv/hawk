@@ -1,9 +1,15 @@
 import { DISCORD_SERVER } from "../utils/Constants.js";
+import Cache from '../utils/Cache.js';
 
 export function renderHelp() {
   const app = document.getElementById('app');
   app.innerHTML = `
-    <h2>Help</h2>
+    <div class="auth">
+  <div class="header">
+    <h3><canv-icon src="${Cache.getBlob('assets/icons/info.png').dataUrl}"></canv-icon>Help</h3>
+    <span class="description">Help and controls of Hawk.</span>
+  </div>
+  <hr>
     <p>Our help page, check <a href="/about">about page</a> for more info.</p>
     
     <h2>Contact</h2>
@@ -16,5 +22,6 @@ export function renderHelp() {
     <p>
       <strong>Mobile:</strong> Use the dynamic joystick on the screen for movement.
     </p>
+    </div>
   `;
 }

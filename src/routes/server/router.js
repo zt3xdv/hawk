@@ -1,6 +1,7 @@
 class Router {
   constructor() {
     this.routes = [];
+    this.app = null;
   }
 
   _add(method, path, ...handlers) {
@@ -46,6 +47,7 @@ class Router {
     for (const { method, path, handlers } of this.routes) {
       app[method](path, ...handlers);
     }
+    this.app = app;
   }
 }
 

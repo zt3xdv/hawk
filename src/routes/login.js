@@ -1,21 +1,24 @@
 import Alerts from '../utils/Alerts.js';
+import Cache from '../utils/Cache.js';
 
 export function renderLogin() {
   const app = document.getElementById('app');
   app.innerHTML = `
-<main class="main">
+  <div class="auth">
   <div class="header">
-    <h3>Login</h3>
+    <h3><canv-icon src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon>Login</h3>
+    <span class="description">Log in into Hawk.</span>
   </div>
-  
+  <hr>
   <form id="loginForm" class="gap">
     <input type="text" id="username" placeholder="Username" required>
     <input type="password" id="password" placeholder="Password" required>
     <br>
     <button class="btn" type="submit">Login</button>
   </form>
-  <p>New here? <a href="/register">register</a></p>
-</main>
+  <hr>
+  <p>New here? <a href="/register">Register</a></p>
+  </div>
   `;
 
   document.getElementById('loginForm').addEventListener('submit', async e => {
@@ -35,7 +38,7 @@ export function renderLogin() {
       localStorage.setItem('password', data.password);
       window.location = '/dashboard';
     } else {
-      Alerts.add("Error when logging in", data.error);
+      Alerts.add("Login error", data.error);
     }
   });
 }

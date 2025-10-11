@@ -5,22 +5,31 @@ import UserModel from '../models/UserModel.js';
 import PlayerModel from '../models/PlayerModel.js';
 import { log, uuid } from '../utils/Utils.js';
 import { DEV } from '../utils/Constants.js';
-import WebSocket, { WebSocketServer } from 'ws';
 import { pack, unpack } from 'msgpackr';
 
 class HawkServer {
-  constructor(server) {
-    this.wss = new WebSocketServer({ server, path: '/' });
+  constructor(server, serverData) {
+    this.path = '/ws/game/' + serverData.id + '/';
+    this.wss = server.route(this.path);
 
     this.players = {};
     this.map = [];
 
-    this.time = 1440;
+    this.time = 720;
     this.__counterStarted = false;
 
     this.dev = DEV;
+    this.data = serverData;
 
     this.create();
+  }
+  
+  getData() {
+    return {
+      ...this.data,
+      players: Object.keys(this.players).length,
+      path: this.path
+    };
   }
 
   _distance(a, b) {
@@ -110,7 +119,7 @@ class HawkServer {
   }
 
   async create() {
-    log('server', 'Starting up server...');
+    log('server-' + this.data.id, 'Starting up server...');
 
     const startMs = Date.now();
 
@@ -130,14 +139,14 @@ class HawkServer {
     }
 
     try {
-      log('server', 'Loading map...');
+      log('server-' + this.data.id, 'Loading map...');
       const content = await fs.readFile(MAP_FILE, 'utf8');
       this.map = JSON.parse(content);
     } catch (err) {
       this.map = [];
     }
 
-    log('server', 'Starting up WebSocket server...');
+    log('server-' + this.data.id, 'Starting up WebSocket server...');
     this.wss.on('connection', (ws, req) => {
       const socketId = uuid(); // usa uuid() desde Utils.js
       ws._id = socketId;
@@ -263,17 +272,41 @@ class HawkServer {
         }
 
         if (this.dev && type === 'createElement') {
+          const p = this.players[socketId];
+          if (!p || !p.loggedIn) return;
+          
+          for (const viewerId of p.visible) {
+            const viewer = this.players[viewerId];
+            const sockViewer = viewer?.ws;
+            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) this._send(sockViewer, 'createElement', data);
+          }
           this.map.push(data);
           await fs.writeFile(MAP_FILE, JSON.stringify(this.map, null, 2), 'utf8');
           return;
         }
         if (this.dev && type === 'deleteElement') {
+          const p = this.players[socketId];
+          if (!p || !p.loggedIn) return;
+          
+          for (const viewerId of p.visible) {
+            const viewer = this.players[viewerId];
+            const sockViewer = viewer?.ws;
+            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) this._send(sockViewer, 'deleteElement', data);
+          }
           const index = this.map.findIndex(item => item.options?.serverId === data.options?.serverId);
           if (index > -1) this.map.splice(index, 1);
           await fs.writeFile(MAP_FILE, JSON.stringify(this.map, null, 2), 'utf8');
           return;
         }
         if (this.dev && type === 'moveElement') {
+          const p = this.players[socketId];
+          if (!p || !p.loggedIn) return;
+          
+          for (const viewerId of p.visible) {
+            const viewer = this.players[viewerId];
+            const sockViewer = viewer?.ws;
+            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) this._send(sockViewer, 'moveElement', data);
+          }
           const index = this.map.findIndex(item => item.options?.serverId === data.options?.serverId);
           if (index > -1) {
             const el = this.map[index];
@@ -312,14 +345,14 @@ class HawkServer {
       });
 
       ws.on('error', (err) => {
-        log('server', 'WebSocket error for ' + socketId + ': ' + String(err));
+        log('server-' + this.data.id, 'WebSocket error for ' + socketId + ': ' + String(err));
       });
     });
 
     const endMs = Date.now();
     const took = endMs - startMs;
 
-    log('server', 'Server started. Took ' + took + 'ms');
+    log('server-' + this.data.id, 'Server started. Took ' + took + 'ms');
   }
 }
 

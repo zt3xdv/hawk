@@ -27,6 +27,15 @@ export function apiPost(path, body) {
   });
 }
 
+export function apiGet(path) {
+  return fetch(path, {
+    method: 'GET',
+  }).then(async r => {
+    const txt = await r.text();
+    try { return JSON.parse(txt); } catch (e) { return { error: 'Invalid JSON response', raw: txt }; }
+  });
+}
+
 export function id(length) {
   let number = '';
   for (let i = 0; i < length; i++) {

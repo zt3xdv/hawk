@@ -1,4 +1,4 @@
-import * as Phaser from 'phaser';
+import Phaser from '../../../dist/engine/main.js';
 import Editable from '../utils/Editable.js';
 
 export default class MapObject {

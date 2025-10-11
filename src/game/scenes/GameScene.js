@@ -1,4 +1,4 @@
-import * as Phaser from 'phaser';
+import Phaser from '../../../dist/engine/main.js';
 import InputManager from '../managers/InputManager.js';
 import NetworkManager from '../managers/NetworkManager.js';
 import ConnectingOverlay from '../managers/ConnectingOverlay.js';
@@ -127,6 +127,8 @@ export default class GameScene extends Phaser.Scene {
       this.lastSentPos.x = null;
       this.lastSentPos.y = null;
     }
+    
+    Object.keys(this.networkManager.players).forEach(p => this.networkManager.players[p].update());
     
     this.lightManager.update(time, delta);
     this.mapObjects.update(time, delta);

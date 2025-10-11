@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "build": "node bundler/Build.js",
-    "fast-build": "node bundler/Build.js fast",
-    "watch": "node bundler/Build.js dev"
+    "build": "node app.build.js",
+    "fast-build": "node app.build.js fast",
+    "watch": "node app.build.js dev",
+    "build-engine": "node engine.build.js",
+    "fast-build-engine": "node engine.build.js fast",
+    "watch-engine": "node engine.build.js dev"
   },
   "keywords": [],
   "author": "tsumugi_dev",
@@ -15,6 +18,7 @@
   "description": "Hangout game using Hawk engine.",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "canvas-image": "^0.0.7",
     "esbuild": "^0.25.10",
     "eventemitter2": "^6.4.9",
     "express": "^5.1.0",
@@ -22,6 +26,7 @@
     "msgpackr": "^1.11.5",
     "phaser": "^3.90.0",
     "pngjs": "^7.0.0",
+    "satori": "^0.18.3",
     "ws": "^8.18.3"
   },
   "devDependencies": {

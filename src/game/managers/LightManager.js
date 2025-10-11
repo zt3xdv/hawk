@@ -1,4 +1,4 @@
-import * as Phaser from 'phaser';
+import Phaser from '../../../dist/engine/main.js';
 import Options from '../utils/Options.js';
 
 const MAX_LIGHTS = 64;

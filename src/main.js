@@ -72,3 +72,107 @@ window.addEventListener('DOMContentLoaded', async () => {
     router();
   }
 });
+
+/*class CanvIcon extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    const src = this.getAttribute('src');
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.width = '2em';
+    img.style.height = '2em';
+    img.style.verticalAlign = 'middle';
+    img.style.marginRight = '5px';
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      canvas.width = 128;
+      canvas.height = 128;
+      ctx.drawImage(img, 0, 0);
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < pixels.data.length; i += 4) {
+        const lightness = (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
+        if (lightness < 64) {
+          pixels.data[i + 3] = 0;
+        } else {
+          pixels.data[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(pixels, 0, 0);
+      img.src = canvas.toDataURL();
+    };
+
+    this.shadowRoot.appendChild(img);
+  }
+}*/
+
+class CanvIcon extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    const src = this.getAttribute('src');
+    const color = this.getAttribute('color'); // nuevo atributo
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.width = '2em';
+    img.style.height = '2em';
+    img.style.verticalAlign = 'middle';
+    img.style.marginRight = '5px';
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      canvas.width = 128;
+      canvas.height = 128;
+      ctx.drawImage(img, 0, 0);
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < pixels.data.length; i += 4) {
+        const lightness = (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
+        pixels.data[i + 3] = lightness < 64 ? 0 : 255;
+      }
+
+      ctx.putImageData(pixels, 0, 0);
+      if (color) {
+        const [r, g, b] = hexToRgb(color);
+        const recolor = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < recolor.data.length; i += 4) {
+          if (recolor.data[i + 3] > 0) {
+            recolor.data[i] = r;
+            recolor.data[i + 1] = g;
+            recolor.data[i + 2] = b;
+          }
+        }
+        ctx.putImageData(recolor, 0, 0);
+      }
+
+      img.src = canvas.toDataURL();
+    };
+
+    this.shadowRoot.appendChild(img);
+  }
+}
+
+function hexToRgb(hex) {
+  const value = hex.replace('#', '');
+  const bigint = parseInt(value, 16);
+  return [
+    (bigint >> 16) & 255,
+    (bigint >> 8) & 255,
+    bigint & 255
+  ];
+}
+
+customElements.define('canv-icon', CanvIcon);

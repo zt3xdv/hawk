@@ -1,10 +1,15 @@
 import { toBase64, loadImageFromDataUrl, fitAndDrawImageToCanvas, validateAndConvertImage, postJson, escapeHtml } from "../utils/Utils.js";
+import Cache from '../utils/Cache.js';
 
 export async function renderProfileSettings() {
   const app = document.getElementById("app");
   app.innerHTML = `
-    <div class="profile-container">
-      <h2>Edit Profile</h2>
+    <div class="auth">
+  <div class="header">
+    <h3><canv-icon src="${Cache.getBlob('assets/icons/control.png').dataUrl}"></canv-icon>Profile Settings</h3>
+    <span class="description">Edit/Modify your profile with ease.</span>
+  </div>
+  <hr>
 
       <div class="header-row" id="headerRow">
         <div class="avatar-wrap"><canvas id="settingsAvatarPreview" width=128 height=128></canvas></div>

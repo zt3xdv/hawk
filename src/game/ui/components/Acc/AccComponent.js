@@ -16,7 +16,7 @@ export default class AccComponent extends HudComponent {
     this.el.className = 'acc-container';
 
     const btnMe = document.createElement('button');
-    btnMe.innerHTML = '<img src="' + Cache.getBlob("assets/icons/person.png").dataUrl + '">';
+    btnMe.innerHTML = '<img src="' + Cache.getBlob("assets/icons/Person.png").dataUrl + '">';
     btnMe.className = 'acc-button';
     btnMe.onclick = this.onClickMe;
 

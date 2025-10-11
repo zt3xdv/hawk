@@ -10,7 +10,7 @@ import HouseOne from '../objects/building/HouseOne.js';
 import Campfire from '../objects/Campfire.js';
 import Crate from '../objects/Crate.js';
 import Outdoor from '../objects/Outdoor.js';
-import * as Phaser from 'phaser';
+import Phaser from '../../../dist/engine/main.js';
 
 const CHUNK_SIZE = 500;
 const PAD = 64;
@@ -202,6 +202,32 @@ export default class MapObjectManager {
         try { if (item.image && typeof item.image.destroy === 'function') item.image.destroy(); } catch(e){}
         this.list.splice(index, 1);
         if (item.serverId) this.serverIdIndex.delete(item.serverId);
+      }
+    } catch (e) {}
+  }
+  
+  destroyByServerId(serverId) {
+    try {
+      const index = this.list.findIndex(item => item.serverId == serverId);
+      if (index > -1) {
+        const item = this.list[index];
+        if (typeof item.destroy === 'function') {
+          try { item.destroy(); } catch (err) {}
+        }
+        try { if (item.image && typeof item.image.destroy === 'function') item.image.destroy(); } catch(e){}
+        this.list.splice(index, 1);
+        if (item.serverId) this.serverIdIndex.delete(item.serverId);
+      }
+    } catch (e) {}
+  }
+  
+  moveByServerId(serverId, x, y) {
+    try {
+      const index = this.list.findIndex(item => item.serverId == serverId);
+      if (index > -1) {
+        const item = this.list[index];
+        
+        item.setPosition(x, y);
       }
     } catch (e) {}
   }

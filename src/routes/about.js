@@ -1,4 +1,5 @@
 import { DISCORD_SERVER, CONTRIBUTORS } from "../utils/Constants.js";
+import Cache from '../utils/Cache.js';
 
 export function renderAbout() {
   const contributorsHTML = CONTRIBUTORS.map(c => (`
@@ -11,8 +12,13 @@ export function renderAbout() {
   
   const app = document.getElementById('app');
   app.innerHTML = `
-    <h2>About</h2>
-    <p>A game written in <strong>Javascript</strong> using Hawk (based in <a href="https://phaser.io/">Phaser</a>) engine.</p>
+    <div class="auth">
+  <div class="header">
+    <h3><canv-icon src="${Cache.getBlob('assets/icons/info.png').dataUrl}"></canv-icon>About</h3>
+    <span class="description">About Hawk.</span>
+  </div>
+  <hr>
+    <p>A game written in <strong>Javascript</strong> using Hawk (based in <a href="https://phaser.io/">Phaser</a>) engine, check <a href="/help">help page</a> for controls and more.</p>
     
     <h2>Contact</h2>
     <p>You can contact us on <strong>Discord</strong> <a href="${DISCORD_SERVER}">here</a>.</p>
@@ -20,5 +26,6 @@ export function renderAbout() {
     <h2>Team</h2>
     <p>Our team has <strong>${CONTRIBUTORS.length}</strong> contributor(s). You can be one by joining our discord server and contributing!</p>
     ${contributorsHTML}
+    </div>
   `;
 }

@@ -1,5 +1,5 @@
-import * as Phaser from 'phaser';
-import DashScene from './scenes/DashScene.js';
+import Phaser from '../../dist/engine/main.js';
+import PreviewScene from './scenes/PreviewScene.js';
 
 export default class Preview {
   constructor(domElement) {
@@ -17,7 +17,7 @@ export default class Preview {
         arcade: {}
       },
       scene: [
-        DashScene
+        PreviewScene
       ]
     };
 

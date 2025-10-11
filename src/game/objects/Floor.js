@@ -1,4 +1,4 @@
-import * as Phaser from 'phaser';
+import Phaser from '../../../dist/engine/main.js';
 
 export default class Floor extends Phaser.GameObjects.Container {
   constructor(scene, {

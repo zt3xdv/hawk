@@ -1,3 +1,5 @@
+import Cache from '../utils/Cache.js';
+
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -75,20 +77,22 @@ async function postAvatar(base64Image, username = null, password = null, { timeo
 export function renderAvatar() {
   const app = document.getElementById("app");
   app.innerHTML = `
-    <main class="avatar-page">
-      <h2 id="avatar-title">Avatar</h2>
-
+    <div class="auth">
+  <div class="header">
+    <h3><canv-icon src="${Cache.getBlob('assets/icons/createemoji.png').dataUrl}"></canv-icon>In-Game avatar</h3>
+    <span class="description">Modify your in-game avatar.</span>
+  </div>
+<hr>
       <section class="avatar-section">
         <div class="header-row">
           <div>
             <p id="avatar-desc" class="lead">Upload an avatar for your character.</p>
-            <p class="muted">Accepted: images. Max 5 MB.</p>
+            <p class="small accent">Accepted: images. Max 5 MB.</p>
           </div>
         </div>
 
         <label for="avatarInput" class="file-label">
           <input id="avatarInput" type="file" accept="image/*" class="visually-hidden" />
-          <span class="file-btn" role="button">Choose image</span>
         </label>
 
         <div class="preview-row" aria-live="polite">
@@ -101,7 +105,7 @@ export function renderAvatar() {
           <div id="avatarMessage" class="message"></div>
         </div>
       </section>
-    </main>
+    </div>
   `;
 
   const fileInput = document.getElementById("avatarInput");

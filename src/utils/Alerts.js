@@ -16,9 +16,9 @@ class Alerts {
         const alertElement = document.createElement('div');
         alertElement.className = 'alert';
         alertElement.innerHTML = `
-            <h2>${alert.title}</h2>
-            <div>${alert.html}</div>
-            <button class="close-btn">Accept</button>
+            <h3 class="title">${alert.title}</h3>
+            <div class="content">${alert.html}</div>
+            <button class="btn close-btn">Accept</button>
         `;
 
         document.body.appendChild(alertElement);

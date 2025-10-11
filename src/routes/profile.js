@@ -1,9 +1,15 @@
 import { postJson, escapeHtml } from "../utils/Utils.js";
+import Cache from '../utils/Cache.js';
 
 export async function renderProfile() {
   const app = document.getElementById("app");
   app.innerHTML = `
-    <div style="width: 100%;">
+    <div class="auth">
+  <div class="header">
+    <h3><canv-icon src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon>Profile</h3>
+    <span class="description">Main profile.</span>
+  </div>
+  <hr>
       <div class="profile-header" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <img id="profileAvatar" src="/assets/generic-profile.png" width="64" height="64" style="border-radius:50%;object-fit:cover;background:#222;">
         <div>
@@ -43,7 +49,7 @@ export async function renderProfile() {
     if (profileActions) profileActions.style.display = "none";
   }
   function showEditButtons() {
-    if (profileActions) profileActions.style.display = "";
+    if (profileActions) profileActions.style.display = "flex";
   }
 
   function getQueryParam(name) {

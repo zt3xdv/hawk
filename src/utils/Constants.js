@@ -41,14 +41,27 @@ export const CONTRIBUTORS = [
     username: "tsumugi_dev",
     role: "Main Development"
   },
-  /*{
+  {
     name: "Asura",
     username: "asurawhite",
     role: "Domain"
-  },*/
+  },
   {
     name: "David Dobos",
     username: "wolfypro",
     role: "Just existing (free hosting service 🙏🙏)"
+  }
+];
+
+export const SERVERS = [
+  {
+    id: "spanish_portuguese",
+    name: "Spanish/Portuguese",
+    description: "Spanish/Portuguese server.",
+  },
+  {
+    id: "english",
+    name: "English",
+    description: "Server in english.",
   }
 ];

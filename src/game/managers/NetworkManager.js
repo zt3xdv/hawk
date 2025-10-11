@@ -11,8 +11,15 @@ export default class NetworkManager {
     this.last = { type: null, data: null };
   }
 
+  buildPath(basePath) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    return `${protocol}//${host}${basePath}`;
+  }
+
   connect() {
-    this.ws = new WebSocket("/");
+    this.server = JSON.parse(localStorage.getItem("server"));
+    this.ws = new WebSocket(this.server.path);
 
     this.ws.addEventListener('open', () => {});
     this.ws.addEventListener('message', async (evt) => {
@@ -83,16 +90,23 @@ export default class NetworkManager {
         case 'map':
           this.scene.mapObjects.loadJsonMap(data.map);
           break;
+          
+        case 'createElement':
+          this.scene.mapObjects.create(data.id, this.scene, data.x, data.y, data.options);
+          break;
+        case 'deleteElement':
+          this.scene.mapObjects.destroyByServerId(data.options?.serverId);
+          break;
+        case 'moveElement':
+          this.scene.mapObjects.moveByServerId(data.options?.serverId, data.x, data.y);
+          break;
         default:
           // unknown type
       }
     });
-
     this.ws.addEventListener('close', () => {
       this.scene.errorModal.throwError("Disconnected from server.");
     });
-
-    this.ws.addEventListener('error', () => {});
   }
 
   send(type, data) {

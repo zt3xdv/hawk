@@ -1,23 +1,26 @@
 import Alerts from '../utils/Alerts.js';
 import { DISPLAY_NAME, USERNAME, PASSWORD } from '../utils/Constants.js';
+import Cache from '../utils/Cache.js';
 
 export function renderRegister() {
   const app = document.getElementById('app');
   app.innerHTML = `
-<main class="main">
+  <div class="auth">
   <div class="header">
-    <h3>Register</h3>
+    <h3><canv-icon src="${Cache.getBlob('assets/icons/unbanmember.png').dataUrl}"></canv-icon>Register</h3>
+    <span class="description">Create a new account.</span>
   </div>
-  
+  <hr>
   <form id="regForm" class="gap">
-    <input type="text" id="display_name" placeholder="Display name" required>
+    <input type="text" id="display_name" placeholder="Display Name" required>
     <input type="text" id="username" placeholder="Username" required>
     <input type="password" id="password" placeholder="Password" required>
     <br>
     <button class="btn" type="submit">Register</button>
   </form>
-  <p>Already have a account? <a href="/login">login</a></p>
-</main>
+  <hr>
+  <p>Already have a account? <a href="/login">Login</a></p>
+  </div>
   `;
 
   const form = document.getElementById('regForm');
@@ -78,9 +81,9 @@ export function renderRegister() {
       });
       const data = await res.json();
       if (res.ok) {
-        Alerts.add('Registered', 'Succesfully registered.<br>Now login <a href="/login">here</a>.');
+        Alerts.add('Registered', 'Succesfully registered.<br>Login by clicking <a href="/login">here</a>.');
       } else {
-        Alerts.add('Error when registering', data.error || 'Unknown error.');
+        Alerts.add('Register error', data.error || 'Unknown error.<br>This maybe is a mistake, please contact an administrator.');
       }
     } catch (err) {
       Alerts.add('Network error', err.message);
