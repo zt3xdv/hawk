@@ -1,7 +1,10 @@
+<a href="https://hawkg.xyz">
+  <img width="60px" height="60px" src="https://raw.githubusercontent.com/zt3xdv/hawk/main/public/logo.svg" align="right" />
+</a>
+
 # Hawk
 
-Hangout game using Hawk engine.
-Ah yes chatgpt is my sugar :wah:
+
 
 ---
 
@@ -30,6 +33,12 @@ npm run fast-build
 
 # For production
 npm run build
+
+# For engine development
+npm run fast-build-engine
+
+# For engine production
+npm run build-engine
 ```
 
 5. Run:
@@ -44,18 +53,5 @@ Edit /src/utils/Constants.js to modify dev mode to add debugging and map editor.
 ## License
 
 Apache License 2.0
-
----
-
-## TODO
-
-Aw man...
-
-- [x] ID System: Use id instead of username for identify accounts.
-- [x] Friends system: Add friends requests (needs id system for security).
-- [x] Building: Add a public map editor.
-- [ ] Islands: Separate world per player.
-- [x] Editor: Map editor.
-- [x] Tiled map: Use tiled (mapeditor) maps instead of generating images using hash (in progress)...
 
 ---

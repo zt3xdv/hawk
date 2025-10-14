@@ -39,6 +39,7 @@ export function nav() {
         `}
         <hr>
         <li><a href="/about">About</a></li>
+        <li><a href="/help">Help</a></li>
       </div>
     </div>
   `;

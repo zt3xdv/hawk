@@ -1,19 +1,22 @@
 import { escapeHtml, getAuth, apiPost, qs, qsa } from '../game/utils/Utils.js';
 import { API } from '../utils/Constants.js';
+import Cache from '../utils/Cache.js';
 
 export function renderPeople(dom, mini = false, closeBtn = false) {
   const app = dom || document.getElementById('app');
   app.innerHTML = `
-    ${mini ? '' : '<main class="friends-shell">'}
-      <aside class="friends-sidebar${mini ? ' mini' : ''}">
-        <div class="friends-card" style="padding-bottom:10px">
-          <div class="friends-header">
-            <div><strong>People</strong></div>
+  <div class="auth" ${closeBtn ? 'style="margin: 0 0;"' : ''}>
+  <div class="header">
+    <h3><canv-icon src="${Cache.getBlob('assets/icons/people.png').dataUrl}"></canv-icon>People</h3>
+    <span class="description">Send, recieve, accept friend requests.</span>
             <div class="friends-actions">
               <button id="refreshBtn" class="friends-ghost">Refresh</button>
               ${closeBtn ? '<button id="closeBtn" class="friends-ghost">Close</button>' : ''}
             </div>
-          </div>
+  </div>
+  <hr>
+      <aside class="friends-sidebar mini">
+        <div class="friends-card" style="padding-bottom:10px">
           <div style="margin-top:10px">
             <div class="small" style="color:rgba(255,255,255,0.7)">Send friend request by username</div>
             <div class="friends-send-row">
@@ -44,7 +47,7 @@ export function renderPeople(dom, mini = false, closeBtn = false) {
           <div id="sentPanel" class="friends-list friends-card" style="display:none"></div>
         </div>
       </section>
-    ${mini ? '' : '</main>'}
+      </div>
   `;
 
   const auth = getAuth();

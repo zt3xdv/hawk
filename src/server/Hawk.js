@@ -119,8 +119,6 @@ class HawkServer {
   }
 
   async create() {
-    log('server-' + this.data.id, 'Starting up server...');
-
     const startMs = Date.now();
 
     if (!this.__counterStarted) {
@@ -139,14 +137,12 @@ class HawkServer {
     }
 
     try {
-      log('server-' + this.data.id, 'Loading map...');
       const content = await fs.readFile(MAP_FILE, 'utf8');
       this.map = JSON.parse(content);
     } catch (err) {
       this.map = [];
     }
 
-    log('server-' + this.data.id, 'Starting up WebSocket server...');
     this.wss.on('connection', (ws, req) => {
       const socketId = uuid(); // usa uuid() desde Utils.js
       ws._id = socketId;
@@ -244,7 +240,7 @@ class HawkServer {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
 
-          log('chat', `${p.username}: ${data.message}`);
+          log('chat-' + this.data.id, `${p.username}: ${data.message}`);
 
           const payload = { ...data, user: p.username, id: socketId };
 
@@ -348,11 +344,6 @@ class HawkServer {
         log('server-' + this.data.id, 'WebSocket error for ' + socketId + ': ' + String(err));
       });
     });
-
-    const endMs = Date.now();
-    const took = endMs - startMs;
-
-    log('server-' + this.data.id, 'Server started. Took ' + took + 'ms');
   }
 }
 

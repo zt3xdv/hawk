@@ -39,7 +39,8 @@ const baseConfig = {
   output: {
     dir: outDir,
     format: 'esm',
-    name: 'Hawk'
+    name: 'Hawk',
+    indent: false
   }
 };
 
