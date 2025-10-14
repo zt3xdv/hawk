@@ -3,48 +3,77 @@
 </a>
 
 # Hawk
+Built with fun and ❤!
 
-- Built to be scalable.
-- Built just for fun lol.
+---
 
-### Quick Start
+## Quick setup
 
-1. **Clone**:
+Follow these steps to get Hawk running in minutes:
+
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/zt3xdv/hawk.git
 cd hawk
 ```
 
-2. **Install**:
+### 2. Install dependencies
+
 ```bash
 npm install
 ```
 
-3. **Startup config**:
+### 3. Configure the starter file
+
 ```bash
 cp config.example.json config.json
+# Edit config.json according to your needs
 ```
 
-4. **Build**:
-```bash
-# For development
-npm run fast-build
+### 4. Build the project
 
-# For production
-npm run build
+- **Development:**  
+  ```bash
+  npm run fast-build
+  ```
 
-# For engine development
-npm run fast-build-engine
+- **Production:**  
+  ```bash
+  npm run build
+  ```
 
-# For engine production
-npm run build-engine
-```
+- **Engine development:**  
+  ```bash
+  npm run fast-build-engine
+  ```
 
-5. **Run**:
+- **Engine production:**  
+  ```bash
+  npm run build-engine
+  ```
+
+### 5. Run Hawk
+
 ```bash
 npm run start
 ```
 
-### License
+---
 
-Apache License 2.0
+## Notes
+
+- Customize `config.json` for your environment.
+- Check the scripts in `package.json` for more advanced options.
+
+---
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
+
+---
+
+Questions, suggestions, or improvements? Open an [issue](https://github.com/zt3xdv/hawk/issues) or create a [pull request](https://github.com/zt3xdv/hawk/pulls).
+
+---
