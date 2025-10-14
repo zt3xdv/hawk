@@ -4,29 +4,28 @@
 
 # Hawk
 
+- Built to be scalable.
+- Built just for fun lol.
 
+### Quick Start
 
----
-
-## Quick Start
-
-1. Clone:
+1. **Clone**:
 ```bash
 git clone https://github.com/zt3xdv/hawk.git
 cd hawk
 ```
 
-2. Install:
+2. **Install**:
 ```bash
 npm install
 ```
 
-3. Startup config;
+3. **Startup config**:
 ```bash
 cp config.example.json config.json
 ```
 
-4. Build
+4. **Build**:
 ```bash
 # For development
 npm run fast-build
@@ -41,17 +40,11 @@ npm run fast-build-engine
 npm run build-engine
 ```
 
-5. Run:
+5. **Run**:
 ```bash
 npm run start
 ```
 
-Edit /src/utils/Constants.js to modify dev mode to add debugging and map editor.
-
----
-
-## License
+### License
 
 Apache License 2.0
-
----
