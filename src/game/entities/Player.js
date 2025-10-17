@@ -1,5 +1,6 @@
 import ChatBubbleManager from '../managers/ChatBubbleManager.js';
 import { estimateReadTime } from '../utils/Utils.js';
+import { PLAYER_SPEED } from '../../utils/Constants.js';
 
 export default class Player {
   constructor(scene, id, uuid, username, display_name, x, y, avatar) {
@@ -55,10 +56,9 @@ export default class Player {
   }
 
   updateMovement(direction) {
-    const speed = 200;
-    this.sprite.body.setVelocity(Math.floor(direction.x * speed), Math.floor(direction.y * speed));
-    this.sprite.setDepth(this.sprite.y + 16);
+    this.sprite.body.setVelocity(Math.floor(direction.x * PLAYER_SPEED), Math.floor(direction.y * PLAYER_SPEED));
     this.nameText.setPosition(Math.floor(this.sprite.x - Math.floor(this.sprite.width / 2)), Math.floor(this.sprite.y - 30));
+    this.sprite.setDepth(this.sprite.y + 16);
   }
 
   setPosition(x, y, smooth = false) {

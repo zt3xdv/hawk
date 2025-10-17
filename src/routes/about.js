@@ -2,13 +2,15 @@ import { DISCORD_SERVER, CONTRIBUTORS } from "../utils/Constants.js";
 import Cache from '../utils/Cache.js';
 
 export function renderAbout() {
-  const contributorsHTML = CONTRIBUTORS.map(c => (`
-    <div class="contributor">
+  let contributorsHTML = "";
+  
+  CONTRIBUTORS.forEach(c => {
+    contributorsHTML += `<div class="contributor">
       <span>${c.name} <span class="accent">@${c.username}</span></span>
       <br>
       <small>Role: <span class="accent">${c.role}</span></small>
-    </div>
-  `));
+    </div><br>`;
+  });
   
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -24,7 +26,7 @@ export function renderAbout() {
     <p>You can contact us on <strong>Discord</strong> <a href="${DISCORD_SERVER}">here</a>.</p>
     
     <h2>Team</h2>
-    <p>Our team has <strong>${CONTRIBUTORS.length}</strong> contributor(s). You can be one by joining our discord server and contributing!</p>
+    <p>Our team has <strong>${CONTRIBUTORS.length}</strong> contributor(s). You can be one by joining our Discord Server and contributing!</p>
     ${contributorsHTML}
     </div>
   `;

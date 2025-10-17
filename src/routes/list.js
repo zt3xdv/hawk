@@ -10,7 +10,8 @@ export const routes = {
 '/help':             { auth: false,  title: 'Help', description: 'Controls, and some help.' },
 '/privacypolicy':    { auth: false,  title: 'Privacy Policy', description: 'Details on how Hawk collects, uses, and protects data.' },
 '/termsofservice':   { auth: false,  title: 'Terms Of Service', description: 'Rules and legal terms governing use of Hawk.' },
-
+  '/404':              { auth: false, title: '404', description: 'This page has not found.' },
+  '/ping':              { auth: false, title: 'Ping', description: 'Check the ping between you and Hawk servers.' },
+  
   '/':                 {},
-  '/404':              { fn: () => {}, auth: false, title: '404', description: 'This page has not found.' },
 };

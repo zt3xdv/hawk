@@ -10,7 +10,7 @@ export function renderPrivacyPolicy() {
 - At registration we collect: <strong>username</strong>, <strong>password</strong>, and <strong>display name</strong>.
 <br><br>
 2. <strong>Purpose and use</strong><br>
-- <strong>username</strong> and <strong>password</strong>: validated and used exclusively for authentication.<br>
+- <strong>username</strong> and <strong>password</strong>: validated and used exclusively for authentication and friend requests.<br>
 - <strong>display name</strong>: shown on the site to identify the user.
 <br><br>
 3. <strong>No cookies</strong><br>
@@ -20,7 +20,7 @@ export function renderPrivacyPolicy() {
 - We do not share personal data with third parties, except when required by law.
 <br><br>
 5. <strong>Retention</strong><br>
-- Account data is retained indefinitely and <strong>accounts cannot be deleted</strong>. Some data may remain even if the account is disabled.
+- Account data is retained indefinitely and <strong>accounts cannot be deleted</strong>.
 <br><br>
 6. <strong>Security</strong><br>
 - We implement reasonable measures to protect your data but cannot guarantee absolute security.

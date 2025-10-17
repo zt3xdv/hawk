@@ -8,7 +8,7 @@ export function nav() {
   navEl.className = 'main-nav';
   navEl.innerHTML = `
     <div class="nav-icon">
-      <img src="${Cache.getBlob("logo.png").dataUrl}" alt="Hawk" width="auto" height="25">
+      <img src="${Cache.getBlob("logo.svg").dataUrl}" alt="Hawk" width="auto" height="25">
     </div>
     <p class="nav-title">Hawk</p>
     <div class="nav-dropdown">

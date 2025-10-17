@@ -128,6 +128,16 @@ export function escapeHtml(str) {
   });
 }
 
-export function generateOgUrl(args = "") {
-  return "https://images.weserv.nl/?url=" + encodeURIComponent("87.106.208.203:13221/og" + args) + "&output=png"
+export function getRandomFromArray(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+export function hexToRgb(hex) {
+  const value = hex.replace('#', '');
+  const bigint = parseInt(value, 16);
+  return [
+    (bigint >> 16) & 255,
+    (bigint >> 8) & 255,
+    bigint & 255
+  ];
 }

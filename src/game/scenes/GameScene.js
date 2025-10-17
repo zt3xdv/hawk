@@ -108,8 +108,8 @@ export default class GameScene extends Phaser.Scene {
       this.movementTimer += delta;
 
       if (this.movementTimer >= SEND_INTERVAL) {
-        const px = this.player.sprite.x;
-        const py = this.player.sprite.y;
+        const px = Math.floor(this.player.sprite.x);
+        const py = Math.floor(this.player.sprite.y);
 
         const lastX = this.lastSentPos.x;
         const lastY = this.lastSentPos.y;
@@ -127,8 +127,6 @@ export default class GameScene extends Phaser.Scene {
       this.lastSentPos.x = null;
       this.lastSentPos.y = null;
     }
-    
-    Object.keys(this.networkManager.players).forEach(p => this.networkManager.players[p].update());
     
     this.lightManager.update(time, delta);
     this.mapObjects.update(time, delta);

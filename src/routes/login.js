@@ -15,6 +15,8 @@ export function renderLogin() {
     <input type="password" id="password" placeholder="Password" required>
     <br>
     <button class="btn" type="submit">Login</button>
+    <br>
+    <small class="accent">By logging in you accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
   </form>
   <hr>
   <p>New here? <a href="/register">Register</a></p>

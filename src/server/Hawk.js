@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import { existsSync, mkdirSync } from 'fs';
 import UserModel from '../models/UserModel.js';
 import PlayerModel from '../models/PlayerModel.js';
-import { log, uuid } from '../utils/Utils.js';
+import { log, uuid, escapeHtml } from '../utils/Utils.js';
 import { DEV } from '../utils/Constants.js';
 import { pack, unpack } from 'msgpackr';
 
@@ -239,6 +239,8 @@ class HawkServer {
           if (!data?.message) return;
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
+          
+          data.message = escapeHtml(data.message);
 
           log('chat-' + this.data.id, `${p.username}: ${data.message}`);
 

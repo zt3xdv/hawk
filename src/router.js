@@ -1,8 +1,7 @@
 import { nav } from './components/nav.js';
 import Cache from "./utils/Cache.js";
-import { DISCORD_SERVER } from "./utils/Constants.js";
+import { DISCORD_SERVER, VERSION, ASSETS_VERSION, API, AUTHOR } from "./utils/ConstantsPackage.js";
 import { getAuth, apiPost } from './game/utils/Utils.js';
-import { API } from './utils/Constants.js';
 import { routes, getPathFromLocation } from './routes/routes.js';
 
 let currentNav = null;
@@ -38,7 +37,7 @@ function mountShell() {
       currentFooter.innerHTML = `
   <div class="footer-top">
     <div class="brand">
-      <img src="${Cache.getBlob("logo.png").dataUrl}" alt="Logo" class="footer-logo">
+      <img src="${Cache.getBlob("logo.svg").dataUrl}" alt="Logo" class="footer-logo">
       <span class="brand-name">Hawk</span>
     </div>
     <div class="right-side">
@@ -46,13 +45,15 @@ function mountShell() {
   </div>
   <div class="footer-bottom">
     <div class="authors">
-      © 2025 — Nexa Studios, tsumugi_dev
+      © ${new Date().getFullYear()} — ${AUTHOR}
     </div>
     <div class="extras">
+      <p>${VERSION} · assets-${ASSETS_VERSION}</p>
       <a href="/termsofservice">Terms Of Service</a> · <a href="/privacypolicy">Privacy Policy</a> · <a href="${DISCORD_SERVER}">Discord</a>
     </div>
   </div>
 `;
+      currentFooter.style.marginTop = `170px`;
       document.body.appendChild(currentFooter);
 
       document.body.addEventListener('click', onBodyClick);
@@ -114,7 +115,7 @@ export function router() {
   }
 
   if (!route.fn) {
-    window.history.replaceState({}, '', '/login');
+    window.history.replaceState({}, '', '/404');
     return router();
   }
 

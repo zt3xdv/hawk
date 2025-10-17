@@ -9,6 +9,8 @@ import { renderAvatar } from './avatar.js';
 import { renderPeople } from './people.js';
 import { renderTermsOfService } from './termsofservice.js';
 import { renderPrivacyPolicy } from './ppolicy.js';
+import { renderNotFound } from './404.js';
+import { renderPing } from './ping.js';
 import { routes as baseRoutes } from './list.js';
 
 export const routes = {
@@ -23,10 +25,11 @@ export const routes = {
   '/help':             { ...(baseRoutes['/help'] || {}),             fn: renderHelp },
   '/privacypolicy':    { ...(baseRoutes['/privacypolicy'] || {}),    fn: renderPrivacyPolicy },
   '/termsofservice':   { ...(baseRoutes['/termsofservice'] || {}),   fn: renderTermsOfService },
+  '/404':              { ...(baseRoutes['/404'] || {}),              fn: renderNotFound },
+  '/ping':             { ...(baseRoutes['/ping'] || {}),             fn: renderPing },
   
   // NOOP
   '/':                 { ...(baseRoutes['/'] || {}) },
-  '/404':              { ...(baseRoutes['/404'] || {}) },
 };
 
 export function getPathFromLocation() {

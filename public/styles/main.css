@@ -46,7 +46,6 @@ body {
 }
 
 .site-footer {
-  margin-top: 100%;
   color: #eee;
   padding: 24px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
@@ -97,6 +96,10 @@ body {
   padding-top: 12px;
   font-size: 13px;
   color: #ccc;
+}
+
+.extras {
+  text-align: right;
 }
 
 #app {
@@ -601,7 +604,6 @@ strong {
 input {
   flex: 1;
   padding: 10px 12px;
-  /*border-radius: 10px;*/
   border: none;
   border-bottom: 1px dashed #2a2a2a;
   background: none;
@@ -1845,6 +1847,10 @@ hr {
     justify-content: flex-end;
     width: 100%;
   }
+  
+.extras {
+  text-align: left;
+}
 
   .brand-name {
     font-size: 16px;
@@ -1881,7 +1887,6 @@ hr {
 }
 
 
-/* Profile settings responsive styles */
 .profile-container {
   width: 100%;
   max-width: 1100px;
@@ -1937,7 +1942,6 @@ hr {
   margin-top: 6px;
 }
 
-/* Form layout */
 .profile-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1971,7 +1975,6 @@ hr {
   font-size: 0.95rem;
 }
 
-/* Avatar upload row */
 .avatar-row {
   display: flex;
   align-items: center;
@@ -2100,9 +2103,9 @@ button, a {
   width: 100%;
 }
 
-.ticon {
-  width: 2em; /* ajusta el ancho según el tamaño del texto */
-  height: 2em; /* ajusta la altura según el tamaño del texto */
-  vertical-align: middle; /* ajusta la alineación vertical */
-  margin-right: 5px; /* ajusta el margen según sea necesario */
+#displayName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
 }

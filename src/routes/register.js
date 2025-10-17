@@ -17,6 +17,8 @@ export function renderRegister() {
     <input type="password" id="password" placeholder="Password" required>
     <br>
     <button class="btn" type="submit">Register</button>
+    <br>
+    <small class="accent">By creating a account your accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
   </form>
   <hr>
   <p>Already have a account? <a href="/login">Login</a></p>
@@ -24,7 +26,7 @@ export function renderRegister() {
   `;
 
   const form = document.getElementById('regForm');
-
+  
   function validateField(name, value) {
     switch (name) {
       case 'display_name':

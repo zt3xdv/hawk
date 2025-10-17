@@ -13,14 +13,8 @@ if (typeof WEBGL_RENDERER)
     renderWebGL = require('./ExternWebGLRenderer');
 }
 
-if (typeof CANVAS_RENDERER)
-{
-    renderCanvas = require('./ExternCanvasRenderer');
-}
-
 module.exports = {
 
     renderWebGL: renderWebGL,
-    renderCanvas: renderCanvas
 
 };

@@ -2,9 +2,19 @@ import { router } from './router.js';
 import Features from './game/device/Features.js';
 import Cache from './utils/Cache.js';
 import { list } from './utils/Icons.js';
+import { ASSETS_VERSION, TIPS } from './utils/ConstantsPackage.js';
+import { getRandomFromArray } from './utils/Utils.js';
+import * as Components from './components/components.js';
 
 window.addEventListener('DOMContentLoaded', async () => {
   const loading = document.getElementById("loading");
+  function randomTip() {
+    loading.querySelector("#tip").innerHTML = getRandomFromArray(TIPS);
+  }
+  const tipInterval = setInterval(() => randomTip(), 5000);
+  randomTip();
+  
+  Components.define();
 
   let codes = [];
   const f = Features();
@@ -32,10 +42,14 @@ window.addEventListener('DOMContentLoaded', async () => {
       </main>
     `;
     document.body.appendChild(app);
-    loading.remove();
+    
+    loading.classList.add('hidden');
+    loading.addEventListener('transitionend', () => {
+      clearInterval(tipInterval);
+      loading.remove();
+    });
   } else {
-    loading.querySelector("#tip").innerText = "Loading assets...";
-    await Cache.load("1.0.5", [
+    await Cache.load(ASSETS_VERSION, [
       "assets/entities/bee.png",
       "assets/fonts/at01.ttf",
       "assets/game/props.png",
@@ -58,6 +72,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       "assets/wah.png",
       "styles/main.css",
       "logo.png",
+      "logo.svg",
+      "banner.png",
       ...list
     ], (data) => {
       loading.querySelector("#loading-bar-percentage-int").innerText = data.percentage + "%";
@@ -66,113 +82,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     
     loading.classList.add('hidden');
     loading.addEventListener('transitionend', () => {
+      clearInterval(tipInterval);
       loading.remove();
     });
     
     router();
   }
 });
-
-/*class CanvIcon extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-  }
-
-  connectedCallback() {
-    const src = this.getAttribute('src');
-    const img = document.createElement('img');
-    img.src = src;
-    img.style.width = '2em';
-    img.style.height = '2em';
-    img.style.verticalAlign = 'middle';
-    img.style.marginRight = '5px';
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      canvas.width = 128;
-      canvas.height = 128;
-      ctx.drawImage(img, 0, 0);
-      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < pixels.data.length; i += 4) {
-        const lightness = (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
-        if (lightness < 64) {
-          pixels.data[i + 3] = 0;
-        } else {
-          pixels.data[i + 3] = 255;
-        }
-      }
-      ctx.putImageData(pixels, 0, 0);
-      img.src = canvas.toDataURL();
-    };
-
-    this.shadowRoot.appendChild(img);
-  }
-}*/
-
-class CanvIcon extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-  }
-
-  connectedCallback() {
-    const src = this.getAttribute('src');
-    const color = this.getAttribute('color'); // nuevo atributo
-
-    const img = document.createElement('img');
-    img.src = src;
-    img.style.width = '2em';
-    img.style.height = '2em';
-    img.style.verticalAlign = 'middle';
-    img.style.marginRight = '5px';
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    img.crossOrigin = 'anonymous';
-
-    img.onload = () => {
-      canvas.width = 128;
-      canvas.height = 128;
-      ctx.drawImage(img, 0, 0);
-      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-      for (let i = 0; i < pixels.data.length; i += 4) {
-        const lightness = (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
-        pixels.data[i + 3] = lightness < 64 ? 0 : 255;
-      }
-
-      ctx.putImageData(pixels, 0, 0);
-      if (color) {
-        const [r, g, b] = hexToRgb(color);
-        const recolor = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        for (let i = 0; i < recolor.data.length; i += 4) {
-          if (recolor.data[i + 3] > 0) {
-            recolor.data[i] = r;
-            recolor.data[i + 1] = g;
-            recolor.data[i + 2] = b;
-          }
-        }
-        ctx.putImageData(recolor, 0, 0);
-      }
-
-      img.src = canvas.toDataURL();
-    };
-
-    this.shadowRoot.appendChild(img);
-  }
-}
-
-function hexToRgb(hex) {
-  const value = hex.replace('#', '');
-  const bigint = parseInt(value, 16);
-  return [
-    (bigint >> 16) & 255,
-    (bigint >> 8) & 255,
-    bigint & 255
-  ];
-}
-
-customElements.define('canv-icon', CanvIcon);

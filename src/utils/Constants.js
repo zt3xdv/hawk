@@ -18,6 +18,8 @@ export const BIO = {
   MAX: 200
 };
 
+export const PLAYER_SPEED = 200;
+
 export const API = {
   friendsList: '/api/friends/list',
   friendsRequests: '/api/friends/requests',
@@ -43,8 +45,23 @@ export const CONTRIBUTORS = [
   },
   {
     name: "Asura",
-    username: "asurawhite",
-    role: "Domain"
+    username: "asurawhite_1",
+    role: "Domain gifter :3"
+  },
+];
+
+export const BASE_RULES = [
+  {
+    title: "Use common sense",
+    description: "Do not swear."
+  },
+  {
+    title: "Account Limit",
+    description: "Do not create more than one account."
+  },
+  {
+    title: "Hack/Exploits",
+    description: "Do not use any hack/exploit such as auto write."
   },
 ];
 
@@ -53,11 +70,18 @@ export const SERVERS = [
     id: "spanish",
     name: "Spanish",
     description: "Server in Spanish.",
+    rules: BASE_RULES
   },
   {
     id: "english",
     name: "English",
     description: "Server in English.",
+    rules: BASE_RULES
   }
 ];
 
+export const TIPS = [
+  "You can go to <a href='/avatar'>Avatar Page</a><br>to change your game avatar, yes its customizable.",
+  "If u wanna change your username<br>go to /profile-settings and do it.",
+  "This game is written in javascript."
+];

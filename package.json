@@ -1,6 +1,7 @@
 {
   "name": "hawk",
-  "version": "0.0.1",
+  "version": "0.0.1-beta",
+  "assets": "0.0.1-release",
   "module": "index.js",
   "type": "module",
   "scripts": {
@@ -23,14 +24,11 @@
   "description": "Hangout game created using Hawk engine.",
   "dependencies": {
     "bcryptjs": "^3.0.2",
-    "buffpress": "^1.0.0",
-    "canvas-image": "^0.0.7",
     "eventemitter2": "^6.4.9",
     "express": "^5.1.0",
     "mime-types": "^3.0.1",
     "msgpackr": "^1.11.5",
     "pngjs": "^7.0.0",
-    "satori": "^0.18.3",
     "ws": "^8.18.3"
   },
   "devDependencies": {
