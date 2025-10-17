@@ -44,7 +44,7 @@ app.get(/.*/, async (req, res) => {
     const route = routes[req.path] || routes["404"];
     htmlContent = htmlContent.replaceAll('route_description', route?.description || "Sign up and join our community!");
     htmlContent = htmlContent.replaceAll('route_title', route?.title ? ('Hawk - ' + route.title) : 'Hawk');
-    htmlContent = htmlContent.replaceAll('route_ogimage', 'banner.png');
+    htmlContent = htmlContent.replaceAll('route_ogimage', '/banner.png');
     
     res.setHeader('Content-Type', 'text/html');
     res.send(htmlContent);

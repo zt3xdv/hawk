@@ -13,5 +13,5 @@ export const routes = {
   '/404':              { auth: false, title: '404', description: 'This page has not found.' },
   '/ping':              { auth: false, title: 'Ping', description: 'Check the ping between you and Hawk servers.' },
   
-  '/':                 {},
+  '/':                 { redirect: '/dashboard' },
 };
