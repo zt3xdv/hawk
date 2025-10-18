@@ -1,19 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-//  These properties get injected into the Scene and map to local systems
-//  The map value is the property that is injected into the Scene, the key is the Scene.Systems reference.
-//  These defaults can be modified via the Scene config object
-//          var config = {
-//            map: {
-//                add: 'makeStuff',
-//                load: 'loader'
-//            }
-//        };
-
 var InjectionMap = {
 
     game: 'game',

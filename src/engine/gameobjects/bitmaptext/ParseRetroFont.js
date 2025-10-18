@@ -1,23 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var GetValue = require('../../utils/object/GetValue');
 
-/**
- * Parses a Retro Font configuration object so you can pass it to the BitmapText constructor
- * and create a BitmapText object using a fixed-width retro font.
- *
- * @function Phaser.GameObjects.RetroFont.Parse
- * @since 3.0.0
- *
- * @param {Phaser.Scene} scene - A reference to the Phaser Scene.
- * @param {Phaser.Types.GameObjects.BitmapText.RetroFontConfig} config - The font configuration object.
- *
- * @return {Phaser.Types.GameObjects.BitmapText.BitmapFontData} A parsed Bitmap Font data entry for the Bitmap Font cache.
- */
 var ParseRetroFont = function (scene, config)
 {
     var w = config.width;

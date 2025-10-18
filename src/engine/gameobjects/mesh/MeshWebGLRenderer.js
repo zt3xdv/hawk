@@ -1,25 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var GetCalcMatrix = require('../GetCalcMatrix');
 
-/**
- * Renders this Game Object with the WebGL Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.Mesh#renderWebGL
- * @since 3.0.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLRenderer} renderer - A reference to the current active WebGL renderer.
- * @param {Phaser.GameObjects.Mesh} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var MeshWebGLRenderer = function (renderer, src, camera, parentMatrix)
 {
     var faces = src.faces;
@@ -36,7 +16,6 @@ var MeshWebGLRenderer = function (renderer, src, camera, parentMatrix)
 
     var calcMatrix = GetCalcMatrix(src, camera, parentMatrix).calc;
 
-    //  This causes a flush if the Mesh has a Post Pipeline
     renderer.pipelines.preBatch(src);
 
     var textureUnit = pipeline.setGameObject(src);
@@ -70,7 +49,6 @@ var MeshWebGLRenderer = function (renderer, src, camera, parentMatrix)
     {
         var face = faces[i];
 
-        //  If face has alpha <= 0, or hideCCW + clockwise, or isn't in camera view, then don't draw it
         if (!face.isInView(camera, hideCCW, z, alpha, a, b, c, d, e, f, roundPixels))
         {
             continue;

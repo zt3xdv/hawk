@@ -1,24 +1,6 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
 
-/**
- * Creates an XHRSettings Object with default values.
- *
- * @function Phaser.Loader.XHRSettings
- * @since 3.0.0
- *
- * @param {XMLHttpRequestResponseType} [responseType=''] - The responseType, such as 'text'.
- * @param {boolean} [async=true] - Should the XHR request use async or not?
- * @param {string} [user=''] - Optional username for the XHR request.
- * @param {string} [password=''] - Optional password for the XHR request.
- * @param {number} [timeout=0] - Optional XHR timeout value.
- * @param {boolean} [withCredentials=false] - Optional XHR withCredentials value.
- *
- * @return {Phaser.Types.Loader.XHRSettingsObject} The XHRSettings object as used by the Loader.
- */
+
+
 var XHRSettings = function (responseType, async, user, password, timeout, withCredentials)
 {
     if (responseType === undefined) { responseType = ''; }

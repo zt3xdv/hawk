@@ -9,7 +9,7 @@ module.exports = [
     '    float radius;',
     '};',
     'const int kMaxLights = %LIGHT_COUNT%;',
-    'uniform vec4 uCamera; /* x, y, rotation, zoom */',
+    'uniform vec4 uCamera; ',
     'uniform vec2 uResolution;',
     'uniform sampler2D uMainSampler;',
     'uniform sampler2D uNormSampler;',

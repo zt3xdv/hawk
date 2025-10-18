@@ -1,20 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2021 Photon Storm Ltd.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Parses a KTX format Compressed Texture file and generates texture data suitable for WebGL from it.
- *
- * @function Phaser.Textures.Parsers.KTXParser
- * @memberof Phaser.Textures.Parsers
- * @since 3.60.0
- *
- * @param {ArrayBuffer} data - The data object created by the Compressed Texture File Loader.
- *
- * @return {Phaser.Types.Textures.CompressedTextureData} The Compressed Texture data.
- */
 var KTXParser = function (data)
 {
     var idCheck = [ 0xab, 0x4b, 0x54, 0x58, 0x20, 0x31, 0x31, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a ];
@@ -65,7 +48,6 @@ var KTXParser = function (data)
     {
         var levelSize = new Int32Array(data, offset, 1)[0];
 
-        // levelSize field
         offset += 4;
 
         mipmaps[i] = {
@@ -73,9 +55,6 @@ var KTXParser = function (data)
             width: levelWidth,
             height: levelHeight
         };
-
-        // add padding for odd sized image
-        // offset += 3 - ((levelSize + 3) % 4);
 
         levelWidth = Math.max(1, levelWidth >> 1);
         levelHeight = Math.max(1, levelHeight >> 1);

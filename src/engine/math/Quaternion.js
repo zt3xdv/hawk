@@ -1,12 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-//  Adapted from [gl-matrix](https://github.com/toji/gl-matrix) by toji
-//  and [vecmath](https://github.com/mattdesl/vecmath) by mattdesl
-
 var Class = require('../utils/Class');
 var Matrix3 = require('./Matrix3');
 var NOOP = require('../utils/NOOP');
@@ -14,7 +5,6 @@ var Vector3 = require('./Vector3');
 
 var EPSILON = 0.000001;
 
-//  Some shared 'private' arrays
 var siNext = new Int8Array([ 1, 2, 0 ]);
 var tmp = new Float32Array([ 0, 0, 0 ]);
 
@@ -24,87 +14,18 @@ var yUnitVec3 = new Vector3(0, 1, 0);
 var tmpvec = new Vector3();
 var tmpMat3 = new Matrix3();
 
-/**
- * @classdesc
- * A quaternion.
- *
- * @class Quaternion
- * @memberof Phaser.Math
- * @constructor
- * @since 3.0.0
- *
- * @param {number} [x=0] - The x component.
- * @param {number} [y=0] - The y component.
- * @param {number} [z=0] - The z component.
- * @param {number} [w=1] - The w component.
- */
 var Quaternion = new Class({
 
     initialize:
 
     function Quaternion (x, y, z, w)
     {
-        /**
-         * The x component of this Quaternion.
-         *
-         * @name Phaser.Math.Quaternion#_x
-         * @type {number}
-         * @default 0
-         * @private
-         * @since 3.50.0
-         */
 
-        /**
-         * The y component of this Quaternion.
-         *
-         * @name Phaser.Math.Quaternion#_y
-         * @type {number}
-         * @default 0
-         * @private
-         * @since 3.50.0
-         */
-
-        /**
-         * The z component of this Quaternion.
-         *
-         * @name Phaser.Math.Quaternion#_z
-         * @type {number}
-         * @default 0
-         * @private
-         * @since 3.50.0
-         */
-
-        /**
-         * The w component of this Quaternion.
-         *
-         * @name Phaser.Math.Quaternion#_w
-         * @type {number}
-         * @default 0
-         * @private
-         * @since 3.50.0
-         */
-
-        /**
-         * This callback is invoked, if set, each time a value in this quaternion is changed.
-         * The callback is passed one argument, a reference to this quaternion.
-         *
-         * @name Phaser.Math.Quaternion#onChangeCallback
-         * @type {function}
-         * @since 3.50.0
-         */
         this.onChangeCallback = NOOP;
 
         this.set(x, y, z, w);
     },
 
-    /**
-     * The x component of this Quaternion.
-     *
-     * @name Phaser.Math.Quaternion#x
-     * @type {number}
-     * @default 0
-     * @since 3.0.0
-     */
     x: {
         get: function ()
         {
@@ -119,14 +40,6 @@ var Quaternion = new Class({
         }
     },
 
-    /**
-     * The y component of this Quaternion.
-     *
-     * @name Phaser.Math.Quaternion#y
-     * @type {number}
-     * @default 0
-     * @since 3.0.0
-     */
     y: {
         get: function ()
         {
@@ -141,14 +54,6 @@ var Quaternion = new Class({
         }
     },
 
-    /**
-     * The z component of this Quaternion.
-     *
-     * @name Phaser.Math.Quaternion#z
-     * @type {number}
-     * @default 0
-     * @since 3.0.0
-     */
     z: {
         get: function ()
         {
@@ -163,14 +68,6 @@ var Quaternion = new Class({
         }
     },
 
-    /**
-     * The w component of this Quaternion.
-     *
-     * @name Phaser.Math.Quaternion#w
-     * @type {number}
-     * @default 0
-     * @since 3.0.0
-     */
     w: {
         get: function ()
         {
@@ -185,35 +82,11 @@ var Quaternion = new Class({
         }
     },
 
-    /**
-     * Copy the components of a given Quaternion or Vector into this Quaternion.
-     *
-     * @method Phaser.Math.Quaternion#copy
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Quaternion|Phaser.Math.Vector4)} src - The Quaternion or Vector to copy the components from.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     copy: function (src)
     {
         return this.set(src);
     },
 
-    /**
-     * Set the components of this Quaternion and optionally call the `onChangeCallback`.
-     *
-     * @method Phaser.Math.Quaternion#set
-     * @since 3.0.0
-     *
-     * @param {(number|object)} [x=0] - The x component, or an object containing x, y, z, and w components.
-     * @param {number} [y=0] - The y component.
-     * @param {number} [z=0] - The z component.
-     * @param {number} [w=0] - The w component.
-     * @param {boolean} [update=true] - Call the `onChangeCallback`?
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     set: function (x, y, z, w, update)
     {
         if (update === undefined) { update = true; }
@@ -241,16 +114,6 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Add a given Quaternion or Vector to this Quaternion. Addition is component-wise.
-     *
-     * @method Phaser.Math.Quaternion#add
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Quaternion|Phaser.Math.Vector4)} v - The Quaternion or Vector to add to this Quaternion.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     add: function (v)
     {
         this._x += v.x;
@@ -263,16 +126,6 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Subtract a given Quaternion or Vector from this Quaternion. Subtraction is component-wise.
-     *
-     * @method Phaser.Math.Quaternion#subtract
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Quaternion|Phaser.Math.Vector4)} v - The Quaternion or Vector to subtract from this Quaternion.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     subtract: function (v)
     {
         this._x -= v.x;
@@ -285,16 +138,6 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Scale this Quaternion by the given value.
-     *
-     * @method Phaser.Math.Quaternion#scale
-     * @since 3.0.0
-     *
-     * @param {number} scale - The value to scale this Quaternion by.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     scale: function (scale)
     {
         this._x *= scale;
@@ -307,14 +150,6 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Calculate the length of this Quaternion.
-     *
-     * @method Phaser.Math.Quaternion#length
-     * @since 3.0.0
-     *
-     * @return {number} The length of this Quaternion.
-     */
     length: function ()
     {
         var x = this.x;
@@ -325,14 +160,6 @@ var Quaternion = new Class({
         return Math.sqrt(x * x + y * y + z * z + w * w);
     },
 
-    /**
-     * Calculate the length of this Quaternion squared.
-     *
-     * @method Phaser.Math.Quaternion#lengthSq
-     * @since 3.0.0
-     *
-     * @return {number} The length of this Quaternion, squared.
-     */
     lengthSq: function ()
     {
         var x = this.x;
@@ -343,14 +170,6 @@ var Quaternion = new Class({
         return x * x + y * y + z * z + w * w;
     },
 
-    /**
-     * Normalize this Quaternion.
-     *
-     * @method Phaser.Math.Quaternion#normalize
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     normalize: function ()
     {
         var x = this.x;
@@ -374,32 +193,11 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Calculate the dot product of this Quaternion and the given Quaternion or Vector.
-     *
-     * @method Phaser.Math.Quaternion#dot
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Quaternion|Phaser.Math.Vector4)} v - The Quaternion or Vector to dot product with this Quaternion.
-     *
-     * @return {number} The dot product of this Quaternion and the given Quaternion or Vector.
-     */
     dot: function (v)
     {
         return this.x * v.x + this.y * v.y + this.z * v.z + this.w * v.w;
     },
 
-    /**
-     * Linearly interpolate this Quaternion towards the given Quaternion or Vector.
-     *
-     * @method Phaser.Math.Quaternion#lerp
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Quaternion|Phaser.Math.Vector4)} v - The Quaternion or Vector to interpolate towards.
-     * @param {number} [t=0] - The percentage of interpolation.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     lerp: function (v, t)
     {
         if (t === undefined) { t = 0; }
@@ -417,17 +215,6 @@ var Quaternion = new Class({
         );
     },
 
-    /**
-     * Rotates this Quaternion based on the two given vectors.
-     *
-     * @method Phaser.Math.Quaternion#rotationTo
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector3} a - The transform rotation vector.
-     * @param {Phaser.Math.Vector3} b - The target rotation vector.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     rotationTo: function (a, b)
     {
         var dot = a.x * b.x + a.y * b.y + a.z * b.z;
@@ -461,18 +248,6 @@ var Quaternion = new Class({
         }
     },
 
-    /**
-     * Set the axes of this Quaternion.
-     *
-     * @method Phaser.Math.Quaternion#setAxes
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector3} view - The view axis.
-     * @param {Phaser.Math.Vector3} right - The right axis.
-     * @param {Phaser.Math.Vector3} up - The upwards axis.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     setAxes: function (view, right, up)
     {
         var m = tmpMat3.val;
@@ -492,30 +267,11 @@ var Quaternion = new Class({
         return this.fromMat3(tmpMat3).normalize();
     },
 
-    /**
-     * Reset this Matrix to an identity (default) Quaternion.
-     *
-     * @method Phaser.Math.Quaternion#identity
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     identity: function ()
     {
         return this.set(0, 0, 0, 1);
     },
 
-    /**
-     * Set the axis angle of this Quaternion.
-     *
-     * @method Phaser.Math.Quaternion#setAxisAngle
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector3} axis - The axis.
-     * @param {number} rad - The angle in radians.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     setAxisAngle: function (axis, rad)
     {
         rad = rad * 0.5;
@@ -530,16 +286,6 @@ var Quaternion = new Class({
         );
     },
 
-    /**
-     * Multiply this Quaternion by the given Quaternion or Vector.
-     *
-     * @method Phaser.Math.Quaternion#multiply
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Quaternion|Phaser.Math.Vector4)} b - The Quaternion or Vector to multiply this Quaternion by.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     multiply: function (b)
     {
         var ax = this.x;
@@ -560,20 +306,8 @@ var Quaternion = new Class({
         );
     },
 
-    /**
-     * Smoothly linearly interpolate this Quaternion towards the given Quaternion or Vector.
-     *
-     * @method Phaser.Math.Quaternion#slerp
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Quaternion|Phaser.Math.Vector4)} b - The Quaternion or Vector to interpolate towards.
-     * @param {number} t - The percentage of interpolation.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     slerp: function (b, t)
     {
-        // benchmarks: http://jsperf.com/quaternion-slerp-implementations
 
         var ax = this.x;
         var ay = this.y;
@@ -585,10 +319,8 @@ var Quaternion = new Class({
         var bz = b.z;
         var bw = b.w;
 
-        // calc cosine
         var cosom = ax * bx + ay * by + az * bz + aw * bw;
 
-        // adjust signs (if necessary)
         if (cosom < 0)
         {
             cosom = -cosom;
@@ -598,15 +330,12 @@ var Quaternion = new Class({
             bw = - bw;
         }
 
-        // "from" and "to" quaternions are very close
-        //  ... so we can do a linear interpolation
         var scale0 = 1 - t;
         var scale1 = t;
 
-        // calculate coefficients
         if ((1 - cosom) > EPSILON)
         {
-            // standard case (slerp)
+
             var omega = Math.acos(cosom);
             var sinom = Math.sin(omega);
 
@@ -614,7 +343,6 @@ var Quaternion = new Class({
             scale1 = Math.sin(t * omega) / sinom;
         }
 
-        // calculate final values
         return this.set(
             scale0 * ax + scale1 * bx,
             scale0 * ay + scale1 * by,
@@ -623,14 +351,6 @@ var Quaternion = new Class({
         );
     },
 
-    /**
-     * Invert this Quaternion.
-     *
-     * @method Phaser.Math.Quaternion#invert
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     invert: function ()
     {
         var a0 = this.x;
@@ -649,16 +369,6 @@ var Quaternion = new Class({
         );
     },
 
-    /**
-     * Convert this Quaternion into its conjugate.
-     *
-     * Sets the x, y and z components.
-     *
-     * @method Phaser.Math.Quaternion#conjugate
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     conjugate: function ()
     {
         this._x = -this.x;
@@ -670,16 +380,6 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Rotate this Quaternion on the X axis.
-     *
-     * @method Phaser.Math.Quaternion#rotateX
-     * @since 3.0.0
-     *
-     * @param {number} rad - The rotation angle in radians.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     rotateX: function (rad)
     {
         rad *= 0.5;
@@ -700,16 +400,6 @@ var Quaternion = new Class({
         );
     },
 
-    /**
-     * Rotate this Quaternion on the Y axis.
-     *
-     * @method Phaser.Math.Quaternion#rotateY
-     * @since 3.0.0
-     *
-     * @param {number} rad - The rotation angle in radians.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     rotateY: function (rad)
     {
         rad *= 0.5;
@@ -730,16 +420,6 @@ var Quaternion = new Class({
         );
     },
 
-    /**
-     * Rotate this Quaternion on the Z axis.
-     *
-     * @method Phaser.Math.Quaternion#rotateZ
-     * @since 3.0.0
-     *
-     * @param {number} rad - The rotation angle in radians.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     rotateZ: function (rad)
     {
         rad *= 0.5;
@@ -760,16 +440,6 @@ var Quaternion = new Class({
         );
     },
 
-    /**
-     * Create a unit (or rotation) Quaternion from its x, y, and z components.
-     *
-     * Sets the w component.
-     *
-     * @method Phaser.Math.Quaternion#calculateW
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     calculateW: function ()
     {
         var x = this.x;
@@ -781,17 +451,6 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Set this Quaternion from the given Euler, based on Euler order.
-     *
-     * @method Phaser.Math.Quaternion#setFromEuler
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Euler} euler - The Euler to convert from.
-     * @param {boolean} [update=true] - Run the `onChangeCallback`?
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     setFromEuler: function (euler, update)
     {
         var x = euler.x / 2;
@@ -890,16 +549,6 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Sets the rotation of this Quaternion from the given Matrix4.
-     *
-     * @method Phaser.Math.Quaternion#setFromRotationMatrix
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Matrix4} mat4 - The Matrix4 to set the rotation from.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     setFromRotationMatrix: function (mat4)
     {
         var m = mat4.val;
@@ -965,36 +614,21 @@ var Quaternion = new Class({
         return this;
     },
 
-    /**
-     * Convert the given Matrix into this Quaternion.
-     *
-     * @method Phaser.Math.Quaternion#fromMat3
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix3} mat - The Matrix to convert from.
-     *
-     * @return {Phaser.Math.Quaternion} This Quaternion.
-     */
     fromMat3: function (mat)
     {
-        // benchmarks:
-        //    http://jsperf.com/typed-array-access-speed
-        //    http://jsperf.com/conversion-of-3x3-matrix-to-quaternion
 
-        // Algorithm in Ken Shoemake's article in 1987 SIGGRAPH course notes
-        // article "Quaternion Calculus and Fast Animation".
         var m = mat.val;
         var fTrace = m[0] + m[4] + m[8];
         var fRoot;
 
         if (fTrace > 0)
         {
-            // |w| > 1/2, may as well choose w > 1/2
-            fRoot = Math.sqrt(fTrace + 1.0); // 2w
+
+            fRoot = Math.sqrt(fTrace + 1.0); 
 
             this.w = 0.5 * fRoot;
 
-            fRoot = 0.5 / fRoot; // 1/(4w)
+            fRoot = 0.5 / fRoot; 
 
             this._x = (m[7] - m[5]) * fRoot;
             this._y = (m[2] - m[6]) * fRoot;
@@ -1002,7 +636,7 @@ var Quaternion = new Class({
         }
         else
         {
-            // |w| <= 1/2
+
             var i = 0;
 
             if (m[4] > m[0])
@@ -1018,7 +652,6 @@ var Quaternion = new Class({
             var j = siNext[i];
             var k = siNext[j];
 
-            //  This isn't quite as clean without array access
             fRoot = Math.sqrt(m[i * 3 + i] - m[j * 3 + j] - m[k * 3 + k] + 1);
             tmp[i] = 0.5 * fRoot;
 

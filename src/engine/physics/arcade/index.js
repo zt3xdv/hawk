@@ -1,15 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var CONST = require('./const');
 var Extend = require('../../utils/object/Extend');
-
-/**
- * @namespace Phaser.Physics.Arcade
- */
 
 var Arcade = {
 
@@ -34,7 +24,6 @@ var Arcade = {
 
 };
 
-//   Merge in the consts
 Arcade = Extend(false, Arcade, CONST);
 
 module.exports = Arcade;

@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @author       Igor Ognichenko <ognichenko.igor@gmail.com>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @ignore
- */
 var copy = function (out, a)
 {
     out[0] = a[0];
@@ -16,18 +6,6 @@ var copy = function (out, a)
     return out;
 };
 
-/**
- * Takes a Polygon object and applies Chaikin's smoothing algorithm on its points.
- *
- * @function Phaser.Geom.Polygon.Smooth
- * @since 3.13.0
- *
- * @generic {Phaser.Geom.Polygon} O - [polygon,$return]
- *
- * @param {Phaser.Geom.Polygon} polygon - The polygon to be smoothed. The polygon will be modified in-place and returned.
- *
- * @return {Phaser.Geom.Polygon} The input polygon.
- */
 var Smooth = function (polygon)
 {
     var i;

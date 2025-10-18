@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.GameObjects
- */
-
 var GameObjects = {
 
     Events: require('./events'),
@@ -50,8 +40,6 @@ var GameObjects = {
     Zone: require('./zone/Zone'),
     Video: require('./video/Video'),
 
-    //  Shapes
-
     Shape: require('./shape/Shape'),
     Arc: require('./shape/arc/Arc'),
     Curve: require('./shape/curve/Curve'),
@@ -64,8 +52,6 @@ var GameObjects = {
     Rectangle: require('./shape/rectangle/Rectangle'),
     Star: require('./shape/star/Star'),
     Triangle: require('./shape/triangle/Triangle'),
-
-    //  Game Object Factories
 
     Factories: {
         Blitter: require('./blitter/BlitterFactory'),
@@ -88,7 +74,6 @@ var GameObjects = {
         Zone: require('./zone/ZoneFactory'),
         Video: require('./video/VideoFactory'),
 
-        //  Shapes
         Arc: require('./shape/arc/ArcFactory'),
         Curve: require('./shape/curve/CurveFactory'),
         Ellipse: require('./shape/ellipse/EllipseFactory'),
@@ -123,7 +108,6 @@ var GameObjects = {
 
 };
 
-//  WebGL only Game Objects
 if (typeof WEBGL_RENDERER)
 {
     GameObjects.Shader = require('./shader/Shader');

@@ -1,32 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Renders one character of the Bitmap Text to the WebGL Pipeline.
- *
- * @function BatchChar
- * @since 3.50.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLPipeline} pipeline - The WebGLPipeline. Must have a `batchQuad` method.
- * @param {Phaser.GameObjects.BitmapText} src - The BitmapText Game Object.
- * @param {Phaser.Types.GameObjects.BitmapText.BitmapTextCharacter} char - The character to render.
- * @param {Phaser.Types.GameObjects.BitmapText.BitmapFontCharacterData} glyph - The character glyph.
- * @param {number} offsetX - The x offset.
- * @param {number} offsetY - The y offset.
- * @param {Phaser.GameObjects.Components.TransformMatrix} calcMatrix - The transform matrix.
- * @param {boolean} roundPixels - Round the transform values or not?
- * @param {number} tintTL - Top-left tint value.
- * @param {number} tintTR - Top-right tint value.
- * @param {number} tintBL - Bottom-left tint value.
- * @param {number} tintBR - Bottom-right tint value.
- * @param {number} tintEffect - The tint effect mode.
- * @param {Phaser.Renderer.WebGL.Wrappers.WebGLTextureWrapper} texture - The texture.
- * @param {number} textureUnit - The texture unit.
- */
 var BatchChar = function (pipeline, src, char, glyph, offsetX, offsetY, calcMatrix, roundPixels, tintTL, tintTR, tintBL, tintBR, tintEffect, texture, textureUnit)
 {
     var x = (char.x - src.displayOriginX) + offsetX;

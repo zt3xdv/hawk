@@ -1,4 +1,4 @@
-import Phaser from '../../../dist/engine/main.js';
+import HawkEngine from '../../../dist/engine/main.js';
 import InputManager from '../managers/InputManager.js';
 import NetworkManager from '../managers/NetworkManager.js';
 import ConnectingOverlay from '../managers/ConnectingOverlay.js';
@@ -12,7 +12,7 @@ import { getAssets, loadPack } from '../utils/Utils.js';
 
 const SEND_INTERVAL = 100;
 
-export default class GameScene extends Phaser.Scene {
+export default class GameScene extends HawkEngine.Scene {
   constructor() {
     super({ key: 'GameScene' });
     this.zoom = 1;
@@ -80,7 +80,7 @@ export default class GameScene extends Phaser.Scene {
           this.collisionGroup.add(object.image);
         }
         
-        if (Phaser.Geom.Rectangle.Overlaps(this.player.sprite.getBounds(), object.image.getBounds()) && this.player.sprite.depth < object.image.depth) {
+        if (HawkEngine.Geom.Rectangle.Overlaps(this.player.sprite.getBounds(), object.image.getBounds()) && this.player.sprite.depth < object.image.depth) {
           if (!object.isOverlapping) {
             object.isOverlapping = true;
             this.tweens.add({
@@ -134,7 +134,7 @@ export default class GameScene extends Phaser.Scene {
 
   zoomIn() {
     const cam = this.cameras.main;
-    const newZoom = Phaser.Math.Clamp(this.zoom + 1.0, this.minZoom, this.maxZoom);
+    const newZoom = HawkEngine.Math.Clamp(this.zoom + 1.0, this.minZoom, this.maxZoom);
     this.tweens.add({
       targets: cam,
       zoom: newZoom,
@@ -149,7 +149,7 @@ export default class GameScene extends Phaser.Scene {
 
   zoomOut() {
     const cam = this.cameras.main;
-    const newZoom = Phaser.Math.Clamp(this.zoom - 1.0, this.minZoom, this.maxZoom);
+    const newZoom = HawkEngine.Math.Clamp(this.zoom - 1.0, this.minZoom, this.maxZoom);
     this.tweens.add({
       targets: cam,
       zoom: newZoom,
@@ -188,6 +188,6 @@ export default class GameScene extends Phaser.Scene {
   isVisible(camera, gameObject) {
     const camRect = camera.worldView; 
     const goRect = gameObject.getBounds(); 
-    return Phaser.Geom.Intersects.RectangleToRectangle(camRect, goRect);
+    return HawkEngine.Geom.Intersects.RectangleToRectangle(camRect, goRect);
   }
 }

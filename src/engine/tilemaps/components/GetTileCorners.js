@@ -1,24 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Vector2 = require('../../math/Vector2');
 
-/**
- * Gets the corners of the Tile as an array of Vector2s.
- *
- * @function Phaser.Tilemaps.Components.GetTileCorners
- * @since 3.60.0
- *
- * @param {number} tileX - The x coordinate, in tiles, not pixels.
- * @param {number} tileY - The y coordinate, in tiles, not pixels.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera to use when calculating the tile index from the world values.
- * @param {Phaser.Tilemaps.LayerData} layer - The Tilemap Layer to act upon.
- *
- * @return {Phaser.Math.Vector2[]} An array of Vector2s corresponding to the world XY location of each tile corner.
- */
 var GetTileCorners = function (tileX, tileY, camera, layer)
 {
     var tileWidth = layer.baseTileWidth;
@@ -41,11 +22,6 @@ var GetTileCorners = function (tileX, tileY, camera, layer)
 
     var x = worldX + tileX * tileWidth;
     var y = worldY + tileY * tileHeight;
-
-    //  Top Left
-    //  Top Right
-    //  Bottom Right
-    //  Bottom Left
 
     return [
         new Vector2(x, y),

@@ -1,24 +1,8 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Tileset = require('../../Tileset');
 var ImageCollection = require('../../ImageCollection');
 var ParseObject = require('./ParseObject');
 var ParseWangsets = require('./ParseWangsets');
 
-/**
- * Tilesets and Image Collections.
- *
- * @function Phaser.Tilemaps.Parsers.Tiled.ParseTilesets
- * @since 3.0.0
- *
- * @param {object} json - The Tiled JSON data.
- *
- * @return {object} An object containing the tileset and image collection data.
- */
 var ParseTilesets = function (json)
 {
     var tilesets = [];
@@ -28,7 +12,7 @@ var ParseTilesets = function (json)
 
     for (var i = 0; i < json.tilesets.length; i++)
     {
-        //  name, firstgid, width, height, margin, spacing, properties
+
         var set = json.tilesets[i];
 
         if (set.source)
@@ -49,12 +33,10 @@ var ParseTilesets = function (json)
                     datas = datas || {};
                     props = props || {};
 
-                    // Tiled 1.2+
                     for (var t = 0; t < set.tiles.length; t++)
                     {
                         var tile = set.tiles[t];
 
-                        //  Convert tileproperties.
                         if (tile.properties)
                         {
                             var newPropData = {};
@@ -67,7 +49,6 @@ var ParseTilesets = function (json)
                             props[tile.id] = newPropData;
                         }
 
-                        //  Convert objectgroup
                         if (tile.objectgroup)
                         {
                             (datas[tile.id] || (datas[tile.id] = {})).objectgroup = tile.objectgroup;
@@ -83,14 +64,11 @@ var ParseTilesets = function (json)
                             }
                         }
 
-                        // Copy animation data
                         if (tile.animation)
                         {
                             (datas[tile.id] || (datas[tile.id] = {})).animation = tile.animation;
                         }
 
-                        // Copy tile `type` field
-                        // (see https://doc.mapeditor.org/en/latest/manual/custom-properties/#typed-tiles).
                         if (tile.type)
                         {
                             (datas[tile.id] || (datas[tile.id] = {})).type = tile.type;
@@ -106,7 +84,7 @@ var ParseTilesets = function (json)
                     ParseWangsets(set.wangsets, datas);
                 }
 
-                if (datas) // Implies also props is set.
+                if (datas) 
                 {
                     newSet.tileData = datas;
                     newSet.tileProperties = props;
@@ -114,20 +92,16 @@ var ParseTilesets = function (json)
             }
             else
             {
-                // Tiled 1
 
-                // Properties stored per-tile in object with string indexes starting at "0"
                 if (set.tileproperties)
                 {
                     newSet.tileProperties = set.tileproperties;
                 }
 
-                // Object & terrain shapes stored per-tile in object with string indexes starting at "0"
                 if (set.tiles)
                 {
                     newSet.tileData = set.tiles;
 
-                    // Parse the objects into Phaser format to match handling of other Tiled objects
                     for (stringID in newSet.tileData)
                     {
                         var objectGroup = newSet.tileData[stringID].objectgroup;
@@ -145,8 +119,6 @@ var ParseTilesets = function (json)
                 }
             }
 
-            // For a normal sliced tileset the row/count/size information is computed when updated.
-            // This is done (again) after the image is set.
             newSet.updateTileData(set.imagewidth, set.imageheight);
 
             tilesets.push(newSet);
@@ -176,7 +148,6 @@ var ParseTilesets = function (json)
             imageCollections.push(newCollection);
         }
 
-        //  We've got a new Tileset, so set the lastgid into the previous one
         if (lastSet)
         {
             lastSet.lastgid = set.firstgid - 1;

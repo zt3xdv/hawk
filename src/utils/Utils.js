@@ -1,4 +1,3 @@
-
 export function id(length) {
   let number = '';
   for (let i = 0; i < length; i++) {
@@ -140,4 +139,25 @@ export function hexToRgb(hex) {
     (bigint >> 8) & 255,
     bigint & 255
   ];
+}
+
+export function requestNotificationPermission() {
+  Notification.requestPermission(permission => {
+    if (permission === 'granted') {
+      console.log('Notifications enabled');
+    } else if (permission === 'denied') {
+      console.log('Notifications disabled');
+    }
+  });
+}
+
+export async function requestInstall() {
+  if (window.deferredInstallPrompt) {
+    window.deferredInstallPrompt.prompt();
+    const { outcome } = await window.deferredInstallPrompt.userChoice;
+  }
+}
+
+export function isInstalled() {
+  return window.deferredInstallPrompt;
 }

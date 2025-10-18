@@ -1,8 +1,4 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
+
 
 var Class = require('../../utils/Class');
 var FileTypesManager = require('../FileTypesManager');
@@ -11,25 +7,7 @@ var IsPlainObject = require('../../utils/object/IsPlainObject');
 var MultiFile = require('../MultiFile');
 var ScriptFile = require('./ScriptFile');
 
-/**
- * @classdesc
- * A Multi Script File suitable for loading by the Loader.
- *
- * These are created when you use the Phaser.Loader.LoaderPlugin#scripts method and are not typically created directly.
- *
- * For documentation about what all the arguments and configuration options mean please see Phaser.Loader.LoaderPlugin#scripts.
- *
- * @class MultiScriptFile
- * @extends Phaser.Loader.MultiFile
- * @memberof Phaser.Loader.FileTypes
- * @constructor
- * @since 3.17.0
- *
- * @param {Phaser.Loader.LoaderPlugin} loader - A reference to the Loader that is responsible for this file.
- * @param {(string|Phaser.Types.Loader.FileTypes.MultiScriptFileConfig)} key - The key to use for this file, or a file configuration object.
- * @param {string[]} [url] - An array of absolute or relative URLs to load the script files from. They are processed in the order given in the array.
- * @param {Phaser.Types.Loader.XHRSettingsObject} [xhrSettings] - An XHR Settings configuration object for the script files. Used in replacement of the Loaders default XHR Settings.
- */
+
 var MultiScriptFile = new Class({
 
     Extends: MultiFile,
@@ -77,12 +55,7 @@ var MultiScriptFile = new Class({
         MultiFile.call(this, loader, 'scripts', key, files);
     },
 
-    /**
-     * Adds this file to its target cache upon successful loading and processing.
-     *
-     * @method Phaser.Loader.FileTypes.MultiScriptFile#addToCache
-     * @since 3.17.0
-     */
+    
     addToCache: function ()
     {
         if (this.isReadyToProcess())
@@ -106,81 +79,7 @@ var MultiScriptFile = new Class({
 
 });
 
-/**
- * Adds an array of Script files to the current load queue.
- *
- * The difference between this and the `ScriptFile` file type is that you give an array of scripts to this method,
- * and the scripts are then processed _exactly_ in that order. This allows you to load a bunch of scripts that
- * may have dependencies on each other without worrying about the async nature of traditional script loading.
- *
- * You can call this method from within your Scene's `preload`, along with any other files you wish to load:
- *
- * ```javascript
- * function preload ()
- * {
- *     this.load.scripts('PostProcess', [
- *         'libs/shaders/CopyShader.js',
- *         'libs/postprocessing/EffectComposer.js',
- *         'libs/postprocessing/RenderPass.js',
- *         'libs/postprocessing/MaskPass.js',
- *         'libs/postprocessing/ShaderPass.js',
- *         'libs/postprocessing/AfterimagePass.js'
- *    ]);
- * }
- * ```
- *
- * In the code above the script files will all be loaded in parallel but only processed (i.e. invoked) in the exact
- * order given in the array.
- *
- * The files are **not** loaded right away. They are added to a queue ready to be loaded either when the loader starts,
- * or if it's already running, when the next free load slot becomes available. This happens automatically if you
- * are calling this from within the Scene's `preload` method, or a related callback. Because the files are queued
- * it means you cannot use the files immediately after calling this method, but must wait for the files to complete.
- * The typical flow for a Phaser Scene is that you load assets in the Scene's `preload` method and then when the
- * Scene's `create` method is called you are guaranteed that all of those assets are ready for use and have been
- * loaded.
- *
- * The key must be a unique String and not already in-use by another file in the Loader.
- *
- * Instead of passing arguments you can pass a configuration object, such as:
- *
- * ```javascript
- * this.load.scripts({
- *     key: 'PostProcess',
- *     url: [
- *         'libs/shaders/CopyShader.js',
- *         'libs/postprocessing/EffectComposer.js',
- *         'libs/postprocessing/RenderPass.js',
- *         'libs/postprocessing/MaskPass.js',
- *         'libs/postprocessing/ShaderPass.js',
- *         'libs/postprocessing/AfterimagePass.js'
- *        ]
- * });
- * ```
- *
- * See the documentation for `Phaser.Types.Loader.FileTypes.MultiScriptFileConfig` for more details.
- *
- * Once all the files have finished loading they will automatically be converted into a script element
- * via `document.createElement('script')`. They will have their language set to JavaScript, `defer` set to
- * false and then the resulting element will be appended to `document.head`. Any code then in the
- * script will be executed. This is done in the exact order the files are specified in the url array.
- *
- * The URLs can be relative or absolute. If the URLs are relative the `Loader.baseURL` and `Loader.path` values will be prepended to them.
- *
- * Note: The ability to load this type of file will only be available if the MultiScript File type has been built into Phaser.
- * It is available in the default build but can be excluded from custom builds.
- *
- * @method Phaser.Loader.LoaderPlugin#scripts
- * @fires Phaser.Loader.Events#ADD
- * @since 3.17.0
- *
- * @param {(string|Phaser.Types.Loader.FileTypes.MultiScriptFileConfig|Phaser.Types.Loader.FileTypes.MultiScriptFileConfig[])} key - The key to use for this file, or a file configuration object, or array of them.
- * @param {string[]} [url] - An array of absolute or relative URLs to load the script files from. They are processed in the order given in the array.
- * @param {string} [extension='js'] - The default file extension to use if no url is provided.
- * @param {Phaser.Types.Loader.XHRSettingsObject} [xhrSettings] - Extra XHR Settings specifically for these files.
- *
- * @return {this} The Loader instance.
- */
+
 FileTypesManager.register('scripts', function (key, url, xhrSettings)
 {
     var multifile;

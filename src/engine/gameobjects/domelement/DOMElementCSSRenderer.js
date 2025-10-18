@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var CSSBlendModes = require('./CSSBlendModes');
 var GameObject = require('../GameObject');
 var TransformMatrix = require('../components/TransformMatrix');
@@ -12,20 +6,6 @@ var tempMatrix1 = new TransformMatrix();
 var tempMatrix2 = new TransformMatrix();
 var tempMatrix3 = new TransformMatrix();
 
-/**
- * Renders this Game Object with the WebGL Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.DOMElement#renderWebGL
- * @since 3.17.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLRenderer} renderer - A reference to the current active renderer.
- * @param {Phaser.GameObjects.DOMElement} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var DOMElementCSSRenderer = function (renderer, src, camera, parentMatrix)
 {
     if (!src.node)
@@ -70,14 +50,11 @@ var DOMElementCSSRenderer = function (renderer, src, camera, parentMatrix)
 
         camMatrix.copyFrom(camera.matrix);
 
-        //  Multiply the camera by the parent matrix
         camMatrix.multiplyWithOffset(parentMatrix, -camera.scrollX * src.scrollFactorX, -camera.scrollY * src.scrollFactorY);
 
-        //  Undo the camera scroll
         srcMatrix.e = src.x - dx;
         srcMatrix.f = src.y - dy;
 
-        //  Multiply by the src matrix, store result in calcMatrix
         camMatrix.multiply(srcMatrix, calcMatrix);
     }
     else
@@ -95,7 +72,6 @@ var DOMElementCSSRenderer = function (renderer, src, camera, parentMatrix)
         srcMatrix.e -= camera.scrollX * src.scrollFactorX;
         srcMatrix.f -= camera.scrollY * src.scrollFactorY;
 
-        //  Multiply by the src matrix, store result in calcMatrix
         camMatrix.multiply(srcMatrix, calcMatrix);
 
         calcMatrix.e -= dx;
@@ -110,8 +86,6 @@ var DOMElementCSSRenderer = function (renderer, src, camera, parentMatrix)
         style.pointerEvents = src.pointerEvents;
         style.mixBlendMode = CSSBlendModes[src._blendMode];
     }
-
-    // https://developer.mozilla.org/en-US/docs/Web/CSS/transform
 
     style.transform =
         calcMatrix.getCSSMatrix() +

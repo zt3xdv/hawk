@@ -1,31 +1,8 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Tile = require('../Tile');
 var IsInLayerBounds = require('./IsInLayerBounds');
 var CalculateFacesAt = require('./CalculateFacesAt');
 var SetTileCollision = require('./SetTileCollision');
 
-/**
- * Puts a tile at the given tile coordinates in the specified layer. You can pass in either an index
- * or a Tile object. If you pass in a Tile, all attributes will be copied over to the specified
- * location. If you pass in an index, only the index at the specified location will be changed.
- * Collision information will be recalculated at the specified location.
- *
- * @function Phaser.Tilemaps.Components.PutTileAt
- * @since 3.0.0
- *
- * @param {(number|Phaser.Tilemaps.Tile)} tile - The index of this tile to set or a Tile object.
- * @param {number} tileX - The x coordinate, in tiles, not pixels.
- * @param {number} tileY - The y coordinate, in tiles, not pixels.
- * @param {boolean} recalculateFaces - `true` if the faces data should be recalculated.
- * @param {Phaser.Tilemaps.LayerData} layer - The Tilemap Layer to act upon.
- *
- * @return {Phaser.Tilemaps.Tile} The Tile object that was created or added to this map.
- */
 var PutTileAt = function (tile, tileX, tileY, recalculateFaces, layer)
 {
     if (recalculateFaces === undefined) { recalculateFaces = true; }
@@ -62,7 +39,6 @@ var PutTileAt = function (tile, tileX, tileY, recalculateFaces, layer)
         }
     }
 
-    // Updating colliding flag on the new tile
     var newTile = layer.data[tileY][tileX];
     var collides = layer.collideIndexes.indexOf(newTile.index) !== -1;
 
@@ -86,7 +62,6 @@ var PutTileAt = function (tile, tileX, tileY, recalculateFaces, layer)
 
     SetTileCollision(newTile, collides);
 
-    // Recalculate faces only if the colliding flag at (tileX, tileY) has changed
     if (recalculateFaces && (oldTileCollides !== newTile.collides))
     {
         CalculateFacesAt(tileX, tileY, layer);

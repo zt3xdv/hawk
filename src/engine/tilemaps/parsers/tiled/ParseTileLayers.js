@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Base64Decode = require('./Base64Decode');
 var CONST = require('../../const/ORIENTATION_CONST');
 var CreateGroupLayer = require('./CreateGroupLayer');
@@ -13,25 +7,11 @@ var LayerData = require('../../mapdata/LayerData');
 var ParseGID = require('./ParseGID');
 var Tile = require('../../Tile');
 
-/**
- * Parses all tilemap layers in a Tiled JSON object into new LayerData objects.
- *
- * @function Phaser.Tilemaps.Parsers.Tiled.ParseTileLayers
- * @since 3.0.0
- *
- * @param {object} json - The Tiled JSON object.
- * @param {boolean} insertNull - Controls how empty tiles, tiles with an index of -1, in the map
- * data are handled (see {@link Phaser.Tilemaps.Parsers.Tiled.ParseJSONTiled}).
- *
- * @return {Phaser.Tilemaps.LayerData[]} - An array of LayerData objects, one for each entry in
- * json.layers with the type 'tilelayer'.
- */
 var ParseTileLayers = function (json, insertNull)
 {
     var infiniteMap = GetFastValue(json, 'infinite', false);
     var tileLayers = [];
 
-    // State inherited from a parent group
     var groupStack = [];
     var curGroupState = CreateGroupLayer(json);
 
@@ -39,7 +19,7 @@ var ParseTileLayers = function (json, insertNull)
     {
         if (curGroupState.i >= curGroupState.layers.length)
         {
-            // Ensure recursion stack is not empty first
+
             if (groupStack.length < 1)
             {
                 console.warn(
@@ -48,7 +28,6 @@ var ParseTileLayers = function (json, insertNull)
                 break;
             }
 
-            // Return to previous recursive state
             curGroupState = groupStack.pop();
             continue;
         }
@@ -60,19 +39,16 @@ var ParseTileLayers = function (json, insertNull)
         {
             if (curl.type === 'group')
             {
-                // Compute next state inherited from group
+
                 var nextGroupState = CreateGroupLayer(json, curl, curGroupState);
 
-                // Preserve current state before recursing
                 groupStack.push(curGroupState);
                 curGroupState = nextGroupState;
             }
 
-            // Skip this layer OR 'recurse' (iterative style) into the group
             continue;
         }
 
-        // Base64 decode data if necessary. NOTE: uncompressed base64 only.
         if (curl.compression)
         {
             console.warn(
@@ -83,7 +59,7 @@ var ParseTileLayers = function (json, insertNull)
         }
         else if (curl.encoding && curl.encoding === 'base64')
         {
-            // Chunks for an infinite map
+
             if (curl.chunks)
             {
                 for (var i = 0; i < curl.chunks.length; i++)
@@ -92,20 +68,13 @@ var ParseTileLayers = function (json, insertNull)
                 }
             }
 
-            // Non-infinite map data
             if (curl.data)
             {
                 curl.data = Base64Decode(curl.data);
             }
 
-            delete curl.encoding; // Allow the same map to be parsed multiple times
+            delete curl.encoding; 
         }
-
-        //  This is an array containing the tile indexes, one after the other. -1 = no tile,
-        //  everything else = the tile index (starting at 1 for Tiled, 0 for CSV) If the map
-        //  contains multiple tilesets then the indexes are relative to that which the set starts
-        //  from. Need to set which tileset in the cache = which tileset in the JSON, if you do this
-        //  manually it means you can use the same map data but a new tileset.
 
         var layerData;
         var gidInfo;
@@ -183,13 +152,10 @@ var ParseTileLayers = function (json, insertNull)
 
                     gidInfo = ParseGID(chunk.data[t]);
 
-                    //  index, x, y, width, height
                     if (gidInfo.gid > 0)
                     {
                         tile = new Tile(layerData, gidInfo.gid, newOffsetX, newOffsetY, json.tilewidth, json.tileheight);
 
-                        // Turning Tiled's FlippedHorizontal, FlippedVertical and FlippedAntiDiagonal
-                        // propeties into flipX, flipY and rotation
                         tile.rotation = gidInfo.rotation;
                         tile.flipX = gidInfo.flipped;
 
@@ -252,18 +218,14 @@ var ParseTileLayers = function (json, insertNull)
             }
             var row = [];
 
-            //  Loop through the data field in the JSON.
             for (var k = 0, len = curl.data.length; k < len; k++)
             {
                 gidInfo = ParseGID(curl.data[k]);
 
-                //  index, x, y, width, height
                 if (gidInfo.gid > 0)
                 {
                     tile = new Tile(layerData, gidInfo.gid, x, output.length, json.tilewidth, json.tileheight);
 
-                    // Turning Tiled's FlippedHorizontal, FlippedVertical and FlippedAntiDiagonal
-                    // propeties into flipX, flipY and rotation
                     tile.rotation = gidInfo.rotation;
                     tile.flipX = gidInfo.flipped;
 

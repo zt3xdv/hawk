@@ -1,92 +1,36 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-//  Adapted from [gl-matrix](https://github.com/toji/gl-matrix) by toji
-//  and [vecmath](https://github.com/mattdesl/vecmath) by mattdesl
-
 var Class = require('../utils/Class');
 
-/**
- * @classdesc
- * A three-dimensional matrix.
- *
- * Defaults to the identity matrix when instantiated.
- *
- * @class Matrix3
- * @memberof Phaser.Math
- * @constructor
- * @since 3.0.0
- *
- * @param {Phaser.Math.Matrix3} [m] - Optional Matrix3 to copy values from.
- */
 var Matrix3 = new Class({
 
     initialize:
 
     function Matrix3 (m)
     {
-        /**
-         * The matrix values.
-         *
-         * @name Phaser.Math.Matrix3#val
-         * @type {Float32Array}
-         * @since 3.0.0
-         */
+
         this.val = new Float32Array(9);
 
         if (m)
         {
-            //  Assume Matrix3 with val:
+
             this.copy(m);
         }
         else
         {
-            //  Default to identity
+
             this.identity();
         }
     },
 
-    /**
-     * Make a clone of this Matrix3.
-     *
-     * @method Phaser.Math.Matrix3#clone
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Matrix3} A clone of this Matrix3.
-     */
     clone: function ()
     {
         return new Matrix3(this);
     },
 
-    /**
-     * This method is an alias for `Matrix3.copy`.
-     *
-     * @method Phaser.Math.Matrix3#set
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix3} src - The Matrix to set the values of this Matrix's from.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     set: function (src)
     {
         return this.copy(src);
     },
 
-    /**
-     * Copy the values of a given Matrix into this Matrix.
-     *
-     * @method Phaser.Math.Matrix3#copy
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix3} src - The Matrix to copy the values from.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     copy: function (src)
     {
         var out = this.val;
@@ -105,16 +49,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Copy the values of a given Matrix4 into this Matrix3.
-     *
-     * @method Phaser.Math.Matrix3#fromMat4
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix4} m - The Matrix4 to copy the values from.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     fromMat4: function (m)
     {
         var a = m.val;
@@ -133,16 +67,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Set the values of this Matrix from the given array.
-     *
-     * @method Phaser.Math.Matrix3#fromArray
-     * @since 3.0.0
-     *
-     * @param {array} a - The array to copy the values from.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     fromArray: function (a)
     {
         var out = this.val;
@@ -160,14 +84,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Reset this Matrix to an identity (default) matrix.
-     *
-     * @method Phaser.Math.Matrix3#identity
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     identity: function ()
     {
         var out = this.val;
@@ -185,14 +101,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Transpose this Matrix.
-     *
-     * @method Phaser.Math.Matrix3#transpose
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     transpose: function ()
     {
         var a = this.val;
@@ -210,14 +118,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Invert this Matrix.
-     *
-     * @method Phaser.Math.Matrix3#invert
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     invert: function ()
     {
         var a = this.val;
@@ -236,7 +136,6 @@ var Matrix3 = new Class({
         var b11 = -a22 * a10 + a12 * a20;
         var b21 = a21 * a10 - a11 * a20;
 
-        // Calculate the determinant
         var det = a00 * b01 + a01 * b11 + a02 * b21;
 
         if (!det)
@@ -259,14 +158,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Calculate the adjoint, or adjugate, of this Matrix.
-     *
-     * @method Phaser.Math.Matrix3#adjoint
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     adjoint: function ()
     {
         var a = this.val;
@@ -294,14 +185,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Calculate the determinant of this Matrix.
-     *
-     * @method Phaser.Math.Matrix3#determinant
-     * @since 3.0.0
-     *
-     * @return {number} The determinant of this Matrix.
-     */
     determinant: function ()
     {
         var a = this.val;
@@ -319,16 +202,6 @@ var Matrix3 = new Class({
         return a00 * (a22 * a11 - a12 * a21) + a01 * (-a22 * a10 + a12 * a20) + a02 * (a21 * a10 - a11 * a20);
     },
 
-    /**
-     * Multiply this Matrix by the given Matrix.
-     *
-     * @method Phaser.Math.Matrix3#multiply
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix3} src - The Matrix to multiply this Matrix by.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     multiply: function (src)
     {
         var a = this.val;
@@ -370,16 +243,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Translate this Matrix using the given Vector.
-     *
-     * @method Phaser.Math.Matrix3#translate
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3|Phaser.Math.Vector4)} v - The Vector to translate this Matrix with.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     translate: function (v)
     {
         var a = this.val;
@@ -393,16 +256,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Apply a rotation transformation to this Matrix.
-     *
-     * @method Phaser.Math.Matrix3#rotate
-     * @since 3.0.0
-     *
-     * @param {number} rad - The angle in radians to rotate by.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     rotate: function (rad)
     {
         var a = this.val;
@@ -428,18 +281,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Apply a scale transformation to this Matrix.
-     *
-     * Uses the `x` and `y` components of the given Vector to scale the Matrix.
-     *
-     * @method Phaser.Math.Matrix3#scale
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3|Phaser.Math.Vector4)} v - The Vector to scale this Matrix with.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     scale: function (v)
     {
         var a = this.val;
@@ -457,16 +298,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Set the values of this Matrix from the given Quaternion.
-     *
-     * @method Phaser.Math.Matrix3#fromQuat
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Quaternion} q - The Quaternion to set the values of this Matrix from.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     fromQuat: function (q)
     {
         var x = q.x;
@@ -507,16 +338,6 @@ var Matrix3 = new Class({
         return this;
     },
 
-    /**
-     * Set the values of this Matrix3 to be normalized from the given Matrix4.
-     *
-     * @method Phaser.Math.Matrix3#normalFromMat4
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix4} m - The Matrix4 to normalize the values from.
-     *
-     * @return {Phaser.Math.Matrix3} This Matrix3.
-     */
     normalFromMat4: function (m)
     {
         var a = m.val;
@@ -557,7 +378,6 @@ var Matrix3 = new Class({
         var b10 = a21 * a33 - a23 * a31;
         var b11 = a22 * a33 - a23 * a32;
 
-        // Calculate the determinant
         var det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
 
         if (!det)

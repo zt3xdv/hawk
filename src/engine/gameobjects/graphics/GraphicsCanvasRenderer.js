@@ -1,28 +1,6 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Commands = require('./Commands');
 var SetTransform = require('../../renderer/canvas/utils/SetTransform');
 
-/**
- * Renders this Game Object with the Canvas Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.Graphics#renderCanvas
- * @since 3.0.0
- * @private
- *
- * @param {Phaser.Renderer.Canvas.CanvasRenderer} renderer - A reference to the current active Canvas renderer.
- * @param {Phaser.GameObjects.Graphics} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- * @param {CanvasRenderingContext2D} [renderTargetCtx] - The target rendering context.
- * @param {boolean} allowClip - If `true` then path operations will be used instead of fill operations.
- */
 var GraphicsCanvasRenderer = function (renderer, src, camera, parentMatrix, renderTargetCtx, allowClip)
 {
     var commandBuffer = src.commandBuffer;
@@ -46,7 +24,6 @@ var GraphicsCanvasRenderer = function (renderer, src, camera, parentMatrix, rend
     var green = 0;
     var blue = 0;
 
-    //  Reset any currently active paths
     ctx.beginPath();
 
     for (var index = 0; index < commandBufferLength; ++index)
@@ -65,7 +42,6 @@ var GraphicsCanvasRenderer = function (renderer, src, camera, parentMatrix, rend
                     commandBuffer[index + 6]
                 );
 
-                //  +7 because overshoot is the 7th value, not used in Canvas
                 index += 7;
                 break;
 
@@ -234,7 +210,6 @@ var GraphicsCanvasRenderer = function (renderer, src, camera, parentMatrix, rend
         }
     }
 
-    //  Restore the context saved in SetTransform
     ctx.restore();
 };
 

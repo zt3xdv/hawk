@@ -1,27 +1,7 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var BatchChar = require('../BatchChar');
 var GetCalcMatrix = require('../../GetCalcMatrix');
 var Utils = require('../../../renderer/webgl/Utils');
 
-/**
- * Renders this Game Object with the WebGL Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.BitmapText#renderWebGL
- * @since 3.0.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLRenderer} renderer - A reference to the current active WebGL renderer.
- * @param {Phaser.GameObjects.BitmapText} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var BitmapTextWebGLRenderer = function (renderer, src, camera, parentMatrix)
 {
     var text = src._text;
@@ -38,7 +18,6 @@ var BitmapTextWebGLRenderer = function (renderer, src, camera, parentMatrix)
 
     var calcMatrix = GetCalcMatrix(src, camera, parentMatrix).calc;
 
-    //  This causes a flush if the BitmapText has a Post Pipeline
     renderer.pipelines.preBatch(src);
 
     var roundPixels = camera.roundPixels;
@@ -59,7 +38,6 @@ var BitmapTextWebGLRenderer = function (renderer, src, camera, parentMatrix)
     var texture = src.frame.glTexture;
     var textureUnit = pipeline.setGameObject(src);
 
-    //  Update the bounds - skipped internally if not dirty
     var bounds = src.getTextBounds(false);
 
     var i;
@@ -130,8 +108,6 @@ var BitmapTextWebGLRenderer = function (renderer, src, camera, parentMatrix)
             BatchChar(pipeline, src, char, glyph, 0, 0, calcMatrix, roundPixels, tintTL, tintTR, tintBL, tintBR, tintEffect, texture, textureUnit);
         }
 
-        //  Debug test if the characters are in the correct place when rendered:
-        // pipeline.drawFillRect(tx0, ty0, tx2 - tx0, ty2 - ty0, 0x00ff00, 0.5);
     }
 
     renderer.pipelines.postBatch(src);

@@ -1,15 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var CONST = require('./const');
 var Extend = require('../../../utils/object/Extend');
-
-/**
- * @namespace Phaser.Renderer.WebGL.Pipelines
- */
 
 var Pipelines = {
 
@@ -30,10 +20,6 @@ var Pipelines = {
 
 };
 
-//   Merge in the consts
-
 Pipelines = Extend(false, Pipelines, CONST);
-
-//  Export it
 
 module.exports = Pipelines;

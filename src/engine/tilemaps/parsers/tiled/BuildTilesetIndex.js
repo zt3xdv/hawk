@@ -1,21 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Tileset = require('../../Tileset');
 
-/**
- * Master list of tiles -> x, y, index in tileset.
- *
- * @function Phaser.Tilemaps.Parsers.Tiled.BuildTilesetIndex
- * @since 3.0.0
- *
- * @param {(Phaser.Tilemaps.MapData|Phaser.Tilemaps.Tilemap)} mapData - The Map Data object.
- *
- * @return {array} An array of Tileset objects.
- */
 var BuildTilesetIndex = function (mapData)
 {
     var i;
@@ -34,7 +18,7 @@ var BuildTilesetIndex = function (mapData)
                 x: 0,
                 y: image.height - mapData.tileHeight
             };
-            
+
             set = new Tileset(image.image, image.gid, image.width, image.height, 0, 0, undefined, undefined, offset);
 
             set.updateTileData(image.width, image.height);
@@ -56,7 +40,7 @@ var BuildTilesetIndex = function (mapData)
 
         for (var t = set.firstgid; t < set.firstgid + set.total; t++)
         {
-            //  Can add extra properties here as needed
+
             tiles[t] = [ x, y, i ];
 
             x += set.tileWidth + set.tileSpacing;

@@ -1,11 +1,3 @@
-// References:
-// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
-// https://gist.github.com/1579671
-// http://updates.html5rocks.com/2012/05/requestAnimationFrame-API-now-with-sub-millisecond-precision
-// https://gist.github.com/timhall/4078614
-// https://github.com/Financial-Times/polyfill-service/tree/master/polyfills/requestAnimationFrame
-
-// requestAnimationFrame
 var lastTime = Date.now();
 
 var vendors = [ 'ms', 'moz', 'webkit', 'o' ];

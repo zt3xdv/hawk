@@ -1,20 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Attempts to determine the document inner height across iOS and standard devices.
- * Based on code by @tylerjpeterson
- *
- * @function Phaser.DOM.GetInnerHeight
- * @since 3.16.0
- *
- * @param {boolean} iOS - Is this running on iOS?
- *
- * @return {number} The inner height value.
- */
 var GetInnerHeight = function (iOS)
 {
 

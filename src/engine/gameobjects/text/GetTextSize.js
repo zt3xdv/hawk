@@ -1,21 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Returns an object containing dimensions of the Text object.
- *
- * @function Phaser.GameObjects.GetTextSize
- * @since 3.0.0
- *
- * @param {Phaser.GameObjects.Text} text - The Text object to calculate the size from.
- * @param {Phaser.Types.GameObjects.Text.TextMetrics} size - The Text metrics to use when calculating the size.
- * @param {string[]} lines - The lines of text to calculate the size from.
- *
- * @return {Phaser.Types.GameObjects.Text.GetTextSizeObject} An object containing dimensions of the Text object.
- */
 var GetTextSize = function (text, size, lines)
 {
     var canvas = text.canvas;
@@ -33,7 +15,6 @@ var GetTextSize = function (text, size, lines)
 
     style.syncFont(canvas, context);
 
-    //  Text Width
     var letterSpacing = text.letterSpacing;
 
     for (var i = 0; i < drawnLines; i++)
@@ -47,7 +28,7 @@ var GetTextSize = function (text, size, lines)
         else
         {
             var line = lines[i];
-            
+
             for (var j = 0; j < line.length; j++)
             {
                 lineWidth += context.measureText(line[j]).width;
@@ -59,7 +40,6 @@ var GetTextSize = function (text, size, lines)
             }
         }
 
-        // Adjust for wrapped text
         if (style.wordWrap)
         {
             lineWidth -= context.measureText(' ').width;
@@ -69,13 +49,10 @@ var GetTextSize = function (text, size, lines)
         maxLineWidth = Math.max(maxLineWidth, lineWidths[i]);
     }
 
-    //  Text Height
-
     var lineHeight = size.fontSize + style.strokeThickness;
     var height = lineHeight * drawnLines;
     var lineSpacing = text.lineSpacing;
 
-    //  Adjust for line spacing
     if (drawnLines > 1)
     {
         height += lineSpacing * (drawnLines - 1);

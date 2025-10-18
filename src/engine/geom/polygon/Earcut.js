@@ -1,82 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * This module implements a modified ear slicing algorithm, optimized by z-order curve hashing and extended to
- * handle holes, twisted polygons, degeneracies and self-intersections in a way that doesn't guarantee correctness
- * of triangulation, but attempts to always produce acceptable results for practical data.
- *
- * Example:
- *
- * ```javascript
- * const triangles = Phaser.Geom.Polygon.Earcut([10,0, 0,50, 60,60, 70,10]); // returns [1,0,3, 3,2,1]
- * ```
- *
- * Each group of three vertex indices in the resulting array forms a triangle.
- *
- * ```javascript
- * // triangulating a polygon with a hole
- * earcut([0,0, 100,0, 100,100, 0,100,  20,20, 80,20, 80,80, 20,80], [4]);
- * // [3,0,4, 5,4,0, 3,4,7, 5,0,1, 2,3,7, 6,5,1, 2,7,6, 6,1,2]
- *
- * // triangulating a polygon with 3d coords
- * earcut([10,0,1, 0,50,2, 60,60,3, 70,10,4], null, 3);
- * // [1,0,3, 3,2,1]
- * ```
- *
- * If you pass a single vertex as a hole, Earcut treats it as a Steiner point.
- *
- * If your input is a multi-dimensional array (e.g. GeoJSON Polygon), you can convert it to the format
- * expected by Earcut with `Phaser.Geom.Polygon.Earcut.flatten`:
- *
- * ```javascript
- * var data = earcut.flatten(geojson.geometry.coordinates);
- * var triangles = earcut(data.vertices, data.holes, data.dimensions);
- * ```
- *
- * After getting a triangulation, you can verify its correctness with `Phaser.Geom.Polygon.Earcut.deviation`:
- *
- * ```javascript
- * var deviation = earcut.deviation(vertices, holes, dimensions, triangles);
- * ```
- * Returns the relative difference between the total area of triangles and the area of the input polygon.
- * 0 means the triangulation is fully correct.
- *
- * For more information see https://github.com/mapbox/earcut
- *
- * @function Phaser.Geom.Polygon.Earcut
- * @since 3.50.0
- *
- * @param {number[]} data - A flat array of vertex coordinate, like [x0,y0, x1,y1, x2,y2, ...]
- * @param {number[]} [holeIndices] - An array of hole indices if any (e.g. [5, 8] for a 12-vertex input would mean one hole with vertices 5–7 and another with 8–11).
- * @param {number} [dimensions=2] - The number of coordinates per vertex in the input array (2 by default).
- *
- * @return {number[]} An array of triangulated data.
- */
-
- //  Earcut 2.2.4 (July 5th 2022)
-
-/*
- * ISC License
- *
- * Copyright (c) 2016, Mapbox
- *
- * Permission to use, copy, modify, and/or distribute this software for any purpose
- * with or without fee is hereby granted, provided that the above copyright notice
- * and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
- * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
- * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
- * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
- * THIS SOFTWARE.
- */
-
 'use strict';
 
 function earcut(data, holeIndices, dim) {
@@ -94,7 +15,6 @@ function earcut(data, holeIndices, dim) {
 
     if (hasHoles) outerNode = eliminateHoles(data, holeIndices, outerNode, dim);
 
-    // if the shape is not too simple, we'll use z-order curve hash later; calculate polygon bbox
     if (data.length > 80 * dim) {
         minX = maxX = data[0];
         minY = maxY = data[1];
@@ -108,7 +28,6 @@ function earcut(data, holeIndices, dim) {
             if (y > maxY) maxY = y;
         }
 
-        // minX, minY and invSize are later used to transform coords into integers for z-order calculation
         invSize = Math.max(maxX - minX, maxY - minY);
         invSize = invSize !== 0 ? 32767 / invSize : 0;
     }
@@ -118,7 +37,6 @@ function earcut(data, holeIndices, dim) {
     return triangles;
 }
 
-// create a circular doubly linked list from polygon points in the specified winding order
 function linkedList(data, start, end, dim, clockwise) {
     var i, last;
 
@@ -136,7 +54,6 @@ function linkedList(data, start, end, dim, clockwise) {
     return last;
 }
 
-// eliminate colinear or duplicate points
 function filterPoints(start, end) {
     if (!start) return start;
     if (!end) end = start;
@@ -160,30 +77,26 @@ function filterPoints(start, end) {
     return end;
 }
 
-// main ear slicing loop which triangulates a polygon (given as a linked list)
 function earcutLinked(ear, triangles, dim, minX, minY, invSize, pass) {
     if (!ear) return;
 
-    // interlink polygon nodes in z-order
     if (!pass && invSize) indexCurve(ear, minX, minY, invSize);
 
     var stop = ear,
         prev, next;
 
-    // iterate through ears, slicing them one by one
     while (ear.prev !== ear.next) {
         prev = ear.prev;
         next = ear.next;
 
         if (invSize ? isEarHashed(ear, minX, minY, invSize) : isEar(ear)) {
-            // cut off the triangle
+
             triangles.push(prev.i / dim | 0);
             triangles.push(ear.i / dim | 0);
             triangles.push(next.i / dim | 0);
 
             removeNode(ear);
 
-            // skipping the next vertex leads to less sliver triangles
             ear = next.next;
             stop = next.next;
 
@@ -192,18 +105,15 @@ function earcutLinked(ear, triangles, dim, minX, minY, invSize, pass) {
 
         ear = next;
 
-        // if we looped through the whole remaining polygon and can't find any more ears
         if (ear === stop) {
-            // try filtering points and slicing again
+
             if (!pass) {
                 earcutLinked(filterPoints(ear), triangles, dim, minX, minY, invSize, 1);
 
-            // if this didn't work, try curing all small self-intersections locally
             } else if (pass === 1) {
                 ear = cureLocalIntersections(filterPoints(ear), triangles, dim);
                 earcutLinked(ear, triangles, dim, minX, minY, invSize, 2);
 
-            // as a last resort, try splitting the remaining polygon into two
             } else if (pass === 2) {
                 splitEarcut(ear, triangles, dim, minX, minY, invSize);
             }
@@ -213,18 +123,15 @@ function earcutLinked(ear, triangles, dim, minX, minY, invSize, pass) {
     }
 }
 
-// check whether a polygon node forms a valid ear with adjacent nodes
 function isEar(ear) {
     var a = ear.prev,
         b = ear,
         c = ear.next;
 
-    if (area(a, b, c) >= 0) return false; // reflex, can't be an ear
+    if (area(a, b, c) >= 0) return false; 
 
-    // now make sure we don't have other points inside the potential ear
     var ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
 
-    // triangle bbox; min & max are calculated like this for speed
     var x0 = ax < bx ? (ax < cx ? ax : cx) : (bx < cx ? bx : cx),
         y0 = ay < by ? (ay < cy ? ay : cy) : (by < cy ? by : cy),
         x1 = ax > bx ? (ax > cx ? ax : cx) : (bx > cx ? bx : cx),
@@ -246,24 +153,21 @@ function isEarHashed(ear, minX, minY, invSize) {
         b = ear,
         c = ear.next;
 
-    if (area(a, b, c) >= 0) return false; // reflex, can't be an ear
+    if (area(a, b, c) >= 0) return false; 
 
     var ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
 
-    // triangle bbox; min & max are calculated like this for speed
     var x0 = ax < bx ? (ax < cx ? ax : cx) : (bx < cx ? bx : cx),
         y0 = ay < by ? (ay < cy ? ay : cy) : (by < cy ? by : cy),
         x1 = ax > bx ? (ax > cx ? ax : cx) : (bx > cx ? bx : cx),
         y1 = ay > by ? (ay > cy ? ay : cy) : (by > cy ? by : cy);
 
-    // z-order range for the current triangle bbox;
     var minZ = zOrder(x0, y0, minX, minY, invSize),
         maxZ = zOrder(x1, y1, minX, minY, invSize);
 
     var p = ear.prevZ,
         n = ear.nextZ;
 
-    // look for points inside the triangle in both directions
     while (p && p.z >= minZ && n && n.z <= maxZ) {
         if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c &&
             pointInTriangle(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
@@ -274,14 +178,12 @@ function isEarHashed(ear, minX, minY, invSize) {
         n = n.nextZ;
     }
 
-    // look for remaining points in decreasing z-order
     while (p && p.z >= minZ) {
         if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c &&
             pointInTriangle(ax, ay, bx, by, cx, cy, p.x, p.y) && area(p.prev, p, p.next) >= 0) return false;
         p = p.prevZ;
     }
 
-    // look for remaining points in increasing z-order
     while (n && n.z <= maxZ) {
         if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c &&
             pointInTriangle(ax, ay, bx, by, cx, cy, n.x, n.y) && area(n.prev, n, n.next) >= 0) return false;
@@ -291,7 +193,6 @@ function isEarHashed(ear, minX, minY, invSize) {
     return true;
 }
 
-// go through all polygon nodes and cure small local self-intersections
 function cureLocalIntersections(start, triangles, dim) {
     var p = start;
     do {
@@ -304,7 +205,6 @@ function cureLocalIntersections(start, triangles, dim) {
             triangles.push(p.i / dim | 0);
             triangles.push(b.i / dim | 0);
 
-            // remove two nodes involved
             removeNode(p);
             removeNode(p.next);
 
@@ -316,22 +216,19 @@ function cureLocalIntersections(start, triangles, dim) {
     return filterPoints(p);
 }
 
-// try splitting polygon into two and triangulate them independently
 function splitEarcut(start, triangles, dim, minX, minY, invSize) {
-    // look for a valid diagonal that divides the polygon into two
+
     var a = start;
     do {
         var b = a.next.next;
         while (b !== a.prev) {
             if (a.i !== b.i && isValidDiagonal(a, b)) {
-                // split the polygon in two by the diagonal
+
                 var c = splitPolygon(a, b);
 
-                // filter colinear points around the cuts
                 a = filterPoints(a, a.next);
                 c = filterPoints(c, c.next);
 
-                // run earcut on each half
                 earcutLinked(a, triangles, dim, minX, minY, invSize, 0);
                 earcutLinked(c, triangles, dim, minX, minY, invSize, 0);
                 return;
@@ -342,7 +239,6 @@ function splitEarcut(start, triangles, dim, minX, minY, invSize) {
     } while (a !== start);
 }
 
-// link every hole into the outer loop, producing a single-ring polygon without holes
 function eliminateHoles(data, holeIndices, outerNode, dim) {
     var queue = [],
         i, len, start, end, list;
@@ -357,7 +253,6 @@ function eliminateHoles(data, holeIndices, outerNode, dim) {
 
     queue.sort(compareX);
 
-    // process holes from left to right
     for (i = 0; i < queue.length; i++) {
         outerNode = eliminateHole(queue[i], outerNode);
     }
@@ -369,7 +264,6 @@ function compareX(a, b) {
     return a.x - b.x;
 }
 
-// find a bridge between vertices that connects hole with an outer ring and and link it
 function eliminateHole(hole, outerNode) {
     var bridge = findHoleBridge(hole, outerNode);
     if (!bridge) {
@@ -378,12 +272,10 @@ function eliminateHole(hole, outerNode) {
 
     var bridgeReverse = splitPolygon(bridge, hole);
 
-    // filter collinear points around the cuts
     filterPoints(bridgeReverse, bridgeReverse.next);
     return filterPoints(bridge, bridge.next);
 }
 
-// David Eberly's algorithm for finding a bridge between hole and outer polygon
 function findHoleBridge(hole, outerNode) {
     var p = outerNode,
         hx = hole.x,
@@ -391,25 +283,19 @@ function findHoleBridge(hole, outerNode) {
         qx = -Infinity,
         m;
 
-    // find a segment intersected by a ray from the hole's leftmost point to the left;
-    // segment's endpoint with lesser x will be potential connection point
     do {
         if (hy <= p.y && hy >= p.next.y && p.next.y !== p.y) {
             var x = p.x + (hy - p.y) * (p.next.x - p.x) / (p.next.y - p.y);
             if (x <= hx && x > qx) {
                 qx = x;
                 m = p.x < p.next.x ? p : p.next;
-                if (x === hx) return m; // hole touches outer segment; pick leftmost endpoint
+                if (x === hx) return m; 
             }
         }
         p = p.next;
     } while (p !== outerNode);
 
     if (!m) return null;
-
-    // look for points inside the triangle of hole point, segment intersection and endpoint;
-    // if there are no points found, we have a valid connection;
-    // otherwise choose the point of the minimum angle with the ray as connection point
 
     var stop = m,
         mx = m.x,
@@ -423,7 +309,7 @@ function findHoleBridge(hole, outerNode) {
         if (hx >= p.x && p.x >= mx && hx !== p.x &&
                 pointInTriangle(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p.x, p.y)) {
 
-            tan = Math.abs(hy - p.y) / (hx - p.x); // tangential
+            tan = Math.abs(hy - p.y) / (hx - p.x); 
 
             if (locallyInside(p, hole) &&
                 (tan < tanMin || (tan === tanMin && (p.x > m.x || (p.x === m.x && sectorContainsSector(m, p)))))) {
@@ -438,12 +324,10 @@ function findHoleBridge(hole, outerNode) {
     return m;
 }
 
-// whether sector in vertex m contains sector in vertex p in the same coordinates
 function sectorContainsSector(m, p) {
     return area(m.prev, m, p.prev) < 0 && area(p.next, m, m.next) < 0;
 }
 
-// interlink polygon nodes in z-order
 function indexCurve(start, minX, minY, invSize) {
     var p = start;
     do {
@@ -459,8 +343,6 @@ function indexCurve(start, minX, minY, invSize) {
     sortLinked(p);
 }
 
-// Simon Tatham's linked list merge sort algorithm
-// http://www.chiark.greenend.org.uk/~sgtatham/algorithms/listsort.html
 function sortLinked(list) {
     var i, p, q, e, tail, numMerges, pSize, qSize,
         inSize = 1;
@@ -512,9 +394,8 @@ function sortLinked(list) {
     return list;
 }
 
-// z-order of a point given coords and inverse of the longer side of data bbox
 function zOrder(x, y, minX, minY, invSize) {
-    // coords are transformed into non-negative 15-bit integer range
+
     x = (x - minX) * invSize | 0;
     y = (y - minY) * invSize | 0;
 
@@ -531,7 +412,6 @@ function zOrder(x, y, minX, minY, invSize) {
     return x | (y << 1);
 }
 
-// find the leftmost node of a polygon ring
 function getLeftmost(start) {
     var p = start,
         leftmost = start;
@@ -543,49 +423,43 @@ function getLeftmost(start) {
     return leftmost;
 }
 
-// check if a point lies within a convex triangle
 function pointInTriangle(ax, ay, bx, by, cx, cy, px, py) {
     return (cx - px) * (ay - py) >= (ax - px) * (cy - py) &&
            (ax - px) * (by - py) >= (bx - px) * (ay - py) &&
            (bx - px) * (cy - py) >= (cx - px) * (by - py);
 }
 
-// check if a diagonal between two polygon nodes is valid (lies in polygon interior)
 function isValidDiagonal(a, b) {
-    return a.next.i !== b.i && a.prev.i !== b.i && !intersectsPolygon(a, b) && // dones't intersect other edges
-           (locallyInside(a, b) && locallyInside(b, a) && middleInside(a, b) && // locally visible
-            (area(a.prev, a, b.prev) || area(a, b.prev, b)) || // does not create opposite-facing sectors
-            equals(a, b) && area(a.prev, a, a.next) > 0 && area(b.prev, b, b.next) > 0); // special zero-length case
+    return a.next.i !== b.i && a.prev.i !== b.i && !intersectsPolygon(a, b) && 
+           (locallyInside(a, b) && locallyInside(b, a) && middleInside(a, b) && 
+            (area(a.prev, a, b.prev) || area(a, b.prev, b)) || 
+            equals(a, b) && area(a.prev, a, a.next) > 0 && area(b.prev, b, b.next) > 0); 
 }
 
-// signed area of a triangle
 function area(p, q, r) {
     return (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
 }
 
-// check if two points are equal
 function equals(p1, p2) {
     return p1.x === p2.x && p1.y === p2.y;
 }
 
-// check if two segments intersect
 function intersects(p1, q1, p2, q2) {
     var o1 = sign(area(p1, q1, p2));
     var o2 = sign(area(p1, q1, q2));
     var o3 = sign(area(p2, q2, p1));
     var o4 = sign(area(p2, q2, q1));
 
-    if (o1 !== o2 && o3 !== o4) return true; // general case
+    if (o1 !== o2 && o3 !== o4) return true; 
 
-    if (o1 === 0 && onSegment(p1, p2, q1)) return true; // p1, q1 and p2 are collinear and p2 lies on p1q1
-    if (o2 === 0 && onSegment(p1, q2, q1)) return true; // p1, q1 and q2 are collinear and q2 lies on p1q1
-    if (o3 === 0 && onSegment(p2, p1, q2)) return true; // p2, q2 and p1 are collinear and p1 lies on p2q2
-    if (o4 === 0 && onSegment(p2, q1, q2)) return true; // p2, q2 and q1 are collinear and q1 lies on p2q2
+    if (o1 === 0 && onSegment(p1, p2, q1)) return true; 
+    if (o2 === 0 && onSegment(p1, q2, q1)) return true; 
+    if (o3 === 0 && onSegment(p2, p1, q2)) return true; 
+    if (o4 === 0 && onSegment(p2, q1, q2)) return true; 
 
     return false;
 }
 
-// for collinear points p, q, r, check if point q lies on segment pr
 function onSegment(p, q, r) {
     return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
 }
@@ -594,7 +468,6 @@ function sign(num) {
     return num > 0 ? 1 : num < 0 ? -1 : 0;
 }
 
-// check if a polygon diagonal intersects any polygon segments
 function intersectsPolygon(a, b) {
     var p = a;
     do {
@@ -606,14 +479,12 @@ function intersectsPolygon(a, b) {
     return false;
 }
 
-// check if a polygon diagonal is locally inside the polygon
 function locallyInside(a, b) {
     return area(a.prev, a, a.next) < 0 ?
         area(a, b, a.next) >= 0 && area(a, a.prev, b) >= 0 :
         area(a, b, a.prev) < 0 || area(a, a.next, b) < 0;
 }
 
-// check if the middle point of a polygon diagonal is inside the polygon
 function middleInside(a, b) {
     var p = a,
         inside = false,
@@ -629,8 +500,6 @@ function middleInside(a, b) {
     return inside;
 }
 
-// link two polygon vertices with a bridge; if the vertices belong to the same ring, it splits polygon into two;
-// if one belongs to the outer ring and another to a hole, it merges it into a single ring
 function splitPolygon(a, b) {
     var a2 = new Node(a.i, a.x, a.y),
         b2 = new Node(b.i, b.x, b.y),
@@ -652,7 +521,6 @@ function splitPolygon(a, b) {
     return b2;
 }
 
-// create a node and optionally link it with previous one (in a circular doubly linked list)
 function insertNode(i, x, y, last) {
     var p = new Node(i, x, y);
 
@@ -678,30 +546,23 @@ function removeNode(p) {
 }
 
 function Node(i, x, y) {
-    // vertex index in coordinates array
+
     this.i = i;
 
-    // vertex coordinates
     this.x = x;
     this.y = y;
 
-    // previous and next vertex nodes in a polygon ring
     this.prev = null;
     this.next = null;
 
-    // z-order curve value
     this.z = 0;
 
-    // previous and next nodes in z-order
     this.prevZ = null;
     this.nextZ = null;
 
-    // indicates whether this is a steiner point
     this.steiner = false;
 }
 
-// return a percentage difference between the polygon area and its triangulation area;
-// used to verify correctness of triangulation
 earcut.deviation = function (data, holeIndices, dim, triangles) {
     var hasHoles = holeIndices && holeIndices.length;
     var outerLen = hasHoles ? holeIndices[0] * dim : data.length;
@@ -738,7 +599,6 @@ function signedArea(data, start, end, dim) {
     return sum;
 }
 
-// turn a polygon in a multi-dimensional array form (e.g. as in GeoJSON) into a form Earcut accepts
 earcut.flatten = function (data) {
     var dim = data[0][0].length,
         result = {vertices: [], holes: [], dimensions: dim},

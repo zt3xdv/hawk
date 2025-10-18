@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var BaseTween = require('../tween/BaseTween');
 var Defaults = require('../tween/Defaults');
 var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
@@ -16,18 +10,6 @@ var GetValueOp = require('./GetValueOp');
 var MergeRight = require('../../utils/object/MergeRight');
 var Tween = require('../tween/Tween');
 
-/**
- * Creates a new Number Tween.
- *
- * @function Phaser.Tweens.Builders.NumberTweenBuilder
- * @since 3.0.0
- *
- * @param {Phaser.Tweens.TweenManager} parent - The owner of the new Tween.
- * @param {Phaser.Types.Tweens.NumberTweenBuilderConfig} config - Configuration for the new Tween.
- * @param {Phaser.Types.Tweens.TweenConfigDefaults} defaults - Tween configuration defaults.
- *
- * @return {Phaser.Tweens.Tween} The new tween.
- */
 var NumberTweenBuilder = function (parent, config, defaults)
 {
     if (config instanceof Tween)
@@ -45,16 +27,6 @@ var NumberTweenBuilder = function (parent, config, defaults)
     {
         defaults = MergeRight(Defaults, defaults);
     }
-
-    //  var tween = this.tweens.addCounter({
-    //      from: 100,
-    //      to: 200,
-    //      ... (normal tween properties)
-    //  })
-    //
-    //  Then use it in your game via:
-    //
-    //  tween.getValue()
 
     var from = GetFastValue(config, 'from', 0);
     var to = GetFastValue(config, 'to', 1);
@@ -96,7 +68,6 @@ var NumberTweenBuilder = function (parent, config, defaults)
     tween.persist = GetBoolean(config, 'persist', false);
     tween.isNumberTween = true;
 
-    //  Set the Callbacks
     tween.callbackScope = GetValue(config, 'callbackScope', tween);
 
     var callbacks = BaseTween.TYPES;

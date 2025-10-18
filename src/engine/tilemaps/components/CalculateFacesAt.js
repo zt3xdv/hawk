@@ -1,23 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var GetTileAt = require('./GetTileAt');
 
-/**
- * Calculates interesting faces at the given tile coordinates of the specified layer. Interesting
- * faces are used internally for optimizing collisions against tiles. This method is mostly used
- * internally to optimize recalculating faces when only one tile has been changed.
- *
- * @function Phaser.Tilemaps.Components.CalculateFacesAt
- * @since 3.0.0
- *
- * @param {number} tileX - The x coordinate.
- * @param {number} tileY - The y coordinate.
- * @param {Phaser.Tilemaps.LayerData} layer - The Tilemap Layer to act upon.
- */
 var CalculateFacesAt = function (tileX, tileY, layer)
 {
     var tile = GetTileAt(tileX, tileY, true, layer);
@@ -27,7 +9,6 @@ var CalculateFacesAt = function (tileX, tileY, layer)
     var right = GetTileAt(tileX + 1, tileY, true, layer);
     var tileCollides = tile && tile.collides;
 
-    // Assume the changed tile has all interesting edges
     if (tileCollides)
     {
         tile.faceTop = true;
@@ -36,7 +17,6 @@ var CalculateFacesAt = function (tileX, tileY, layer)
         tile.faceRight = true;
     }
 
-    // Reset edges that are shared between tile and its neighbors
     if (above && above.collides)
     {
         if (tileCollides)

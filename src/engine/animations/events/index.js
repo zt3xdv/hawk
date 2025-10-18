@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.Animations.Events
- */
-
 module.exports = {
 
     ADD_ANIMATION: require('./ADD_ANIMATION_EVENT'),

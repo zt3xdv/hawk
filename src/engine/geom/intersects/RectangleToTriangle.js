@@ -1,28 +1,10 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var LineToLine = require('./LineToLine');
 var Contains = require('../rectangle/Contains');
 var ContainsArray = require('../triangle/ContainsArray');
 var Decompose = require('../rectangle/Decompose');
 
-/**
- * Checks for intersection between Rectangle shape and Triangle shape.
- *
- * @function Phaser.Geom.Intersects.RectangleToTriangle
- * @since 3.0.0
- *
- * @param {Phaser.Geom.Rectangle} rect - Rectangle object to test.
- * @param {Phaser.Geom.Triangle} triangle - Triangle object to test.
- *
- * @return {boolean} A value of `true` if objects intersect; otherwise `false`.
- */
 var RectangleToTriangle = function (rect, triangle)
 {
-    //  First the cheapest ones:
 
     if (
         triangle.left > rect.right ||
@@ -36,8 +18,6 @@ var RectangleToTriangle = function (rect, triangle)
     var triA = triangle.getLineA();
     var triB = triangle.getLineB();
     var triC = triangle.getLineC();
-
-    //  Are any of the triangle points within the rectangle?
 
     if (Contains(rect, triA.x1, triA.y1) || Contains(rect, triA.x2, triA.y2))
     {
@@ -53,8 +33,6 @@ var RectangleToTriangle = function (rect, triangle)
     {
         return true;
     }
-
-    //  Cheap tests over, now to see if any of the lines intersect ...
 
     var rectA = rect.getLineA();
     var rectB = rect.getLineB();
@@ -75,8 +53,6 @@ var RectangleToTriangle = function (rect, triangle)
     {
         return true;
     }
-
-    //  None of the lines intersect, so are any rectangle points within the triangle?
 
     var points = Decompose(rect);
     var within = ContainsArray(triangle, points, true);

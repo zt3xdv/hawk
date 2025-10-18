@@ -1,5 +1,4 @@
 import { watch, rollup } from './src/bundler/rollup.js';
-import { cacheBuild } from 'rollup-cache';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
@@ -26,7 +25,7 @@ if (isProd) {
   basePlugins.push(terser({
   format: {
     comments: false,
-    ecma: '2015' // Esto preserva las exportaciones
+    ecma: '2015'
   },
   keep_classnames: true,
   keep_fnames: true
@@ -44,18 +43,10 @@ const baseConfig = {
   }
 };
 
-const cacheOptions = {
-  name: 'hawk-engine-build-cache',
-  dependencies: [],
-  enabled: isFast || isProd
-};
-
-const cachedBuildConfig = cacheBuild(cacheOptions, baseConfig);
-
 async function runBuild() {
   try {
-    const bundle = await rollup(cachedBuildConfig);
-    await bundle.write(cachedBuildConfig.output);
+    const bundle = await rollup(baseConfig);
+    await bundle.write(baseConfig.output);
     await bundle.close();
     process.exit(0);
   } catch (err) {

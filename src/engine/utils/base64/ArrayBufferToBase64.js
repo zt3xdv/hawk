@@ -1,27 +1,5 @@
-/**
- * @author       Niklas von Hertzen (https://github.com/niklasvh/base64-arraybuffer)
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
-/**
- * Converts an ArrayBuffer into a base64 string.
- *
- * The resulting string can optionally be a data uri if the `mediaType` argument is provided.
- *
- * See https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs for more details.
- *
- * @function Phaser.Utils.Base64.ArrayBufferToBase64
- * @since 3.18.0
- *
- * @param {ArrayBuffer} arrayBuffer - The Array Buffer to encode.
- * @param {string} [mediaType] - An optional media type, i.e. `audio/ogg` or `image/jpeg`. If included the resulting string will be a data URI.
- *
- * @return {string} The base64 encoded Array Buffer.
- */
 var ArrayBufferToBase64 = function (arrayBuffer, mediaType)
 {
     var bytes = new Uint8Array(arrayBuffer);

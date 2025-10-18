@@ -1,25 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var SetTransform = require('../../../renderer/canvas/utils/SetTransform');
 
-/**
- * Renders this Game Object with the Canvas Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.BitmapText#renderCanvas
- * @since 3.0.0
- * @private
- *
- * @param {Phaser.Renderer.Canvas.CanvasRenderer} renderer - A reference to the current active Canvas renderer.
- * @param {Phaser.GameObjects.BitmapText} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var BitmapTextCanvasRenderer = function (renderer, src, camera, parentMatrix)
 {
     var text = src._text;
@@ -71,10 +51,8 @@ var BitmapTextCanvasRenderer = function (renderer, src, camera, parentMatrix)
     var currentLine = 0;
     var lineOffsetX = 0;
 
-    //  Update the bounds - skipped internally if not dirty
     var bounds = src.getTextBounds(false);
 
-    //  In case the method above changed it (word wrapping)
     if (src.maxWidth > 0)
     {
         text = bounds.wrappedText;
@@ -152,7 +130,6 @@ var BitmapTextCanvasRenderer = function (renderer, src, camera, parentMatrix)
         lastGlyph = glyph;
         lastCharCode = charCode;
 
-        //  Nothing to render or a space? Then skip to the next glyph
         if (glyphW === 0 || glyphH === 0 || charCode === 32)
         {
             continue;

@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var AddToDOM = require('../dom/AddToDOM');
 
 var CreateDOMContainer = function (game)
@@ -15,7 +9,6 @@ var CreateDOMContainer = function (game)
         return;
     }
 
-    //  DOM Element Container
     var div = document.createElement('div');
 
     div.style.cssText = [

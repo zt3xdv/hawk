@@ -1,13 +1,4 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Point = require('../point/Point');
-
-// The three angle bisectors of a triangle meet in one point called the incenter.
-// It is the center of the incircle, the circle inscribed in the triangle.
 
 function getLength (x1, y1, x2, y2)
 {
@@ -18,19 +9,6 @@ function getLength (x1, y1, x2, y2)
     return Math.sqrt(magnitude);
 }
 
-/**
- * Calculates the position of the incenter of a Triangle object. This is the point where its three angle bisectors meet and it's also the center of the incircle, which is the circle inscribed in the triangle.
- *
- * @function Phaser.Geom.Triangle.InCenter
- * @since 3.0.0
- *
- * @generic {Phaser.Geom.Point} O - [out,$return]
- *
- * @param {Phaser.Geom.Triangle} triangle - The Triangle to find the incenter of.
- * @param {Phaser.Geom.Point} [out] - An optional Point in which to store the coordinates.
- *
- * @return {Phaser.Geom.Point} Point (x, y) of the center pixel of the triangle.
- */
 var InCenter = function (triangle, out)
 {
     if (out === undefined) { out = new Point(); }

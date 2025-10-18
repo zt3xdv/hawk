@@ -1,4 +1,4 @@
-import Phaser from '../../dist/engine/main.js';
+import HawkEngine from '../../dist/engine/main.js';
 import GameScene from './scenes/GameScene.js';
 import Options from './utils/Options.js';
 
@@ -29,12 +29,10 @@ export default class Game {
       ]
     };
 
-    this.game = new Phaser.Game(config);
+    this.game = new HawkEngine.Game(config);
 
-    let resizeTimeout;
     window.addEventListener('resize', () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => this._onResize(), 200);
+      this._onResize();
     });
   }
   

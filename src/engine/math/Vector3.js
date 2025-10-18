@@ -1,63 +1,16 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-//  Adapted from [gl-matrix](https://github.com/toji/gl-matrix) by toji
-//  and [vecmath](https://github.com/mattdesl/vecmath) by mattdesl
-
 var Class = require('../utils/Class');
 
-/**
- * @classdesc
- * A representation of a vector in 3D space.
- *
- * A three-component vector.
- *
- * @class Vector3
- * @memberof Phaser.Math
- * @constructor
- * @since 3.0.0
- *
- * @param {number} [x] - The x component.
- * @param {number} [y] - The y component.
- * @param {number} [z] - The z component.
- */
 var Vector3 = new Class({
 
     initialize:
 
     function Vector3 (x, y, z)
     {
-        /**
-         * The x component of this Vector.
-         *
-         * @name Phaser.Math.Vector3#x
-         * @type {number}
-         * @default 0
-         * @since 3.0.0
-         */
+
         this.x = 0;
 
-        /**
-         * The y component of this Vector.
-         *
-         * @name Phaser.Math.Vector3#y
-         * @type {number}
-         * @default 0
-         * @since 3.0.0
-         */
         this.y = 0;
 
-        /**
-         * The z component of this Vector.
-         *
-         * @name Phaser.Math.Vector3#z
-         * @type {number}
-         * @default 0
-         * @since 3.0.0
-         */
         this.z = 0;
 
         if (typeof x === 'object')
@@ -74,16 +27,6 @@ var Vector3 = new Class({
         }
     },
 
-    /**
-     * Set this Vector to point up.
-     *
-     * Sets the y component of the vector to 1, and the others to 0.
-     *
-     * @method Phaser.Math.Vector3#up
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     up: function ()
     {
         this.x = 0;
@@ -93,16 +36,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Sets the components of this Vector to be the `Math.min` result from the given vector.
-     *
-     * @method Phaser.Math.Vector3#min
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Vector3} v - The Vector3 to check the minimum values against.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     min: function (v)
     {
         this.x = Math.min(this.x, v.x);
@@ -112,16 +45,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Sets the components of this Vector to be the `Math.max` result from the given vector.
-     *
-     * @method Phaser.Math.Vector3#max
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Vector3} v - The Vector3 to check the maximum values against.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     max: function (v)
     {
         this.x = Math.max(this.x, v.x);
@@ -131,30 +54,11 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Make a clone of this Vector3.
-     *
-     * @method Phaser.Math.Vector3#clone
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Vector3} A new Vector3 object containing this Vectors values.
-     */
     clone: function ()
     {
         return new Vector3(this.x, this.y, this.z);
     },
 
-    /**
-     * Adds the two given Vector3s and sets the results into this Vector3.
-     *
-     * @method Phaser.Math.Vector3#addVectors
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Vector3} a - The first Vector to add.
-     * @param {Phaser.Math.Vector3} b - The second Vector to add.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     addVectors: function (a, b)
     {
         this.x = a.x + b.x;
@@ -164,17 +68,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Subtracts the two given Vector3s and sets the results into this Vector3.
-     *
-     * @method Phaser.Math.Vector3#subVectors
-     * @since 3.85.0
-     *
-     * @param {Phaser.Math.Vector3} a - The first Vector to sub.
-     * @param {Phaser.Math.Vector3} b - The second Vector to sub.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     subVectors: function (a, b)
     {
         this.x = a.x - b.x;
@@ -184,17 +77,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Calculate the cross (vector) product of two given Vectors.
-     *
-     * @method Phaser.Math.Vector3#crossVectors
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector3} a - The first Vector to multiply.
-     * @param {Phaser.Math.Vector3} b - The second Vector to multiply.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     crossVectors: function (a, b)
     {
         var ax = a.x;
@@ -211,33 +93,11 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Check whether this Vector is equal to a given Vector.
-     *
-     * Performs a strict equality check against each Vector's components.
-     *
-     * @method Phaser.Math.Vector3#equals
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector3} v - The Vector3 to compare against.
-     *
-     * @return {boolean} True if the two vectors strictly match, otherwise false.
-     */
     equals: function (v)
     {
         return ((this.x === v.x) && (this.y === v.y) && (this.z === v.z));
     },
 
-    /**
-     * Copy the components of a given Vector into this Vector.
-     *
-     * @method Phaser.Math.Vector3#copy
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3)} src - The Vector to copy the components from.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     copy: function (src)
     {
         this.x = src.x;
@@ -247,18 +107,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Set the `x`, `y`, and `z` components of this Vector to the given `x`, `y`, and `z` values.
-     *
-     * @method Phaser.Math.Vector3#set
-     * @since 3.0.0
-     *
-     * @param {(number|object)} x - The x value to set for this Vector, or an object containing x, y and z components.
-     * @param {number} [y] - The y value to set for this Vector.
-     * @param {number} [z] - The z value to set for this Vector.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     set: function (x, y, z)
     {
         if (typeof x === 'object')
@@ -277,52 +125,16 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Sets the components of this Vector3 from the position of the given Matrix4.
-     *
-     * @method Phaser.Math.Vector3#setFromMatrixPosition
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Matrix4} mat4 - The Matrix4 to get the position from.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     setFromMatrixPosition: function (m)
     {
         return this.fromArray(m.val, 12);
     },
 
-    /**
-     * Sets the components of this Vector3 from the Matrix4 column specified.
-     *
-     * @method Phaser.Math.Vector3#setFromMatrixColumn
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Matrix4} mat4 - The Matrix4 to get the column from.
-     * @param {number} index - The column index.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     setFromMatrixColumn: function (mat4, index)
     {
         return this.fromArray(mat4.val, index * 4);
     },
 
-    /**
-     * Sets the components of this Vector3 from the given array, based on the offset.
-     *
-     * Vector3.x = array[offset]
-     * Vector3.y = array[offset + 1]
-     * Vector3.z = array[offset + 2]
-     *
-     * @method Phaser.Math.Vector3#fromArray
-     * @since 3.50.0
-     *
-     * @param {number[]} array - The array of values to get this Vector from.
-     * @param {number} [offset=0] - The offset index into the array.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     fromArray: function (array, offset)
     {
         if (offset === undefined) { offset = 0; }
@@ -334,16 +146,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Add a given Vector to this Vector. Addition is component-wise.
-     *
-     * @method Phaser.Math.Vector3#add
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3)} v - The Vector to add to this Vector.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     add: function (v)
     {
         this.x += v.x;
@@ -353,16 +155,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Add the given value to each component of this Vector.
-     *
-     * @method Phaser.Math.Vector3#addScalar
-     * @since 3.50.0
-     *
-     * @param {number} s - The amount to add to this Vector.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     addScalar: function (s)
     {
         this.x += s;
@@ -372,17 +164,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Add and scale a given Vector to this Vector. Addition is component-wise.
-     *
-     * @method Phaser.Math.Vector3#addScale
-     * @since 3.50.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3)} v - The Vector to add to this Vector.
-     * @param {number} scale - The amount to scale `v` by.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     addScale: function (v, scale)
     {
         this.x += v.x * scale;
@@ -392,16 +173,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Subtract the given Vector from this Vector. Subtraction is component-wise.
-     *
-     * @method Phaser.Math.Vector3#subtract
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3)} v - The Vector to subtract from this Vector.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     subtract: function (v)
     {
         this.x -= v.x;
@@ -411,18 +182,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Perform a component-wise multiplication between this Vector and the given Vector.
-     *
-     * Multiplies this Vector by the given Vector.
-     *
-     * @method Phaser.Math.Vector3#multiply
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3)} v - The Vector to multiply this Vector by.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     multiply: function (v)
     {
         this.x *= v.x;
@@ -432,16 +191,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Scale this Vector by the given value.
-     *
-     * @method Phaser.Math.Vector3#scale
-     * @since 3.0.0
-     *
-     * @param {number} scale - The value to scale this Vector by.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     scale: function (scale)
     {
         if (isFinite(scale))
@@ -460,18 +209,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Perform a component-wise division between this Vector and the given Vector.
-     *
-     * Divides this Vector by the given Vector.
-     *
-     * @method Phaser.Math.Vector3#divide
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3)} v - The Vector to divide this Vector by.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     divide: function (v)
     {
         this.x /= v.x;
@@ -481,14 +218,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Negate the `x`, `y` and `z` components of this Vector.
-     *
-     * @method Phaser.Math.Vector3#negate
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     negate: function ()
     {
         this.x = -this.x;
@@ -498,16 +227,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Calculate the distance between this Vector and the given Vector.
-     *
-     * @method Phaser.Math.Vector3#distance
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3)} v - The Vector to calculate the distance to.
-     *
-     * @return {number} The distance from this Vector to the given Vector.
-     */
     distance: function (v)
     {
         var dx = v.x - this.x;
@@ -517,16 +236,6 @@ var Vector3 = new Class({
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     },
 
-    /**
-     * Calculate the distance between this Vector and the given Vector, squared.
-     *
-     * @method Phaser.Math.Vector3#distanceSq
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Math.Vector2|Phaser.Math.Vector3)} v - The Vector to calculate the distance to.
-     *
-     * @return {number} The distance from this Vector to the given Vector, squared.
-     */
     distanceSq: function (v)
     {
         var dx = v.x - this.x;
@@ -536,14 +245,6 @@ var Vector3 = new Class({
         return dx * dx + dy * dy + dz * dz;
     },
 
-    /**
-     * Calculate the length (or magnitude) of this Vector.
-     *
-     * @method Phaser.Math.Vector3#length
-     * @since 3.0.0
-     *
-     * @return {number} The length of this Vector.
-     */
     length: function ()
     {
         var x = this.x;
@@ -553,14 +254,6 @@ var Vector3 = new Class({
         return Math.sqrt(x * x + y * y + z * z);
     },
 
-    /**
-     * Calculate the length of this Vector squared.
-     *
-     * @method Phaser.Math.Vector3#lengthSq
-     * @since 3.0.0
-     *
-     * @return {number} The length of this Vector, squared.
-     */
     lengthSq: function ()
     {
         var x = this.x;
@@ -570,16 +263,6 @@ var Vector3 = new Class({
         return x * x + y * y + z * z;
     },
 
-    /**
-     * Normalize this Vector.
-     *
-     * Makes the vector a unit length vector (magnitude of 1) in the same direction.
-     *
-     * @method Phaser.Math.Vector3#normalize
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     normalize: function ()
     {
         var x = this.x;
@@ -599,31 +282,11 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Calculate the dot product of this Vector and the given Vector.
-     *
-     * @method Phaser.Math.Vector3#dot
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector3} v - The Vector3 to dot product with this Vector3.
-     *
-     * @return {number} The dot product of this Vector and `v`.
-     */
     dot: function (v)
     {
         return this.x * v.x + this.y * v.y + this.z * v.z;
     },
 
-    /**
-     * Calculate the cross (vector) product of this Vector (which will be modified) and the given Vector.
-     *
-     * @method Phaser.Math.Vector3#cross
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector3} v - The Vector to cross product with.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     cross: function (v)
     {
         var ax = this.x;
@@ -640,19 +303,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Linearly interpolate between this Vector and the given Vector.
-     *
-     * Interpolates this Vector towards the given Vector.
-     *
-     * @method Phaser.Math.Vector3#lerp
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector3} v - The Vector3 to interpolate towards.
-     * @param {number} [t=0] - The interpolation percentage, between 0 and 1.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     lerp: function (v, t)
     {
         if (t === undefined) { t = 0; }
@@ -668,16 +318,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Takes a Matrix3 and applies it to this Vector3.
-     *
-     * @method Phaser.Math.Vector3#applyMatrix3
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Matrix3} mat3 - The Matrix3 to apply to this Vector3.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     applyMatrix3: function (mat3)
     {
         var x = this.x;
@@ -692,16 +332,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Takes a Matrix4 and applies it to this Vector3.
-     *
-     * @method Phaser.Math.Vector3#applyMatrix4
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Matrix4} mat4 - The Matrix4 to apply to this Vector3.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     applyMatrix4: function (mat4)
     {
         var x = this.x;
@@ -718,16 +348,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Transform this Vector with the given Matrix.
-     *
-     * @method Phaser.Math.Vector3#transformMat3
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix3} mat - The Matrix3 to transform this Vector3 with.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     transformMat3: function (mat)
     {
         var x = this.x;
@@ -742,16 +362,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Transform this Vector with the given Matrix4.
-     *
-     * @method Phaser.Math.Vector3#transformMat4
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix4} mat - The Matrix4 to transform this Vector3 with.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     transformMat4: function (mat)
     {
         var x = this.x;
@@ -766,16 +376,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Transforms the coordinates of this Vector3 with the given Matrix4.
-     *
-     * @method Phaser.Math.Vector3#transformCoordinates
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix4} mat - The Matrix4 to transform this Vector3 with.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     transformCoordinates: function (mat)
     {
         var x = this.x;
@@ -795,19 +395,9 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Transform this Vector with the given Quaternion.
-     *
-     * @method Phaser.Math.Vector3#transformQuat
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Quaternion} q - The Quaternion to transform this Vector with.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     transformQuat: function (q)
     {
-        // benchmarks: http://jsperf.com/quaternion-transform-vec3-implementations
+
         var x = this.x;
         var y = this.y;
         var z = this.z;
@@ -816,13 +406,11 @@ var Vector3 = new Class({
         var qz = q.z;
         var qw = q.w;
 
-        // calculate quat * vec
         var ix = qw * x + qy * z - qz * y;
         var iy = qw * y + qz * x - qx * z;
         var iz = qw * z + qx * y - qy * x;
         var iw = -qx * x - qy * y - qz * z;
 
-        // calculate result * inverse quat
         this.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
         this.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
         this.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
@@ -830,17 +418,6 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Multiplies this Vector3 by the specified matrix, applying a W divide. This is useful for projection,
-     * e.g. unprojecting a 2D point into 3D space.
-     *
-     * @method Phaser.Math.Vector3#project
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Matrix4} mat - The Matrix4 to multiply this Vector3 with.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     project: function (mat)
     {
         var x = this.x;
@@ -874,56 +451,16 @@ var Vector3 = new Class({
         return this;
     },
 
-    /**
-     * Multiplies this Vector3 by the given view and projection matrices.
-     *
-     * @method Phaser.Math.Vector3#projectViewMatrix
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Matrix4} viewMatrix - A View Matrix.
-     * @param {Phaser.Math.Matrix4} projectionMatrix - A Projection Matrix.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     projectViewMatrix: function (viewMatrix, projectionMatrix)
     {
         return this.applyMatrix4(viewMatrix).applyMatrix4(projectionMatrix);
     },
 
-    /**
-     * Multiplies this Vector3 by the given inversed projection matrix and world matrix.
-     *
-     * @method Phaser.Math.Vector3#unprojectViewMatrix
-     * @since 3.50.0
-     *
-     * @param {Phaser.Math.Matrix4} projectionMatrix - An inversed Projection Matrix.
-     * @param {Phaser.Math.Matrix4} worldMatrix - A World View Matrix.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     unprojectViewMatrix: function (projectionMatrix, worldMatrix)
     {
         return this.applyMatrix4(projectionMatrix).applyMatrix4(worldMatrix);
     },
 
-    /**
-     * Unproject this point from 2D space to 3D space.
-     * The point should have its x and y properties set to
-     * 2D screen space, and the z either at 0 (near plane)
-     * or 1 (far plane). The provided matrix is assumed to already
-     * be combined, i.e. projection * view * model.
-     *
-     * After this operation, this vector's (x, y, z) components will
-     * represent the unprojected 3D coordinate.
-     *
-     * @method Phaser.Math.Vector3#unproject
-     * @since 3.0.0
-     *
-     * @param {Phaser.Math.Vector4} viewport - Screen x, y, width and height in pixels.
-     * @param {Phaser.Math.Matrix4} invProjectionView - Combined projection and view matrix.
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     unproject: function (viewport, invProjectionView)
     {
         var viewX = viewport.x;
@@ -942,14 +479,6 @@ var Vector3 = new Class({
         return this.project(invProjectionView);
     },
 
-    /**
-     * Make this Vector the zero vector (0, 0, 0).
-     *
-     * @method Phaser.Math.Vector3#reset
-     * @since 3.0.0
-     *
-     * @return {Phaser.Math.Vector3} This Vector3.
-     */
     reset: function ()
     {
         this.x = 0;
@@ -961,100 +490,20 @@ var Vector3 = new Class({
 
 });
 
-/**
- * A static zero Vector3 for use by reference.
- *
- * This constant is meant for comparison operations and should not be modified directly.
- *
- * @constant
- * @name Phaser.Math.Vector3.ZERO
- * @type {Phaser.Math.Vector3}
- * @since 3.16.0
- */
 Vector3.ZERO = new Vector3();
 
-/**
- * A static right Vector3 for use by reference.
- *
- * This constant is meant for comparison operations and should not be modified directly.
- *
- * @constant
- * @name Phaser.Math.Vector3.RIGHT
- * @type {Phaser.Math.Vector3}
- * @since 3.16.0
- */
 Vector3.RIGHT = new Vector3(1, 0, 0);
 
-/**
- * A static left Vector3 for use by reference.
- *
- * This constant is meant for comparison operations and should not be modified directly.
- *
- * @constant
- * @name Phaser.Math.Vector3.LEFT
- * @type {Phaser.Math.Vector3}
- * @since 3.16.0
- */
 Vector3.LEFT = new Vector3(-1, 0, 0);
 
-/**
- * A static up Vector3 for use by reference.
- *
- * This constant is meant for comparison operations and should not be modified directly.
- *
- * @constant
- * @name Phaser.Math.Vector3.UP
- * @type {Phaser.Math.Vector3}
- * @since 3.16.0
- */
 Vector3.UP = new Vector3(0, -1, 0);
 
-/**
- * A static down Vector3 for use by reference.
- *
- * This constant is meant for comparison operations and should not be modified directly.
- *
- * @constant
- * @name Phaser.Math.Vector3.DOWN
- * @type {Phaser.Math.Vector3}
- * @since 3.16.0
- */
 Vector3.DOWN = new Vector3(0, 1, 0);
 
-/**
- * A static forward Vector3 for use by reference.
- *
- * This constant is meant for comparison operations and should not be modified directly.
- *
- * @constant
- * @name Phaser.Math.Vector3.FORWARD
- * @type {Phaser.Math.Vector3}
- * @since 3.16.0
- */
 Vector3.FORWARD = new Vector3(0, 0, 1);
 
-/**
- * A static back Vector3 for use by reference.
- *
- * This constant is meant for comparison operations and should not be modified directly.
- *
- * @constant
- * @name Phaser.Math.Vector3.BACK
- * @type {Phaser.Math.Vector3}
- * @since 3.16.0
- */
 Vector3.BACK = new Vector3(0, 0, -1);
 
-/**
- * A static one Vector3 for use by reference.
- *
- * This constant is meant for comparison operations and should not be modified directly.
- *
- * @constant
- * @name Phaser.Math.Vector3.ONE
- * @type {Phaser.Math.Vector3}
- * @since 3.16.0
- */
 Vector3.ONE = new Vector3(1, 1, 1);
 
 module.exports = Vector3;

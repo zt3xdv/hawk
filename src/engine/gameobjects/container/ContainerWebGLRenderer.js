@@ -1,24 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @author       Felipe Alfonso <@bitnenfer>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Renders this Game Object with the WebGL Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.Container#renderWebGL
- * @since 3.4.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLRenderer} renderer - A reference to the current active WebGL renderer.
- * @param {Phaser.GameObjects.Container} container - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var ContainerWebGLRenderer = function (renderer, container, camera, parentMatrix)
 {
     camera.addToRenderList(container);
@@ -52,7 +31,7 @@ var ContainerWebGLRenderer = function (renderer, container, camera, parentMatrix
 
     if (!containerHasBlendMode)
     {
-        //  If Container is SKIP_TEST then set blend mode to be Normal
+
         renderer.setBlendMode(0);
     }
 
@@ -97,7 +76,7 @@ var ContainerWebGLRenderer = function (renderer, container, camera, parentMatrix
 
         if (!containerHasBlendMode && child.blendMode !== renderer.currentBlendMode)
         {
-            //  If Container doesn't have its own blend mode, then a child can have one
+
             renderer.setBlendMode(child.blendMode);
         }
 
@@ -118,15 +97,11 @@ var ContainerWebGLRenderer = function (renderer, container, camera, parentMatrix
 
         renderer.nextTypeMatch = (i < childCount - 1) ? (children[i + 1].type === renderer.currentType) : false;
 
-        //  Set parent values
         child.setScrollFactor(childScrollFactorX * scrollFactorX, childScrollFactorY * scrollFactorY);
 
         child.setAlpha(childAlphaTopLeft * alpha, childAlphaTopRight * alpha, childAlphaBottomLeft * alpha, childAlphaBottomRight * alpha);
 
-        //  Render
         child.renderWebGL(renderer, child, camera, transformMatrix, container);
-
-        //  Restore original values
 
         child.setAlpha(childAlphaTopLeft, childAlphaTopRight, childAlphaBottomLeft, childAlphaBottomRight);
 

@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.Cameras.Scene2D.Events
- */
-
 module.exports = {
 
     DESTROY: require('./DESTROY_EVENT'),

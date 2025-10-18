@@ -1,18 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Internal function to process the separation of a physics body from a tile.
- *
- * @function Phaser.Physics.Arcade.Tilemap.ProcessTileSeparationX
- * @since 3.0.0
- *
- * @param {Phaser.Physics.Arcade.Body} body - The Body object to separate.
- * @param {number} x - The x separation amount.
- */
 var ProcessTileSeparationX = function (body, x)
 {
     if (x < 0)

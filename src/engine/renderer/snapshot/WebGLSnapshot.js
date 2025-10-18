@@ -1,25 +1,7 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var CanvasPool = require('../../display/canvas/CanvasPool');
 var Color = require('../../display/color/Color');
 var GetFastValue = require('../../utils/object/GetFastValue');
 
-/**
- * Takes a snapshot of an area from the current frame displayed by a WebGL canvas.
- *
- * This is then copied to an Image object. When this loads, the results are sent
- * to the callback provided in the Snapshot Configuration object.
- *
- * @function Phaser.Renderer.Snapshot.WebGL
- * @since 3.0.0
- *
- * @param {WebGLRenderingContext} sourceContext - The WebGL context to take a snapshot of.
- * @param {Phaser.Types.Renderer.Snapshot.SnapshotState} config - The snapshot configuration object.
- */
 var WebGLSnapshot = function (sourceContext, config)
 {
     var gl = sourceContext;

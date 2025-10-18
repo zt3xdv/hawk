@@ -1,28 +1,8 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var TransformMatrix = require('../components/TransformMatrix');
 var Utils = require('../../renderer/webgl/Utils');
 
 var tempMatrix = new TransformMatrix();
 
-/**
- * Renders this Game Object with the WebGL Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.Blitter#renderWebGL
- * @since 3.0.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLRenderer} renderer - A reference to the current active WebGL renderer.
- * @param {Phaser.GameObjects.Blitter} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var BlitterWebGLRenderer = function (renderer, src, camera, parentMatrix)
 {
     var list = src.getRenderList();
@@ -30,7 +10,7 @@ var BlitterWebGLRenderer = function (renderer, src, camera, parentMatrix)
 
     if (list.length === 0 || alpha === 0)
     {
-        //  Nothing to see, so abort early
+
         return;
     }
 
@@ -40,17 +20,17 @@ var BlitterWebGLRenderer = function (renderer, src, camera, parentMatrix)
 
     var cameraScrollX = camera.scrollX * src.scrollFactorX;
     var cameraScrollY = camera.scrollY * src.scrollFactorY;
-    
+
     var calcMatrix = tempMatrix.copyFrom(camera.matrix);
-    
+
     if (parentMatrix)
     {
         calcMatrix.multiplyWithOffset(parentMatrix, -cameraScrollX, -cameraScrollY);
-        
+
         cameraScrollX = 0;
         cameraScrollY = 0;
     }
-    
+
     var blitterX = src.x - cameraScrollX;
     var blitterY = src.y - cameraScrollY;
     var prevTextureSourceIndex = -1;
@@ -92,7 +72,6 @@ var BlitterWebGLRenderer = function (renderer, src, camera, parentMatrix)
 
         var tint = Utils.getTintAppendFloatAlpha(bob.tint, bobAlpha);
 
-        //  Bind texture only if the Texture Source is different from before
         if (frame.sourceIndex !== prevTextureSourceIndex)
         {
             var textureUnit = pipeline.setGameObject(src, frame);

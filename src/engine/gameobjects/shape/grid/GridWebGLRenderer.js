@@ -1,26 +1,6 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var GetCalcMatrix = require('../../GetCalcMatrix');
 var Utils = require('../../../renderer/webgl/Utils');
 
-/**
- * Renders this Game Object with the WebGL Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.Grid#renderWebGL
- * @since 3.13.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLRenderer} renderer - A reference to the current active WebGL renderer.
- * @param {Phaser.GameObjects.Grid} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var GridWebGLRenderer = function (renderer, src, camera, parentMatrix)
 {
     camera.addToRenderList(src);
@@ -34,8 +14,6 @@ var GridWebGLRenderer = function (renderer, src, camera, parentMatrix)
     calcMatrix.translate(-src._displayOriginX, -src._displayOriginY);
 
     var alpha = camera.alpha * src.alpha;
-
-    //  Work out the grid size
 
     var width = src.width;
     var height = src.height;
@@ -67,7 +45,7 @@ var GridWebGLRenderer = function (renderer, src, camera, parentMatrix)
 
     if (showOutline)
     {
-        //  To make room for the grid lines (in case alpha < 1)
+
         cellWidthA--;
         cellHeightA--;
 

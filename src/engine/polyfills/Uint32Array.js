@@ -1,13 +1,8 @@
-/**
-* Low-budget Float32Array knock-off, suitable for use with P2.js in IE9
-* Source: http://www.html5gamedevs.com/topic/5988-phaser-12-ie9/
-* Cameron Foale (http://www.kibibu.com)
-*/
 if (typeof window.Uint32Array !== 'function' && typeof window.Uint32Array !== 'object')
 {
     var CheapArray = function (fakeType)
     {
-        var proto = new Array(); // jshint ignore:line
+        var proto = new Array(); 
 
         window[fakeType] = function(arg) {
 
@@ -39,11 +34,11 @@ if (typeof window.Uint32Array !== 'function' && typeof window.Uint32Array !== 'o
         window[fakeType].constructor = window[fakeType];
     };
 
-    CheapArray('Float32Array'); // jshint ignore:line
-    CheapArray('Uint32Array'); // jshint ignore:line
-    CheapArray('Uint16Array'); // jshint ignore:line
-    CheapArray('Int16Array'); // jshint ignore:line
-    CheapArray('ArrayBuffer'); // jshint ignore:line
-    CheapArray('Int8Array'); // jshint ignore:line
-    CheapArray('Uint8Array'); // jshint ignore:line
+    CheapArray('Float32Array'); 
+    CheapArray('Uint32Array'); 
+    CheapArray('Uint16Array'); 
+    CheapArray('Int16Array'); 
+    CheapArray('ArrayBuffer'); 
+    CheapArray('Int8Array'); 
+    CheapArray('Uint8Array'); 
 }

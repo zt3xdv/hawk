@@ -1,5 +1,5 @@
 <a href="https://hawkg.xyz">
-  <img width="60px" height="60px" src="https://raw.githubusercontent.com/zt3xdv/hawk/main/public/logo.svg" align="right" />
+  <img width="60px" height="60px" src="https://raw.githubusercontent.com/zt3xdv/hawk/main/assets/logo.svg" align="right" />
 </a>
 
 # Hawk

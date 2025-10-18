@@ -1,20 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Extend = require('../utils/object/Extend');
 var CONST = require('./const');
-
-/**
- * @namespace Phaser.Tilemaps
- *
- * @borrows Phaser.Tilemaps.Orientation.ORTHOGONAL as ORTHOGONAL
- * @borrows Phaser.Tilemaps.Orientation.ISOMETRIC as ISOMETRIC
- * @borrows Phaser.Tilemaps.Orientation.STAGGERED as STAGGERED
- * @borrows Phaser.Tilemaps.Orientation.HEXAGONAL as HEXAGONAL
- */
 
 var Tilemaps = {
 

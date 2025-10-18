@@ -1,12 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @ignore
- */
 function swap (arr, i, j)
 {
     var tmp = arr[i];
@@ -14,33 +5,11 @@ function swap (arr, i, j)
     arr[j] = tmp;
 }
 
-/**
- * @ignore
- */
 function defaultCompare (a, b)
 {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/**
- * A [Floyd-Rivest](https://en.wikipedia.org/wiki/Floyd%E2%80%93Rivest_algorithm) quick selection algorithm.
- *
- * Rearranges the array items so that all items in the [left, k] range are smaller than all items in [k, right];
- * The k-th element will have the (k - left + 1)th smallest value in [left, right].
- *
- * The array is modified in-place.
- *
- * Based on code by [Vladimir Agafonkin](https://www.npmjs.com/~mourner)
- *
- * @function Phaser.Utils.Array.QuickSelect
- * @since 3.0.0
- *
- * @param {array} arr - The array to sort.
- * @param {number} k - The k-th element index.
- * @param {number} [left=0] - The index of the left part of the range.
- * @param {number} [right] - The index of the right part of the range.
- * @param {function} [compare] - An optional comparison function. Is passed two elements and should return 0, 1 or -1.
- */
 var QuickSelect = function (arr, k, left, right, compare)
 {
     if (left === undefined) { left = 0; }

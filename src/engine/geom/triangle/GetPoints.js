@@ -1,27 +1,6 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Length = require('../line/Length');
 var Point = require('../point/Point');
 
-/**
- * Returns an array of evenly spaced points on the perimeter of a Triangle.
- *
- * @function Phaser.Geom.Triangle.GetPoints
- * @since 3.0.0
- *
- * @generic {Phaser.Geom.Point} O - [out,$return]
- *
- * @param {Phaser.Geom.Triangle} triangle - The Triangle to get the points from.
- * @param {number} quantity - The number of evenly spaced points to return. Set to 0 to return an arbitrary number of points based on the `stepRate`.
- * @param {number} stepRate - If `quantity` is 0, the distance between each returned point.
- * @param {(array|Phaser.Geom.Point[])} [out] - An array to which the points should be appended.
- *
- * @return {(array|Phaser.Geom.Point[])} The modified `out` array, or a new array if none was provided.
- */
 var GetPoints = function (triangle, quantity, stepRate, out)
 {
     if (out === undefined) { out = []; }
@@ -36,7 +15,6 @@ var GetPoints = function (triangle, quantity, stepRate, out)
 
     var perimeter = length1 + length2 + length3;
 
-    //  If quantity is a falsey value (false, null, 0, undefined, etc) then we calculate it based on the stepRate instead.
     if (!quantity && stepRate > 0)
     {
         quantity = perimeter / stepRate;
@@ -49,11 +27,9 @@ var GetPoints = function (triangle, quantity, stepRate, out)
 
         var point = new Point();
 
-        //  Which line is it on?
-
         if (p < length1)
         {
-            //  Line 1
+
             localPosition = p / length1;
 
             point.x = line1.x1 + (line1.x2 - line1.x1) * localPosition;
@@ -61,7 +37,7 @@ var GetPoints = function (triangle, quantity, stepRate, out)
         }
         else if (p > length1 + length2)
         {
-            //  Line 3
+
             p -= length1 + length2;
             localPosition = p / length3;
 
@@ -70,7 +46,7 @@ var GetPoints = function (triangle, quantity, stepRate, out)
         }
         else
         {
-            //  Line 2
+
             p -= length1;
             localPosition = p / length2;
 

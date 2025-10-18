@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var BaseTween = require('../tween/BaseTween');
 var Defaults = require('../tween/Defaults');
 var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
@@ -19,18 +13,6 @@ var GetValueOp = require('./GetValueOp');
 var MergeRight = require('../../utils/object/MergeRight');
 var Tween = require('../tween/Tween');
 
-/**
- * Creates a new Tween.
- *
- * @function Phaser.Tweens.Builders.TweenBuilder
- * @since 3.0.0
- *
- * @param {Phaser.Tweens.TweenManager} parent - The owner of the new Tween.
- * @param {Phaser.Types.Tweens.TweenBuilderConfig|object} config - Configuration for the new Tween.
- * @param {Phaser.Types.Tweens.TweenConfigDefaults} defaults - Tween configuration defaults.
- *
- * @return {Phaser.Tweens.Tween} The new tween.
- */
 var TweenBuilder = function (parent, config, defaults)
 {
     if (config instanceof Tween)
@@ -49,7 +31,6 @@ var TweenBuilder = function (parent, config, defaults)
         defaults = MergeRight(Defaults, defaults);
     }
 
-    //  Create arrays of the Targets and the Properties. This Targets array should not be manipulated outside of this Tween.
     var targets = GetTargets(config);
 
     if (!targets && defaults.targets)
@@ -58,8 +39,6 @@ var TweenBuilder = function (parent, config, defaults)
     }
 
     var props = GetProps(config);
-
-    //  Default Tween values
 
     var delay = GetFastValue(config, 'delay', defaults.delay);
     var duration = GetFastValue(config, 'duration', defaults.duration);
@@ -146,16 +125,14 @@ var TweenBuilder = function (parent, config, defaults)
 
     var tween = new Tween(parent, targets);
 
-    //  Loop through every property defined in the Tween, i.e.: props { x, y, alpha }
     for (var p = 0; p < props.length; p++)
     {
         var key = props[p].key;
         var value = props[p].value;
 
-        //  Create 1 TweenData per target, per property
         for (var targetIndex = 0; targetIndex < targets.length; targetIndex++)
         {
-            //  Special-case for scale short-cut:
+
             if (key === 'scale' && !targets[targetIndex].hasOwnProperty('scale'))
             {
                 addTarget(tween, targetIndex, 'scaleX', value);
@@ -174,7 +151,6 @@ var TweenBuilder = function (parent, config, defaults)
     tween.paused = GetBoolean(config, 'paused', false);
     tween.persist = GetBoolean(config, 'persist', false);
 
-    //  Set the Callbacks
     tween.callbackScope = GetFastValue(config, 'callbackScope', tween);
 
     var callbacks = BaseTween.TYPES;

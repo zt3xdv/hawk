@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.Scale.Events
- */
-
 module.exports = {
 
     ENTER_FULLSCREEN: require('./ENTER_FULLSCREEN_EVENT'),

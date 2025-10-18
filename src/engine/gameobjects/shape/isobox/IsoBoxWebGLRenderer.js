@@ -1,26 +1,6 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var GetCalcMatrix = require('../../GetCalcMatrix');
 var Utils = require('../../../renderer/webgl/Utils');
 
-/**
- * Renders this Game Object with the WebGL Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.IsoBox#renderWebGL
- * @since 3.13.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLRenderer} renderer - A reference to the current active WebGL renderer.
- * @param {Phaser.GameObjects.IsoBox} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var IsoBoxWebGLRenderer = function (renderer, src, camera, parentMatrix)
 {
     camera.addToRenderList(src);
@@ -58,10 +38,7 @@ var IsoBoxWebGLRenderer = function (renderer, src, camera, parentMatrix)
     var x3;
     var y3;
 
-
     renderer.pipelines.preBatch(src);
-
-    //  Top Face
 
     if (src.showTop)
     {
@@ -82,8 +59,6 @@ var IsoBoxWebGLRenderer = function (renderer, src, camera, parentMatrix)
         pipeline.batchQuad(src, x0, y0, x1, y1, x2, y2, x3, y3, 0, 0, 1, 1, tint, tint, tint, tint, 2);
     }
 
-    //  Left Face
-
     if (src.showLeft)
     {
         tint = Utils.getTintAppendFloatAlpha(src.fillLeft, alpha);
@@ -102,8 +77,6 @@ var IsoBoxWebGLRenderer = function (renderer, src, camera, parentMatrix)
 
         pipeline.batchQuad(src, x0, y0, x1, y1, x2, y2, x3, y3, 0, 0, 1, 1, tint, tint, tint, tint, 2);
     }
-
-    //  Right Face
 
     if (src.showRight)
     {

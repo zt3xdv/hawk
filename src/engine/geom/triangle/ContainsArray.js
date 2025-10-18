@@ -1,29 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-//  http://www.blackpawn.com/texts/pointinpoly/
-
-//  points is an array of Point-like objects with public x/y properties
-//  returns an array containing all points that are within the triangle, or an empty array if none
-//  if 'returnFirst' is true it will return after the first point within the triangle is found
-
-/**
- * Filters an array of point-like objects to only those contained within a triangle.
- * If `returnFirst` is true, will return an array containing only the first point in the provided array that is within the triangle (or an empty array if there are no such points).
- *
- * @function Phaser.Geom.Triangle.ContainsArray
- * @since 3.0.0
- *
- * @param {Phaser.Geom.Triangle} triangle - The triangle that the points are being checked in.
- * @param {Phaser.Geom.Point[]} points - An array of point-like objects (objects that have an `x` and `y` property)
- * @param {boolean} [returnFirst=false] - If `true`, return an array containing only the first point found that is within the triangle.
- * @param {array} [out] - If provided, the points that are within the triangle will be appended to this array instead of being added to a new array. If `returnFirst` is true, only the first point found within the triangle will be appended. This array will also be returned by this function.
- *
- * @return {Phaser.Geom.Point[]} An array containing all the points from `points` that are within the triangle, if an array was provided as `out`, points will be appended to that array and it will also be returned here.
- */
 var ContainsArray = function (triangle, points, returnFirst, out)
 {
     if (returnFirst === undefined) { returnFirst = false; }
@@ -39,7 +13,6 @@ var ContainsArray = function (triangle, points, returnFirst, out)
     var dot01 = (v0x * v1x) + (v0y * v1y);
     var dot11 = (v1x * v1x) + (v1y * v1y);
 
-    // Compute barycentric coordinates
     var b = ((dot00 * dot11) - (dot01 * dot01));
     var inv = (b === 0) ? 0 : (1 / b);
 

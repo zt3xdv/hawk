@@ -1,6 +1,3 @@
-/**
- * Also fix for the absent console in IE9
- */
 if (!window.console)
 {
     window.console = {};

@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.Input.Keyboard.Events
- */
-
 module.exports = {
 
     ANY_KEY_DOWN: require('./ANY_KEY_DOWN_EVENT'),

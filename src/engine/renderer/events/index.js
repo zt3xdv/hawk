@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.Renderer.Events
- */
-
 module.exports = {
 
     LOSE_WEBGL: require('./LOSE_WEBGL_EVENT'),

@@ -1,26 +1,6 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var FillStyleCanvas = require('../FillStyleCanvas');
 var SetTransform = require('../../../renderer/canvas/utils/SetTransform');
 
-/**
- * Renders this Game Object with the Canvas Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.IsoTriangle#renderCanvas
- * @since 3.13.0
- * @private
- *
- * @param {Phaser.Renderer.Canvas.CanvasRenderer} renderer - A reference to the current active Canvas renderer.
- * @param {Phaser.GameObjects.IsoTriangle} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var IsoTriangleCanvasRenderer = function (renderer, src, camera, parentMatrix)
 {
     camera.addToRenderList(src);
@@ -37,8 +17,6 @@ var IsoTriangleCanvasRenderer = function (renderer, src, camera, parentMatrix)
 
         var reversed = src.isReversed;
 
-        //  Top Face
-
         if (src.showTop && reversed)
         {
             FillStyleCanvas(ctx, src, src.fillTop);
@@ -52,8 +30,6 @@ var IsoTriangleCanvasRenderer = function (renderer, src, camera, parentMatrix)
 
             ctx.fill();
         }
-
-        //  Left Face
 
         if (src.showLeft)
         {
@@ -77,8 +53,6 @@ var IsoTriangleCanvasRenderer = function (renderer, src, camera, parentMatrix)
             ctx.fill();
         }
 
-        //  Right Face
-
         if (src.showRight)
         {
             FillStyleCanvas(ctx, src, src.fillRight);
@@ -101,7 +75,6 @@ var IsoTriangleCanvasRenderer = function (renderer, src, camera, parentMatrix)
             ctx.fill();
         }
 
-        //  Restore the context saved in SetTransform
         ctx.restore();
     }
 };

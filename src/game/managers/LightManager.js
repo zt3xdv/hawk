@@ -1,4 +1,4 @@
-import Phaser from '../../../dist/engine/main.js';
+import HawkEngine from '../../../dist/engine/main.js';
 import Options from '../utils/Options.js';
 
 const MAX_LIGHTS = 64;
@@ -23,9 +23,9 @@ export default class LightManager {
       { start: 20,   color: this.nightColor, alpha: this.nightAlpha }
     ];
     this.phases = (this.phasesMinutes.slice()).map((p, idx) => ({
-      start: Phaser.Math.Clamp((p.start ?? 0) * 60, 0, this.totalSeconds),
+      start: HawkEngine.Math.Clamp((p.start ?? 0) * 60, 0, this.totalSeconds),
       color: (typeof p.color !== 'undefined') ? (p.color >>> 0) : undefined,
-      alpha: (typeof p.alpha !== 'undefined') ? Phaser.Math.Clamp(p.alpha, 0, 1) : undefined,
+      alpha: (typeof p.alpha !== 'undefined') ? HawkEngine.Math.Clamp(p.alpha, 0, 1) : undefined,
       index: idx
     })).sort((a, b) => a.start - b.start);
     this.lights = [];
@@ -68,12 +68,12 @@ export default class LightManager {
   }
 
   static _lerpColor(cA, cB, t) {
-    const a = Phaser.Display.Color.IntegerToColor(cA >>> 0);
-    const b = Phaser.Display.Color.IntegerToColor(cB >>> 0);
-    const r = Math.round(Phaser.Math.Linear(a.red, b.red, t));
-    const g = Math.round(Phaser.Math.Linear(a.green, b.green, t));
-    const bl = Math.round(Phaser.Math.Linear(a.blue, b.blue, t));
-    return Phaser.Display.Color.GetColor(r, g, bl);
+    const a = HawkEngine.Display.Color.IntegerToColor(cA >>> 0);
+    const b = HawkEngine.Display.Color.IntegerToColor(cB >>> 0);
+    const r = Math.round(HawkEngine.Math.Linear(a.red, b.red, t));
+    const g = Math.round(HawkEngine.Math.Linear(a.green, b.green, t));
+    const bl = Math.round(HawkEngine.Math.Linear(a.blue, b.blue, t));
+    return HawkEngine.Display.Color.GetColor(r, g, bl);
   }
 
   _defaultOverlayEvaluator(nowSec) {
@@ -90,13 +90,13 @@ export default class LightManager {
     if (duration <= 0) duration += this.totalSeconds;
     let elapsed = t - phase.start;
     if (elapsed < 0) elapsed += this.totalSeconds;
-    const progress = duration > 0 ? Phaser.Math.Clamp(elapsed / duration, 0, 1) : 0;
+    const progress = duration > 0 ? HawkEngine.Math.Clamp(elapsed / duration, 0, 1) : 0;
     const curColor = (typeof phase.color !== 'undefined') ? phase.color >>> 0 : this.nightColor;
     const curAlpha = (typeof phase.alpha !== 'undefined') ? phase.alpha : this.nightAlpha;
     const nextColor = (typeof nextPhase.color !== 'undefined') ? nextPhase.color >>> 0 : this.nightColor;
     const nextAlpha = (typeof nextPhase.alpha !== 'undefined') ? nextPhase.alpha : this.nightAlpha;
     const color = LightManager._lerpColor(curColor, nextColor, progress);
-    const alpha = Phaser.Math.Clamp(Phaser.Math.Linear(curAlpha, nextAlpha, progress), 0, 1);
+    const alpha = HawkEngine.Math.Clamp(HawkEngine.Math.Linear(curAlpha, nextAlpha, progress), 0, 1);
     return {
       color,
       alpha,
@@ -131,9 +131,9 @@ update(time, delta) {
 
   // Clear & fill night overlay
   this._rt.clear();
-  const nc = Phaser.Display.Color.IntegerToColor(overlay.color ?? this.nightColor);
-  const nightFill = Phaser.Display.Color.GetColor(nc.red, nc.green, nc.blue);
-  const nightAlpha = Phaser.Math.Clamp(overlay.alpha ?? this.nightAlpha, 0, 1);
+  const nc = HawkEngine.Display.Color.IntegerToColor(overlay.color ?? this.nightColor);
+  const nightFill = HawkEngine.Display.Color.GetColor(nc.red, nc.green, nc.blue);
+  const nightAlpha = HawkEngine.Math.Clamp(overlay.alpha ?? this.nightAlpha, 0, 1);
   this._rt.fill(nightFill, nightAlpha);
 
   // Precompute texture source width once
@@ -162,7 +162,7 @@ update(time, delta) {
     // world => screen transform (keeps radius in world units then scaled by cam.zoom)
     const sx = (L.x - camX) + viewOffsetX;
     const sy = (L.y - camY) + viewOffsetY;
-    const alpha = Phaser.Math.Clamp(L.alpha * (L.intensity ?? 1), 0, 1);
+    const alpha = HawkEngine.Math.Clamp(L.alpha * (L.intensity ?? 1), 0, 1);
 
     if (!this._lightSprite || !this._lightSprite.texture) continue;
 
@@ -178,7 +178,7 @@ update(time, delta) {
     // keep display size in case camera resized
     this._quad.setDisplaySize(w, h);
   }
-  this._quad.setBlendMode(Phaser.BlendModes.MULTIPLY);
+  this._quad.setBlendMode(HawkEngine.BlendModes.MULTIPLY);
 }
 
 
@@ -189,7 +189,7 @@ update(time, delta) {
       y: y ?? 0,
       radius: radius ?? 128,
       color: color >>> 0,
-      alpha: Phaser.Math.Clamp(alpha, 0, 1),
+      alpha: HawkEngine.Math.Clamp(alpha, 0, 1),
       intensity: intensity ?? 1,
       mask: mask ?? this._maskKey
     };
@@ -203,7 +203,7 @@ update(time, delta) {
   }
 
   clearLights() { this.lights.length = 0; }
-  setNightAlpha(a) { this.nightAlpha = Phaser.Math.Clamp(a, 0, 1); }
+  setNightAlpha(a) { this.nightAlpha = HawkEngine.Math.Clamp(a, 0, 1); }
   setNightColor(c) { this.nightColor = c >>> 0; }
 
   start() { this.running = true; }

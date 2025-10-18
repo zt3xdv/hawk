@@ -1,27 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var ProcessTileSeparationX = require('./ProcessTileSeparationX');
 
-/**
- * Check the body against the given tile on the X axis.
- * Used internally by the SeparateTile function.
- *
- * @function Phaser.Physics.Arcade.Tilemap.TileCheckX
- * @since 3.0.0
- *
- * @param {Phaser.Physics.Arcade.Body} body - The Body object to separate.
- * @param {Phaser.Tilemaps.Tile} tile - The tile to check.
- * @param {number} tileLeft - The left position of the tile within the tile world.
- * @param {number} tileRight - The right position of the tile within the tile world.
- * @param {number} tileBias - The tile bias value. Populated by the `World.TILE_BIAS` constant.
- * @param {boolean} isLayer - Is this check coming from a TilemapLayer or an array of tiles?
- *
- * @return {number} The amount of separation that occurred.
- */
 var TileCheckX = function (body, tile, tileLeft, tileRight, tileBias, isLayer)
 {
     var ox = 0;
@@ -41,7 +19,7 @@ var TileCheckX = function (body, tile, tileLeft, tileRight, tileBias, isLayer)
 
     if (body.deltaX() < 0 && collideRight && body.checkCollision.left)
     {
-        //  Body is moving LEFT
+
         if (faceRight && body.x < tileRight)
         {
             ox = body.x - tileRight;
@@ -54,7 +32,7 @@ var TileCheckX = function (body, tile, tileLeft, tileRight, tileBias, isLayer)
     }
     else if (body.deltaX() > 0 && collideLeft && body.checkCollision.right)
     {
-        //  Body is moving RIGHT
+
         if (faceLeft && body.right > tileLeft)
         {
             ox = body.right - tileLeft;

@@ -1,18 +1,9 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var flip = true;
 
 var defaultModelName = 'untitled';
 var currentGroup = '';
 var currentMaterial = '';
 
-/**
- * @ignore
- */
 function stripComments (line)
 {
     var idx = line.indexOf('#');
@@ -20,9 +11,6 @@ function stripComments (line)
     return (idx > -1) ? line.substring(0, idx) : line;
 }
 
-/**
- * @ignore
- */
 function currentModel (result)
 {
     if (result.models.length === 0)
@@ -41,9 +29,6 @@ function currentModel (result)
     return result.models[result.models.length - 1];
 }
 
-/**
- * @ignore
- */
 function parseObject (lineItems, result)
 {
     var modelName = lineItems.length >= 2 ? lineItems[1] : defaultModelName;
@@ -59,9 +44,6 @@ function parseObject (lineItems, result)
     currentGroup = '';
 }
 
-/**
- * @ignore
- */
 function parseGroup (lineItems)
 {
     if (lineItems.length === 2)
@@ -70,9 +52,6 @@ function parseGroup (lineItems)
     }
 }
 
-/**
- * @ignore
- */
 function parseVertexCoords (lineItems, result)
 {
     var len = lineItems.length;
@@ -84,9 +63,6 @@ function parseVertexCoords (lineItems, result)
     currentModel(result).vertices.push({ x: x, y: y, z: z });
 }
 
-/**
- * @ignore
- */
 function parseTextureCoords (lineItems, result)
 {
     var len = lineItems.length;
@@ -118,9 +94,6 @@ function parseTextureCoords (lineItems, result)
     currentModel(result).textureCoords.push({ u: u, v: v, w: w });
 }
 
-/**
- * @ignore
- */
 function parseVertexNormal (lineItems, result)
 {
     var len = lineItems.length;
@@ -132,9 +105,6 @@ function parseVertexNormal (lineItems, result)
     currentModel(result).vertexNormals.push({ x: x, y: y, z: z });
 }
 
-/**
- * @ignore
- */
 function parsePolygon (lineItems, result)
 {
     var totalVertices = lineItems.length - 1;
@@ -179,8 +149,7 @@ function parsePolygon (lineItems, result)
 
         if (vertexIndex !== 0)
         {
-            // Negative vertex indices refer to the nth last defined vertex
-            // convert these to postive indices for simplicity
+
             if (vertexIndex < 0)
             {
                 vertexIndex = currentModel(result).vertices.length + 1 + vertexIndex;
@@ -201,9 +170,6 @@ function parsePolygon (lineItems, result)
     currentModel(result).faces.push(face);
 }
 
-/**
- * @ignore
- */
 function parseMtlLib (lineItems, result)
 {
     if (lineItems.length >= 2)
@@ -212,9 +178,6 @@ function parseMtlLib (lineItems, result)
     }
 }
 
-/**
- * @ignore
- */
 function parseUseMtl (lineItems)
 {
     if (lineItems.length >= 2)
@@ -223,26 +186,12 @@ function parseUseMtl (lineItems)
     }
 }
 
-/**
- * Parses a Wavefront OBJ File, extracting the models from it and returning them in an array.
- *
- * The model data *must* be triangulated for a Mesh Game Object to be able to render it.
- *
- * @function Phaser.Geom.Mesh.ParseObj
- * @since 3.50.0
- *
- * @param {string} data - The OBJ File data as a raw string.
- * @param {boolean} [flipUV=true] - Flip the UV coordinates?
- *
- * @return {Phaser.Types.Geom.Mesh.OBJData} The parsed model and material data.
- */
 var ParseObj = function (data, flipUV)
 {
     if (flipUV === undefined) { flipUV = true; }
 
     flip = flipUV;
 
-    //  Store results in here
     var result = {
         materials: {},
         materialLibraries: [],
@@ -263,42 +212,42 @@ var ParseObj = function (data, flipUV)
         switch (lineItems[0].toLowerCase())
         {
             case 'o':
-                // Start A New Model
+
                 parseObject(lineItems, result);
                 break;
 
             case 'g':
-                // Start a new polygon group
+
                 parseGroup(lineItems);
                 break;
 
             case 'v':
-                // Define a vertex for the current model
+
                 parseVertexCoords(lineItems, result);
                 break;
 
             case 'vt':
-                // Texture Coords
+
                 parseTextureCoords(lineItems, result);
                 break;
 
             case 'vn':
-                // Define a vertex normal for the current model
+
                 parseVertexNormal(lineItems, result);
                 break;
 
             case 'f':
-                // Define a Face/Polygon
+
                 parsePolygon(lineItems, result);
                 break;
 
             case 'mtllib':
-                // Reference to a material library file (.mtl)
+
                 parseMtlLib(lineItems, result);
                 break;
 
             case 'usemtl':
-                // Sets the current material to be applied to polygons defined from this point forward
+
                 parseUseMtl(lineItems);
                 break;
         }

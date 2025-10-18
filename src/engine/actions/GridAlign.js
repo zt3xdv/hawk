@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var AlignIn = require('../display/align/in/QuickSet');
 var CONST = require('../display/align/const');
 var GetFastValue = require('../utils/object/GetFastValue');
@@ -12,20 +6,6 @@ var Zone = require('../gameobjects/zone/Zone');
 
 var tempZone = new Zone({ sys: { queueDepthSort: NOOP, events: { once: NOOP } } }, 0, 0, 1, 1).setOrigin(0, 0);
 
-/**
- * Takes an array of Game Objects, or any objects that have public `x` and `y` properties,
- * and then aligns them based on the grid configuration given to this action.
- *
- * @function Phaser.Actions.GridAlign
- * @since 3.0.0
- *
- * @generic {Phaser.GameObjects.GameObject[]} G - [items,$return]
- *
- * @param {(array|Phaser.GameObjects.GameObject[])} items - The array of items to be updated by this action.
- * @param {Phaser.Types.Actions.GridAlignConfig} options - The GridAlign Configuration object.
- *
- * @return {(array|Phaser.GameObjects.GameObject[])} The array of objects that were passed to this Action.
- */
 var GridAlign = function (items, options)
 {
     if (options === undefined) { options = {}; }
@@ -57,17 +37,17 @@ var GridAlign = function (items, options)
 
         if (widthSet && width === -1)
         {
-            //  We keep laying them out horizontally until we've done them all
+
             tempZone.x += cellWidth;
         }
         else if (heightSet && height === -1)
         {
-            //  We keep laying them out vertically until we've done them all
+
             tempZone.y += cellHeight;
         }
         else if (heightSet && !widthSet)
         {
-            //  We keep laying them out until we hit the column limit
+
             cy += cellHeight;
             tempZone.y += cellHeight;
 
@@ -80,14 +60,14 @@ var GridAlign = function (items, options)
 
                 if (cx === w)
                 {
-                    //  We've hit the column limit, so return, even if there are items left
+
                     break;
                 }
             }
         }
         else
         {
-            //  We keep laying them out until we hit the column limit
+
             cx += cellWidth;
             tempZone.x += cellWidth;
 
@@ -100,7 +80,7 @@ var GridAlign = function (items, options)
 
                 if (cy === h)
                 {
-                    //  We've hit the column limit, so return, even if there are items left
+
                     break;
                 }
             }

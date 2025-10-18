@@ -1,28 +1,8 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Contains = require('../circle/Contains');
 var Point = require('../point/Point');
 
 var tmp = new Point();
 
-/**
- * Checks for intersection between the line segment and circle.
- *
- * Based on code by [Matt DesLauriers](https://github.com/mattdesl/line-circle-collision/blob/master/LICENSE.md).
- *
- * @function Phaser.Geom.Intersects.LineToCircle
- * @since 3.0.0
- *
- * @param {Phaser.Geom.Line} line - The line segment to check.
- * @param {Phaser.Geom.Circle} circle - The circle to check against the line.
- * @param {(Phaser.Geom.Point|any)} [nearest] - An optional Point-like object. If given the closest point on the Line where the circle intersects will be stored in this object.
- *
- * @return {boolean} `true` if the two objects intersect, otherwise `false`.
- */
 var LineToCircle = function (line, circle, nearest)
 {
     if (nearest === undefined) { nearest = tmp; }
@@ -49,7 +29,6 @@ var LineToCircle = function (line, circle, nearest)
     var lcx = circle.x - line.x1;
     var lcy = circle.y - line.y1;
 
-    //  project lc onto d, resulting in vector p
     var dLen2 = (dx * dx) + (dy * dy);
     var px = dx;
     var py = dy;
@@ -65,7 +44,6 @@ var LineToCircle = function (line, circle, nearest)
     nearest.x = line.x1 + px;
     nearest.y = line.y1 + py;
 
-    //  len2 of p
     var pLen2 = (px * px) + (py * py);
 
     return (

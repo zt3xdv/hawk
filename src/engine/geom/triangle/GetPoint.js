@@ -1,26 +1,6 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Point = require('../point/Point');
 var Length = require('../line/Length');
 
-/**
- * Returns a Point from around the perimeter of a Triangle.
- *
- * @function Phaser.Geom.Triangle.GetPoint
- * @since 3.0.0
- *
- * @generic {Phaser.Geom.Point} O - [out,$return]
- *
- * @param {Phaser.Geom.Triangle} triangle - The Triangle to get the point on its perimeter from.
- * @param {number} position - The position along the perimeter of the triangle. A value between 0 and 1.
- * @param {(Phaser.Geom.Point|object)} [out] - An option Point, or Point-like object to store the value in. If not given a new Point will be created.
- *
- * @return {(Phaser.Geom.Point|object)} A Point object containing the given position from the perimeter of the triangle.
- */
 var GetPoint = function (triangle, position, out)
 {
     if (out === undefined) { out = new Point(); }
@@ -46,11 +26,9 @@ var GetPoint = function (triangle, position, out)
     var p = perimeter * position;
     var localPosition = 0;
 
-    //  Which line is it on?
-
     if (p < length1)
     {
-        //  Line 1
+
         localPosition = p / length1;
 
         out.x = line1.x1 + (line1.x2 - line1.x1) * localPosition;
@@ -58,7 +36,7 @@ var GetPoint = function (triangle, position, out)
     }
     else if (p > length1 + length2)
     {
-        //  Line 3
+
         p -= length1 + length2;
         localPosition = p / length3;
 
@@ -67,7 +45,7 @@ var GetPoint = function (triangle, position, out)
     }
     else
     {
-        //  Line 2
+
         p -= length1;
         localPosition = p / length2;
 

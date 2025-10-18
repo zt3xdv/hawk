@@ -1,37 +1,7 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Class = require('../../utils/Class');
 var MATH_CONST = require('../../math/const');
 var Vector2 = require('../../math/Vector2');
 
-/**
- * @classdesc
- * A Matrix used for display transformations for rendering.
- *
- * It is represented like so:
- *
- * ```
- * | a | c | tx |
- * | b | d | ty |
- * | 0 | 0 | 1  |
- * ```
- *
- * @class TransformMatrix
- * @memberof Phaser.GameObjects.Components
- * @constructor
- * @since 3.0.0
- *
- * @param {number} [a=1] - The Scale X value.
- * @param {number} [b=0] - The Skew Y value.
- * @param {number} [c=0] - The Skew X value.
- * @param {number} [d=1] - The Scale Y value.
- * @param {number} [tx=0] - The Translate X value.
- * @param {number} [ty=0] - The Translate Y value.
- */
 var TransformMatrix = new Class({
 
     initialize:
@@ -45,22 +15,8 @@ var TransformMatrix = new Class({
         if (tx === undefined) { tx = 0; }
         if (ty === undefined) { ty = 0; }
 
-        /**
-         * The matrix values.
-         *
-         * @name Phaser.GameObjects.Components.TransformMatrix#matrix
-         * @type {Float32Array}
-         * @since 3.0.0
-         */
         this.matrix = new Float32Array([ a, b, c, d, tx, ty, 0, 0, 1 ]);
 
-        /**
-         * The decomposed matrix.
-         *
-         * @name Phaser.GameObjects.Components.TransformMatrix#decomposedMatrix
-         * @type {object}
-         * @since 3.0.0
-         */
         this.decomposedMatrix = {
             translateX: 0,
             translateY: 0,
@@ -69,23 +25,9 @@ var TransformMatrix = new Class({
             rotation: 0
         };
 
-        /**
-         * The temporary quad value cache.
-         *
-         * @name Phaser.GameObjects.Components.TransformMatrix#quad
-         * @type {Float32Array}
-         * @since 3.60.0
-         */
         this.quad = new Float32Array(8);
     },
 
-    /**
-     * The Scale X value.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#a
-     * @type {number}
-     * @since 3.4.0
-     */
     a: {
 
         get: function ()
@@ -100,13 +42,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The Skew Y value.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#b
-     * @type {number}
-     * @since 3.4.0
-     */
     b: {
 
         get: function ()
@@ -121,13 +56,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The Skew X value.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#c
-     * @type {number}
-     * @since 3.4.0
-     */
     c: {
 
         get: function ()
@@ -142,13 +70,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The Scale Y value.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#d
-     * @type {number}
-     * @since 3.4.0
-     */
     d: {
 
         get: function ()
@@ -163,13 +84,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The Translate X value.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#e
-     * @type {number}
-     * @since 3.11.0
-     */
     e: {
 
         get: function ()
@@ -184,13 +98,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The Translate Y value.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#f
-     * @type {number}
-     * @since 3.11.0
-     */
     f: {
 
         get: function ()
@@ -205,13 +112,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The Translate X value.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#tx
-     * @type {number}
-     * @since 3.4.0
-     */
     tx: {
 
         get: function ()
@@ -226,13 +126,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The Translate Y value.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#ty
-     * @type {number}
-     * @since 3.4.0
-     */
     ty: {
 
         get: function ()
@@ -247,14 +140,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The rotation of the Matrix. Value is in radians.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#rotation
-     * @type {number}
-     * @readonly
-     * @since 3.4.0
-     */
     rotation: {
 
         get: function ()
@@ -264,15 +149,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The rotation of the Matrix, normalized to be within the Phaser right-handed
-     * clockwise rotation space. Value is in radians.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#rotationNormalized
-     * @type {number}
-     * @readonly
-     * @since 3.19.0
-     */
     rotationNormalized: {
 
         get: function ()
@@ -286,13 +162,11 @@ var TransformMatrix = new Class({
 
             if (a || b)
             {
-                // var r = Math.sqrt(a * a + b * b);
 
                 return (b > 0) ? Math.acos(a / this.scaleX) : -Math.acos(a / this.scaleX);
             }
             else if (c || d)
             {
-                // var s = Math.sqrt(c * c + d * d);
 
                 return MATH_CONST.TAU - ((d > 0) ? Math.acos(-c / this.scaleY) : -Math.acos(c / this.scaleY));
             }
@@ -304,14 +178,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The decomposed horizontal scale of the Matrix. This value is always positive.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#scaleX
-     * @type {number}
-     * @readonly
-     * @since 3.4.0
-     */
     scaleX: {
 
         get: function ()
@@ -321,14 +187,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * The decomposed vertical scale of the Matrix. This value is always positive.
-     *
-     * @name Phaser.GameObjects.Components.TransformMatrix#scaleY
-     * @type {number}
-     * @readonly
-     * @since 3.4.0
-     */
     scaleY: {
 
         get: function ()
@@ -338,14 +196,6 @@ var TransformMatrix = new Class({
 
     },
 
-    /**
-     * Reset the Matrix to an identity matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#loadIdentity
-     * @since 3.0.0
-     *
-     * @return {this} This TransformMatrix.
-     */
     loadIdentity: function ()
     {
         var matrix = this.matrix;
@@ -360,17 +210,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Translate the Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#translate
-     * @since 3.0.0
-     *
-     * @param {number} x - The horizontal translation value.
-     * @param {number} y - The vertical translation value.
-     *
-     * @return {this} This TransformMatrix.
-     */
     translate: function (x, y)
     {
         var matrix = this.matrix;
@@ -381,17 +220,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Scale the Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#scale
-     * @since 3.0.0
-     *
-     * @param {number} x - The horizontal scale value.
-     * @param {number} y - The vertical scale value.
-     *
-     * @return {this} This TransformMatrix.
-     */
     scale: function (x, y)
     {
         var matrix = this.matrix;
@@ -404,16 +232,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Rotate the Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#rotate
-     * @since 3.0.0
-     *
-     * @param {number} angle - The angle of rotation in radians.
-     *
-     * @return {this} This TransformMatrix.
-     */
     rotate: function (angle)
     {
         var sin = Math.sin(angle);
@@ -434,21 +252,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Multiply this Matrix by the given Matrix.
-     *
-     * If an `out` Matrix is given then the results will be stored in it.
-     * If it is not given, this matrix will be updated in place instead.
-     * Use an `out` Matrix if you do not wish to mutate this matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#multiply
-     * @since 3.0.0
-     *
-     * @param {Phaser.GameObjects.Components.TransformMatrix} rhs - The Matrix to multiply by.
-     * @param {Phaser.GameObjects.Components.TransformMatrix} [out] - An optional Matrix to store the results in.
-     *
-     * @return {(this|Phaser.GameObjects.Components.TransformMatrix)} Either this TransformMatrix, or the `out` Matrix, if given in the arguments.
-     */
     multiply: function (rhs, out)
     {
         var matrix = this.matrix;
@@ -480,21 +283,6 @@ var TransformMatrix = new Class({
         return destinationMatrix;
     },
 
-    /**
-     * Multiply this Matrix by the matrix given, including the offset.
-     *
-     * The offsetX is added to the tx value: `offsetX * a + offsetY * c + tx`.
-     * The offsetY is added to the ty value: `offsetY * b + offsetY * d + ty`.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#multiplyWithOffset
-     * @since 3.11.0
-     *
-     * @param {Phaser.GameObjects.Components.TransformMatrix} src - The source Matrix to copy from.
-     * @param {number} offsetX - Horizontal offset to factor in to the multiplication.
-     * @param {number} offsetY - Vertical offset to factor in to the multiplication.
-     *
-     * @return {this} This TransformMatrix.
-     */
     multiplyWithOffset: function (src, offsetX, offsetY)
     {
         var matrix = this.matrix;
@@ -527,21 +315,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Transform the Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#transform
-     * @since 3.0.0
-     *
-     * @param {number} a - The Scale X value.
-     * @param {number} b - The Shear Y value.
-     * @param {number} c - The Shear X value.
-     * @param {number} d - The Scale Y value.
-     * @param {number} tx - The Translate X value.
-     * @param {number} ty - The Translate Y value.
-     *
-     * @return {this} This TransformMatrix.
-     */
     transform: function (a, b, c, d, tx, ty)
     {
         var matrix = this.matrix;
@@ -563,18 +336,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Transform a point in to the local space of this Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#transformPoint
-     * @since 3.0.0
-     *
-     * @param {number} x - The x coordinate of the point to transform.
-     * @param {number} y - The y coordinate of the point to transform.
-     * @param {Phaser.Types.Math.Vector2Like} [point] - Optional Point object to store the transformed coordinates in.
-     *
-     * @return {Phaser.Types.Math.Vector2Like} The Point containing the transformed coordinates.
-     */
     transformPoint: function (x, y, point)
     {
         if (point === undefined) { point = { x: 0, y: 0 }; }
@@ -594,14 +355,6 @@ var TransformMatrix = new Class({
         return point;
     },
 
-    /**
-     * Invert the Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#invert
-     * @since 3.0.0
-     *
-     * @return {this} This TransformMatrix.
-     */
     invert: function ()
     {
         var matrix = this.matrix;
@@ -625,16 +378,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Set the values of this Matrix to copy those of the matrix given.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#copyFrom
-     * @since 3.11.0
-     *
-     * @param {Phaser.GameObjects.Components.TransformMatrix} src - The source Matrix to copy from.
-     *
-     * @return {this} This TransformMatrix.
-     */
     copyFrom: function (src)
     {
         var matrix = this.matrix;
@@ -649,17 +392,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Set the values of this Matrix to copy those of the array given.
-     * Where array indexes 0, 1, 2, 3, 4 and 5 are mapped to a, b, c, d, e and f.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#copyFromArray
-     * @since 3.11.0
-     *
-     * @param {array} src - The array of values to set into this matrix.
-     *
-     * @return {this} This TransformMatrix.
-     */
     copyFromArray: function (src)
     {
         var matrix = this.matrix;
@@ -674,17 +406,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Copy the values from this Matrix to the given Canvas Rendering Context.
-     * This will use the Context.transform method.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#copyToContext
-     * @since 3.12.0
-     *
-     * @param {CanvasRenderingContext2D} ctx - The Canvas Rendering Context to copy the matrix values to.
-     *
-     * @return {CanvasRenderingContext2D} The Canvas Rendering Context.
-     */
     copyToContext: function (ctx)
     {
         var matrix = this.matrix;
@@ -694,37 +415,14 @@ var TransformMatrix = new Class({
         return ctx;
     },
 
-    /**
-     * Copy the values from this Matrix to the given Canvas Rendering Context.
-     * This will use the Context.setTransform method.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#setToContext
-     * @since 3.12.0
-     *
-     * @param {CanvasRenderingContext2D} ctx - The Canvas Rendering Context to copy the matrix values to.
-     *
-     * @return {CanvasRenderingContext2D} The Canvas Rendering Context.
-     */
     setToContext: function (ctx)
     {
-        // using old way for old browser compatibility #6965
+
         ctx.setTransform(this.a, this.b, this.c, this.d, this.e, this.f);
 
         return ctx;
     },
 
-    /**
-     * Copy the values in this Matrix to the array given.
-     *
-     * Where array indexes 0, 1, 2, 3, 4 and 5 are mapped to a, b, c, d, e and f.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#copyToArray
-     * @since 3.12.0
-     *
-     * @param {array} [out] - The array to copy the matrix values in to.
-     *
-     * @return {array} An array where elements 0 to 5 contain the values from this matrix.
-     */
     copyToArray: function (out)
     {
         var matrix = this.matrix;
@@ -746,21 +444,6 @@ var TransformMatrix = new Class({
         return out;
     },
 
-    /**
-     * Set the values of this Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#setTransform
-     * @since 3.0.0
-     *
-     * @param {number} a - The Scale X value.
-     * @param {number} b - The Shear Y value.
-     * @param {number} c - The Shear X value.
-     * @param {number} d - The Scale Y value.
-     * @param {number} tx - The Translate X value.
-     * @param {number} ty - The Translate Y value.
-     *
-     * @return {this} This TransformMatrix.
-     */
     setTransform: function (a, b, c, d, tx, ty)
     {
         var matrix = this.matrix;
@@ -775,28 +458,11 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Decompose this Matrix into its translation, scale and rotation values using QR decomposition.
-     *
-     * The result must be applied in the following order to reproduce the current matrix:
-     *
-     * translate -> rotate -> scale
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#decomposeMatrix
-     * @since 3.0.0
-     *
-     * @return {Phaser.Types.GameObjects.DecomposeMatrixResults} The decomposed Matrix.
-     */
     decomposeMatrix: function ()
     {
         var decomposedMatrix = this.decomposedMatrix;
 
         var matrix = this.matrix;
-
-        //  a = scale X (1)
-        //  b = shear Y (0)
-        //  c = shear X (0)
-        //  d = scale Y (1)
 
         var a = matrix[0];
         var b = matrix[1];
@@ -834,20 +500,6 @@ var TransformMatrix = new Class({
         return decomposedMatrix;
     },
 
-    /**
-     * Apply the identity, translate, rotate and scale operations on the Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#applyITRS
-     * @since 3.0.0
-     *
-     * @param {number} x - The horizontal translation.
-     * @param {number} y - The vertical translation.
-     * @param {number} rotation - The angle of rotation in radians.
-     * @param {number} scaleX - The horizontal scale.
-     * @param {number} scaleY - The vertical scale.
-     *
-     * @return {this} This TransformMatrix.
-     */
     applyITRS: function (x, y, rotation, scaleX, scaleY)
     {
         var matrix = this.matrix;
@@ -855,11 +507,9 @@ var TransformMatrix = new Class({
         var radianSin = Math.sin(rotation);
         var radianCos = Math.cos(rotation);
 
-        // Translate
         matrix[4] = x;
         matrix[5] = y;
 
-        // Rotate and Scale
         matrix[0] = radianCos * scaleX;
         matrix[1] = radianSin * scaleX;
         matrix[2] = -radianSin * scaleY;
@@ -868,21 +518,6 @@ var TransformMatrix = new Class({
         return this;
     },
 
-    /**
-     * Takes the `x` and `y` values and returns a new position in the `output` vector that is the inverse of
-     * the current matrix with its transformation applied.
-     *
-     * Can be used to translate points from world to local space.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#applyInverse
-     * @since 3.12.0
-     *
-     * @param {number} x - The x position to translate.
-     * @param {number} y - The y position to translate.
-     * @param {Phaser.Math.Vector2} [output] - A Vector2, or point-like object, to store the results in.
-     *
-     * @return {Phaser.Math.Vector2} The coordinates, inverse-transformed through this matrix.
-     */
     applyInverse: function (x, y, output)
     {
         if (output === undefined) { output = new Vector2(); }
@@ -904,25 +539,6 @@ var TransformMatrix = new Class({
         return output;
     },
 
-    /**
-     * Performs the 8 calculations required to create the vertices of
-     * a quad based on this matrix and the given x/y/xw/yh values.
-     *
-     * The result is stored in `TransformMatrix.quad`, which is returned
-     * from this method.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#setQuad
-     * @since 3.60.0
-     *
-     * @param {number} x - The x value.
-     * @param {number} y - The y value.
-     * @param {number} xw - The xw value.
-     * @param {number} yh - The yh value.
-     * @param {boolean} [roundPixels=false] - Pass the results via Math.round?
-     * @param {Float32Array} [quad] - Optional Float32Array to store the results in. Otherwises uses the local quad array.
-     *
-     * @return {Float32Array} The quad Float32Array.
-     */
     setQuad: function (x, y, xw, yh, roundPixels, quad)
     {
         if (roundPixels === undefined) { roundPixels = false; }
@@ -937,7 +553,6 @@ var TransformMatrix = new Class({
         var e = matrix[4];
         var f = matrix[5];
 
-        // Compute the unrounded positions for the quad
         var x0 = x * a + y * c + e;
         var y0 = x * b + y * d + f;
 
@@ -952,15 +567,13 @@ var TransformMatrix = new Class({
 
         if (roundPixels)
         {
-            // Round the top-left corner
+
             var rx0 = Math.floor(x0 + 0.5);
             var ry0 = Math.floor(y0 + 0.5);
 
-            // Calculate the offset caused by rounding
             var dx = rx0 - x0;
             var dy = ry0 - y0;
 
-            // Adjust the other corners by the same offset
             quad[0] = rx0;
             quad[1] = ry0;
 
@@ -991,54 +604,16 @@ var TransformMatrix = new Class({
         return quad;
     },
 
-    /**
-     * Returns the X component of this matrix multiplied by the given values.
-     * This is the same as `x * a + y * c + e`.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#getX
-     * @since 3.12.0
-     *
-     * @param {number} x - The x value.
-     * @param {number} y - The y value.
-     *
-     * @return {number} The calculated x value.
-     */
     getX: function (x, y)
     {
         return x * this.a + y * this.c + this.e;
     },
 
-    /**
-     * Returns the Y component of this matrix multiplied by the given values.
-     * This is the same as `x * b + y * d + f`.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#getY
-     * @since 3.12.0
-     *
-     * @param {number} x - The x value.
-     * @param {number} y - The y value.
-     *
-     * @return {number} The calculated y value.
-     */
     getY: function (x, y)
     {
         return x * this.b + y * this.d + this.f;
     },
 
-    /**
-     * Returns the X component of this matrix multiplied by the given values.
-     *
-     * This is the same as `x * a + y * c + e`, optionally passing via `Math.round`.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#getXRound
-     * @since 3.50.0
-     *
-     * @param {number} x - The x value.
-     * @param {number} y - The y value.
-     * @param {boolean} [round=false] - Math.round the resulting value?
-     *
-     * @return {number} The calculated x value.
-     */
     getXRound: function (x, y, round)
     {
         var v = this.getX(x, y);
@@ -1051,20 +626,6 @@ var TransformMatrix = new Class({
         return v;
     },
 
-    /**
-     * Returns the Y component of this matrix multiplied by the given values.
-     *
-     * This is the same as `x * b + y * d + f`, optionally passing via `Math.round`.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#getYRound
-     * @since 3.50.0
-     *
-     * @param {number} x - The x value.
-     * @param {number} y - The y value.
-     * @param {boolean} [round=false] - Math.round the resulting value?
-     *
-     * @return {number} The calculated y value.
-     */
     getYRound: function (x, y, round)
     {
         var v = this.getY(x, y);
@@ -1077,14 +638,6 @@ var TransformMatrix = new Class({
         return v;
     },
 
-    /**
-     * Returns a string that can be used in a CSS Transform call as a `matrix` property.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#getCSSMatrix
-     * @since 3.12.0
-     *
-     * @return {string} A string containing the CSS Transform matrix values.
-     */
     getCSSMatrix: function ()
     {
         var m = this.matrix;
@@ -1092,12 +645,6 @@ var TransformMatrix = new Class({
         return 'matrix(' + m[0] + ',' + m[1] + ',' + m[2] + ',' + m[3] + ',' + m[4] + ',' + m[5] + ')';
     },
 
-    /**
-     * Destroys this Transform Matrix.
-     *
-     * @method Phaser.GameObjects.Components.TransformMatrix#destroy
-     * @since 3.4.0
-     */
     destroy: function ()
     {
         this.matrix = null;

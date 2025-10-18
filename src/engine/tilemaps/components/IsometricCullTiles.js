@@ -1,24 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var CheckIsoBounds = require('./CheckIsoBounds');
 
-/**
- * Returns the tiles in the given layer that are within the cameras viewport. This is used internally.
- *
- * @function Phaser.Tilemaps.Components.IsometricCullTiles
- * @since 3.50.0
- *
- * @param {Phaser.Tilemaps.LayerData} layer - The Tilemap Layer to act upon.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera to run the cull check against.
- * @param {array} [outputArray] - An optional array to store the Tile objects within.
- * @param {number} [renderOrder=0] - The rendering order constant.
- *
- * @return {Phaser.Tilemaps.Tile[]} An array of Tile objects.
- */
 var IsometricCullTiles = function (layer, camera, outputArray, renderOrder)
 {
     if (outputArray === undefined) { outputArray = []; }
@@ -44,7 +25,6 @@ var IsometricCullTiles = function (layer, camera, outputArray, renderOrder)
 
     if (renderOrder === 0)
     {
-        //  right-down
 
         for (y = drawTop; y < drawBottom; y++)
         {
@@ -68,7 +48,6 @@ var IsometricCullTiles = function (layer, camera, outputArray, renderOrder)
     }
     else if (renderOrder === 1)
     {
-        //  left-down
 
         for (y = drawTop; y < drawBottom; y++)
         {
@@ -92,7 +71,6 @@ var IsometricCullTiles = function (layer, camera, outputArray, renderOrder)
     }
     else if (renderOrder === 2)
     {
-        //  right-up
 
         for (y = drawBottom; y >= drawTop; y--)
         {
@@ -116,7 +94,6 @@ var IsometricCullTiles = function (layer, camera, outputArray, renderOrder)
     }
     else if (renderOrder === 3)
     {
-        //  left-up
 
         for (y = drawBottom; y >= drawTop; y--)
         {

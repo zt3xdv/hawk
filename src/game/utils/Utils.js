@@ -99,15 +99,6 @@ export function getAssets() {
     },
     {
       type: "spritesheet",
-      key: "grass",
-      url: Cache.getBlob("assets/game/grass.png").dataUrl,
-      frameConfig: {
-        frameWidth: 32,
-        frameHeight: 32
-      }
-    },
-    {
-      type: "spritesheet",
       key: "dirt",
       url: Cache.getBlob("assets/game/dirt.png").dataUrl,
       frameConfig: {

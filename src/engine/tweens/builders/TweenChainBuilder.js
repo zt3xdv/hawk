@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var BaseTween = require('../tween/BaseTween');
 var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
 var GetBoolean = require('./GetBoolean');
@@ -12,17 +6,6 @@ var GetValue = require('../../utils/object/GetValue');
 var TweenBuilder = require('./TweenBuilder');
 var TweenChain = require('../tween/TweenChain');
 
-/**
- * Creates a new Tween Chain instance.
- *
- * @function Phaser.Tweens.Builders.TweenChainBuilder
- * @since 3.60.0
- *
- * @param {Phaser.Tweens.TweenManager} parent - The owner of the new Tween.
- * @param {Phaser.Types.Tweens.TweenChainBuilderConfig|object} config - Configuration for the new Tween.
- *
- * @return {Phaser.Tweens.TweenChain} The new Tween Chain.
- */
 var TweenChainBuilder = function (parent, config)
 {
     if (config instanceof TweenChain)
@@ -31,8 +14,6 @@ var TweenChainBuilder = function (parent, config)
 
         return config;
     }
-
-    //  Default TweenChain values
 
     var chain = new TweenChain(parent);
 
@@ -43,7 +24,6 @@ var TweenChainBuilder = function (parent, config)
     chain.paused = GetBoolean(config, 'paused', false);
     chain.persist = GetBoolean(config, 'persist', false);
 
-    //  Set the Callbacks
     chain.callbackScope = GetValue(config, 'callbackScope', chain);
 
     var i;
@@ -63,7 +43,6 @@ var TweenChainBuilder = function (parent, config)
         }
     }
 
-    //  Add in the Tweens
     var tweens = GetValue(config, 'tweens', null);
 
     if (Array.isArray(tweens))

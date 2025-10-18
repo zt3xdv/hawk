@@ -1,4 +1,4 @@
-import Phaser from '../../dist/engine/main.js';
+import HawkEngine from '../../dist/engine/main.js';
 import PreviewScene from './scenes/PreviewScene.js';
 
 export default class Preview {
@@ -21,6 +21,6 @@ export default class Preview {
       ]
     };
 
-    this.game = new Phaser.Game(config);
+    this.game = new HawkEngine.Game(config);
   }
 }

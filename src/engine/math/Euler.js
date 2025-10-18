@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Clamp = require('./Clamp');
 var Class = require('../utils/Class');
 var Matrix4 = require('./Matrix4');
@@ -11,18 +5,6 @@ var NOOP = require('../utils/NOOP');
 
 var tempMatrix = new Matrix4();
 
-/**
- * @classdesc
- *
- * @class Euler
- * @memberof Phaser.Math
- * @constructor
- * @since 3.50.0
- *
- * @param {number} [x] - The x component.
- * @param {number} [y] - The y component.
- * @param {number} [z] - The z component.
- */
 var Euler = new Class({
 
     initialize:
@@ -134,7 +116,6 @@ var Euler = new Class({
 
         var elements = matrix.val;
 
-        //  Upper 3x3 of matrix is un-scaled rotation matrix
         var m11 = elements[0];
         var m12 = elements[4];
         var m13 = elements[8];

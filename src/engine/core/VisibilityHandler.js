@@ -1,25 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Events = require('./events');
 
-/**
- * The Visibility Handler is responsible for listening out for document level visibility change events.
- * This includes `visibilitychange` if the browser supports it, and blur and focus events. It then uses
- * the provided Event Emitter and fires the related events.
- *
- * @function Phaser.Core.VisibilityHandler
- * @fires Phaser.Core.Events#BLUR
- * @fires Phaser.Core.Events#FOCUS
- * @fires Phaser.Core.Events#HIDDEN
- * @fires Phaser.Core.Events#VISIBLE
- * @since 3.0.0
- *
- * @param {Phaser.Game} game - The Game instance this Visibility Handler is working on.
- */
 var VisibilityHandler = function (game)
 {
     var hiddenVar;
@@ -75,7 +55,6 @@ var VisibilityHandler = function (game)
         eventEmitter.emit(Events.FOCUS);
     };
 
-    //  Automatically give the window focus unless config says otherwise
     if (window.focus && game.config.autoFocus)
     {
         window.focus();

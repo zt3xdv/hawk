@@ -1,22 +1,6 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var GetFastValue = require('../utils/object/GetFastValue');
 var UppercaseFirst = require('../utils/string/UppercaseFirst');
 
-/**
- * Builds an array of which physics plugins should be activated for the given Scene.
- *
- * @function Phaser.Scenes.GetPhysicsPlugins
- * @since 3.0.0
- *
- * @param {Phaser.Scenes.Systems} sys - The scene system to get the physics systems of.
- *
- * @return {array} An array of Physics systems to start for this Scene.
- */
 var GetPhysicsPlugins = function (sys)
 {
     var defaultSystem = sys.game.config.defaultPhysicsSystem;
@@ -24,11 +8,10 @@ var GetPhysicsPlugins = function (sys)
 
     if (!defaultSystem && !sceneSystems)
     {
-        //  No default physics system or systems in this scene
+
         return;
     }
 
-    //  Let's build the systems array
     var output = [];
 
     if (defaultSystem)
@@ -49,7 +32,6 @@ var GetPhysicsPlugins = function (sys)
         }
     }
 
-    //  An array of Physics systems to start for this Scene
     return output;
 };
 

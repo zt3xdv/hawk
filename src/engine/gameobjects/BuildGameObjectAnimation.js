@@ -1,22 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var GetAdvancedValue = require('../utils/object/GetAdvancedValue');
 
-/**
- * Adds an Animation component to a Sprite and populates it based on the given config.
- *
- * @function Phaser.GameObjects.BuildGameObjectAnimation
- * @since 3.0.0
- *
- * @param {Phaser.GameObjects.Sprite} sprite - The sprite to add an Animation component to.
- * @param {object} config - The animation config.
- *
- * @return {Phaser.GameObjects.Sprite} The updated Sprite.
- */
 var BuildGameObjectAnimation = function (sprite, config)
 {
     var animConfig = GetAdvancedValue(config, 'anims', null);
@@ -28,22 +11,11 @@ var BuildGameObjectAnimation = function (sprite, config)
 
     if (typeof animConfig === 'string')
     {
-        //  { anims: 'key' }
+
         sprite.anims.play(animConfig);
     }
     else if (typeof animConfig === 'object')
     {
-        //  { anims: {
-        //              key: string
-        //              startFrame: [string|number]
-        //              delay: [float]
-        //              repeat: [integer]
-        //              repeatDelay: [float]
-        //              yoyo: [boolean]
-        //              play: [boolean]
-        //              delayedPlay: [boolean]
-        //           }
-        //  }
 
         var anims = sprite.anims;
 

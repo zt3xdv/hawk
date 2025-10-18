@@ -1,5 +1,3 @@
-//  From https://github.com/ThaUnknown/rvfc-polyfill
-
 if (typeof HTMLVideoElement !== 'undefined' && !('requestVideoFrameCallback' in HTMLVideoElement.prototype) && 'getVideoPlaybackQuality' in HTMLVideoElement.prototype)
 {
     HTMLVideoElement.prototype._rvfcpolyfillmap = {}
@@ -13,7 +11,7 @@ if (typeof HTMLVideoElement !== 'undefined' && !('requestVideoFrameCallback' in 
         const presentedFrames = this.mozPresentedFrames || this.mozPaintedFrames || newquality.totalVideoFrames - newquality.droppedVideoFrames
         if (presentedFrames > baseline) {
           const processingDuration = this.mozFrameDelay || (newquality.totalFrameDelay - quality.totalFrameDelay) || 0
-          const timediff = now - old // HighRes diff
+          const timediff = now - old 
           callback(now, {
             presentationTime: now + processingDuration * 1000,
             expectedDisplayTime: now + timediff,

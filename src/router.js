@@ -23,42 +23,42 @@ function insertBeforeFooter(node) {
 }
 
 function mountShell() {
-    if (!mounted) {
-      document.body.innerHTML = '';
-      currentNav = nav();
-      document.body.appendChild(currentNav);
+  if (!mounted) {
+    document.body.innerHTML = '';
+    currentNav = nav();
+    document.body.appendChild(currentNav);
 
-      const main = document.createElement('main');
-      main.id = 'app';
-      document.body.appendChild(main);
+    const main = document.createElement('main');
+    main.id = 'app';
+    document.body.appendChild(main);
 
-      currentFooter = document.createElement('footer');
-      currentFooter.className = 'site-footer';
-      currentFooter.innerHTML = `
-  <div class="footer-top">
-    <div class="brand">
-      <img src="${Cache.getBlob("logo.svg").dataUrl}" alt="Logo" class="footer-logo">
-      <span class="brand-name">Hawk</span>
-    </div>
-    <div class="right-side">
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <div class="authors">
-      © ${new Date().getFullYear()} — ${AUTHOR}
-    </div>
-    <div class="extras">
-      <p>${VERSION} · assets-${ASSETS_VERSION}</p>
-      <a href="/termsofservice">Terms Of Service</a> · <a href="/privacypolicy">Privacy Policy</a> · <a href="${DISCORD_SERVER}">Discord</a>
-    </div>
-  </div>
-`;
-      currentFooter.style.marginTop = `170px`;
-      document.body.appendChild(currentFooter);
+    currentFooter = document.createElement('footer');
+    currentFooter.className = 'site-footer';
+    currentFooter.innerHTML = `
+      <div class="footer-top">
+        <div class="brand">
+          <img src="${Cache.getBlob("logo.svg").dataUrl}" alt="Logo" class="footer-logo">
+          <span class="brand-name">Hawk</span>
+        </div>
+        <div class="right-side">
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="authors">
+          © ${new Date().getFullYear()} — ${AUTHOR}
+        </div>
+        <div class="extras">
+          <p>${VERSION} · assets-${ASSETS_VERSION}</p>
+          <a href="/termsofservice">Terms Of Service</a> · <a href="/privacypolicy">Privacy Policy</a> · <a href="${DISCORD_SERVER}">Discord</a>
+        </div>
+      </div>
+    `;
+    currentFooter.style.marginTop = `170px`;
+    document.body.appendChild(currentFooter);
 
-      document.body.addEventListener('click', onBodyClick);
-      mounted = true;
-    }
+    document.body.addEventListener('click', onBodyClick);
+    mounted = true;
+  }
 }
 
 function onBodyClick(e) {

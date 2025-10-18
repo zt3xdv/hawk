@@ -1,30 +1,4 @@
-/**
- * @author       Vladimir Agafonkin
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var quickselect = require('../utils/array/QuickSelect');
-
-/**
- * @classdesc
- * RBush is a high-performance JavaScript library for 2D spatial indexing of points and rectangles.
- * It's based on an optimized R-tree data structure with bulk insertion support.
- *
- * Spatial index is a special data structure for points and rectangles that allows you to perform queries like
- * "all items within this bounding box" very efficiently (e.g. hundreds of times faster than looping over all items).
- *
- * This version of RBush uses a fixed min/max accessor structure of `[ '.left', '.top', '.right', '.bottom' ]`.
- * This is to avoid the eval like function creation that the original library used, which caused CSP policy violations.
- *
- * rbush is forked from https://github.com/mourner/rbush by Vladimir Agafonkin
- *
- * @class RTree
- * @memberof Phaser.Structs
- * @constructor
- * @since 3.0.0
- */
 
 function rbush (maxEntries)
 {
@@ -32,7 +6,6 @@ function rbush (maxEntries)
 
     if (!(this instanceof rbush)) return new rbush(maxEntries, format);
 
-    // max entries in a node is 9 by default; min node fill is 40% for best performance
     this._maxEntries = Math.max(4, maxEntries || 9);
     this._minEntries = Math.max(2, Math.ceil(this._maxEntries * 0.4));
 
@@ -113,26 +86,24 @@ rbush.prototype = {
             return this;
         }
 
-        // recursively build the tree with the given data from scratch using OMT algorithm
         var node = this._build(data.slice(), 0, data.length - 1, 0);
 
         if (!this.data.children.length) {
-            // save as is if tree is empty
+
             this.data = node;
 
         } else if (this.data.height === node.height) {
-            // split root if trees have the same height
+
             this._splitRoot(this.data, node);
 
         } else {
             if (this.data.height < node.height) {
-                // swap trees if inserted one is bigger
+
                 var tmpNode = this.data;
                 this.data = node;
                 node = tmpNode;
             }
 
-            // insert the small tree into the large tree at appropriate level
             this._insert(node, this.data.height - node.height - 1, true);
         }
 
@@ -161,21 +132,20 @@ rbush.prototype = {
             indexes = [],
             i, parent, index, goingUp;
 
-        // depth-first iterative tree traversal
         while (node || path.length) {
 
-            if (!node) { // go up
+            if (!node) { 
                 node = path.pop();
                 parent = path[path.length - 1];
                 i = indexes.pop();
                 goingUp = true;
             }
 
-            if (node.leaf) { // check current node
+            if (node.leaf) { 
                 index = findItem(item, node.children, equalsFn);
 
                 if (index !== -1) {
-                    // item found, remove the item and condense tree upwards
+
                     node.children.splice(index, 1);
                     path.push(node);
                     this._condense(path);
@@ -183,19 +153,19 @@ rbush.prototype = {
                 }
             }
 
-            if (!goingUp && !node.leaf && contains(node, bbox)) { // go down
+            if (!goingUp && !node.leaf && contains(node, bbox)) { 
                 path.push(node);
                 indexes.push(i);
                 i = 0;
                 parent = node;
                 node = node.children[0];
 
-            } else if (parent) { // go right
+            } else if (parent) { 
                 i++;
                 node = parent.children[i];
                 goingUp = false;
 
-            } else node = null; // nothing found
+            } else node = null; 
         }
 
         return this;
@@ -233,25 +203,22 @@ rbush.prototype = {
             node;
 
         if (N <= M) {
-            // reached leaf level; return leaf
+
             node = createNode(items.slice(left, right + 1));
             calcBBox(node, this.toBBox);
             return node;
         }
 
         if (!height) {
-            // target height of the bulk-loaded tree
+
             height = Math.ceil(Math.log(N) / Math.log(M));
 
-            // target number of root entries to maximize storage utilization
             M = Math.ceil(N / Math.pow(M, height - 1));
         }
 
         node = createNode([]);
         node.leaf = false;
         node.height = height;
-
-        // split the items into M mostly square tiles
 
         var N2 = Math.ceil(N / M),
             N1 = N2 * Math.ceil(Math.sqrt(M)),
@@ -269,7 +236,6 @@ rbush.prototype = {
 
                 right3 = Math.min(j + N2 - 1, right2);
 
-                // pack each entry recursively
                 node.children.push(this._build(items, j, right3, height - 1));
             }
         }
@@ -295,14 +261,13 @@ rbush.prototype = {
                 area = bboxArea(child);
                 enlargement = enlargedArea(bbox, child) - area;
 
-                // choose entry with the least area enlargement
                 if (enlargement < minEnlargement) {
                     minEnlargement = enlargement;
                     minArea = area < minArea ? area : minArea;
                     targetNode = child;
 
                 } else if (enlargement === minEnlargement) {
-                    // otherwise choose one with the smallest area
+
                     if (area < minArea) {
                         minArea = area;
                         targetNode = child;
@@ -322,14 +287,11 @@ rbush.prototype = {
             bbox = isNode ? item : toBBox(item),
             insertPath = [];
 
-        // find the best node for accommodating the item, saving all nodes along the path too
         var node = this._chooseSubtree(bbox, this.data, level, insertPath);
 
-        // put the item into the node
         node.children.push(item);
         extend(node, bbox);
 
-        // split on node overflow; propagate upwards if necessary
         while (level >= 0) {
             if (insertPath[level].children.length > this._maxEntries) {
                 this._split(insertPath, level);
@@ -337,11 +299,9 @@ rbush.prototype = {
             } else break;
         }
 
-        // adjust bboxes along the insertion path
         this._adjustParentBBoxes(bbox, insertPath, level);
     },
 
-    // split overflowed node into two
     _split: function (insertPath, level)
     {
         var node = insertPath[level],
@@ -365,7 +325,7 @@ rbush.prototype = {
 
     _splitRoot: function (node, newNode)
     {
-        // split root node
+
         this.data = createNode([node, newNode]);
         this.data.height = node.height + 1;
         this.data.leaf = false;
@@ -385,7 +345,6 @@ rbush.prototype = {
             overlap = intersectionArea(bbox1, bbox2);
             area = bboxArea(bbox1) + bboxArea(bbox2);
 
-            // choose distribution with minimum overlap
             if (overlap < minOverlap) {
                 minOverlap = overlap;
                 index = i;
@@ -393,7 +352,7 @@ rbush.prototype = {
                 minArea = area < minArea ? area : minArea;
 
             } else if (overlap === minOverlap) {
-                // otherwise choose distribution with minimum area
+
                 if (area < minArea) {
                     minArea = area;
                     index = i;
@@ -404,7 +363,6 @@ rbush.prototype = {
         return index;
     },
 
-    // sorts node children by the best axis for split
     _chooseSplitAxis: function (node, m, M)
     {
         var compareMinX = node.leaf ? this.compareMinX : compareNodeMinX,
@@ -412,12 +370,9 @@ rbush.prototype = {
             xMargin = this._allDistMargin(node, m, M, compareMinX),
             yMargin = this._allDistMargin(node, m, M, compareMinY);
 
-        // if total distributions margin value is minimal for x, sort by minX,
-        // otherwise it's already sorted by minY
         if (xMargin < yMargin) node.children.sort(compareMinX);
     },
 
-    // total margin of all possible split distributions where each node is at least m full
     _allDistMargin: function (node, m, M, compare)
     {
         node.children.sort(compare);
@@ -445,7 +400,7 @@ rbush.prototype = {
 
     _adjustParentBBoxes: function (bbox, path, level)
     {
-        // adjust bboxes along the given tree path
+
         for (var i = level; i >= 0; i--) {
             extend(path[i], bbox);
         }
@@ -453,7 +408,7 @@ rbush.prototype = {
 
     _condense: function (path)
     {
-        // go through the path, removing empty nodes and updating bboxes
+
         for (var i = path.length - 1, siblings; i >= 0; i--) {
             if (path[i].children.length === 0) {
                 if (i > 0) {
@@ -497,13 +452,11 @@ function findItem (item, items, equalsFn)
     return -1;
 }
 
-// calculate node's bbox from bboxes of its children
 function calcBBox (node, toBBox)
 {
     distBBox(node, 0, node.children.length, toBBox, node);
 }
 
-// min bounding rectangle of node children from k to p-1
 function distBBox (node, k, p, toBBox, destNode)
 {
     if (!destNode) destNode = createNode(null);
@@ -580,9 +533,6 @@ function createNode (children)
         maxY: -Infinity
     };
 }
-
-// sort an array so that items come in groups of n unsorted items, with groups sorted between each other;
-// combines selection algorithm with binary divide & conquer approach
 
 function multiSelect (arr, left, right, n, compare)
 {

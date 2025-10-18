@@ -1,27 +1,9 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Color = require('./Color');
 var HueToComponent = require('./HueToComponent');
 
-/**
- * Converts HSL (hue, saturation and lightness) values to a Phaser Color object.
- *
- * @function Phaser.Display.Color.HSLToColor
- * @since 3.0.0
- *
- * @param {number} h - The hue value in the range 0 to 1.
- * @param {number} s - The saturation value in the range 0 to 1.
- * @param {number} l - The lightness value in the range 0 to 1.
- *
- * @return {Phaser.Display.Color} A Color object created from the results of the h, s and l values.
- */
 var HSLToColor = function (h, s, l)
 {
-    // achromatic by default
+
     var r = l;
     var g = l;
     var b = l;

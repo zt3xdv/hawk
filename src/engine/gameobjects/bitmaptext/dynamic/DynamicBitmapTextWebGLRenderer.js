@@ -1,29 +1,9 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var GetCalcMatrix = require('../../GetCalcMatrix');
 var TransformMatrix = require('../../components/TransformMatrix');
 var Utils = require('../../../renderer/webgl/Utils');
 
 var tempMatrix = new TransformMatrix();
 
-/**
- * Renders this Game Object with the WebGL Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.DynamicBitmapText#renderWebGL
- * @since 3.0.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLRenderer} renderer - A reference to the current active WebGL renderer.
- * @param {Phaser.GameObjects.DynamicBitmapText} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var DynamicBitmapTextWebGLRenderer = function (renderer, src, camera, parentMatrix)
 {
     var text = src.text;
@@ -40,7 +20,6 @@ var DynamicBitmapTextWebGLRenderer = function (renderer, src, camera, parentMatr
 
     var result = GetCalcMatrix(src, camera, parentMatrix);
 
-    //  This causes a flush if the BitmapText has a Post Pipeline
     renderer.pipelines.preBatch(src);
 
     var spriteMatrix = result.sprite;
@@ -95,10 +74,8 @@ var DynamicBitmapTextWebGLRenderer = function (renderer, src, camera, parentMatr
     var currentLine = 0;
     var lineOffsetX = 0;
 
-    //  Update the bounds - skipped internally if not dirty
     var bounds = src.getTextBounds(false);
 
-    //  In case the method above changed it (word wrapping)
     if (src.maxWidth > 0)
     {
         text = bounds.wrappedText;
@@ -124,7 +101,6 @@ var DynamicBitmapTextWebGLRenderer = function (renderer, src, camera, parentMatr
     {
         charCode = text.charCodeAt(i);
 
-        //  Carriage-return
         if (charCode === 10)
         {
             currentLine++;
@@ -169,7 +145,6 @@ var DynamicBitmapTextWebGLRenderer = function (renderer, src, camera, parentMatr
         lastGlyph = glyph;
         lastCharCode = charCode;
 
-        //  Nothing to render or a space? Then skip to the next glyph
         if (glyphW === 0 || glyphH === 0 || charCode === 32)
         {
             continue;

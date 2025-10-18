@@ -1,10 +1,10 @@
-import Phaser from '../../../dist/engine/main.js';
+import HawkEngine from '../../../dist/engine/main.js';
 import Player from '../entities/Player.js';
 import { escapeHtml, getAuth, apiPost, getAssets, loadPack } from '../utils/Utils.js';
 import { API } from '../../utils/Constants.js';
 import Floor from '../objects/Floor.js';
 
-export default class PreviewScene extends Phaser.Scene {
+export default class PreviewScene extends HawkEngine.Scene {
   constructor() {
     super({ key: 'DashScene' });
     this.player = null;

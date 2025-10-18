@@ -1,24 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Utils = require('../../renderer/webgl/Utils');
 
-/**
- * Renders a stroke outline around the given Shape.
- *
- * @method Phaser.GameObjects.Shape#StrokePathWebGL
- * @since 3.13.0
- * @private
- *
- * @param {Phaser.Renderer.WebGL.WebGLPipeline} pipeline - The WebGL Pipeline used to render this Shape.
- * @param {Phaser.GameObjects.Shape} src - The Game Object shape being rendered in this call.
- * @param {number} alpha - The base alpha value.
- * @param {number} dx - The source displayOriginX.
- * @param {number} dy - The source displayOriginY.
- */
 var StrokePathWebGL = function (pipeline, src, alpha, dx, dy)
 {
     var strokeTint = pipeline.strokeTint;

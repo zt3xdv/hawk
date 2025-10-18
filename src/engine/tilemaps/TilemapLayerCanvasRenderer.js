@@ -1,29 +1,9 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var TransformMatrix = require('../gameobjects/components/TransformMatrix');
 
 var tempMatrix1 = new TransformMatrix();
 var tempMatrix2 = new TransformMatrix();
 var tempMatrix3 = new TransformMatrix();
 
-/**
- * Renders this Game Object with the Canvas Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.Tilemaps.TilemapLayer#renderCanvas
- * @since 3.50.0
- * @private
- *
- * @param {Phaser.Renderer.Canvas.CanvasRenderer} renderer - A reference to the current active Canvas renderer.
- * @param {Phaser.Tilemaps.TilemapLayer} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var TilemapLayerCanvasRenderer = function (renderer, src, camera, parentMatrix)
 {
     var renderTiles = src.cull(camera);
@@ -51,14 +31,12 @@ var TilemapLayerCanvasRenderer = function (renderer, src, camera, parentMatrix)
 
     if (parentMatrix)
     {
-        //  Multiply the camera by the parent matrix
+
         camMatrix.multiplyWithOffset(parentMatrix, -camera.scrollX * src.scrollFactorX, -camera.scrollY * src.scrollFactorY);
 
-        //  Undo the camera scroll
         layerMatrix.e = src.x;
         layerMatrix.f = src.y;
 
-        //  Multiply by the Sprite matrix, store result in calcMatrix
         camMatrix.multiply(layerMatrix, calcMatrix);
 
         calcMatrix.copyToContext(ctx);

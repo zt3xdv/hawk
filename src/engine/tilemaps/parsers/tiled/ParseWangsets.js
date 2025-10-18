@@ -1,29 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Parses out the Wangset information from Tiled 1.1.5+ map data, if present.
- *
- * Since a given tile can be in more than one wangset, the resulting properties
- * are nested. `tile.data.wangid[someWangsetName]` will return the array-based wang id in
- * this implementation.
- *
- * Note that we're not guaranteed that there will be any 'normal' tiles if the only
- * thing in the tilset are wangtile definitions, so this has to be parsed separately.
- *
- * See https://doc.mapeditor.org/en/latest/manual/using-wang-tiles/ for more information.
- *
- * @function Phaser.Tilemaps.Parsers.Tiled.ParseWangsets
- * @since 3.53.0
- *
- * @param {Array.<object>} wangsets - The array of wangset objects (parsed from JSON)
- * @param {object} datas - The field into which to put wangset data from Tiled.
- *
- * @return {object} An object containing the tileset and image collection data.
- */
 var ParseWangsets = function (wangsets, datas)
 {
     for (var w = 0; w < wangsets.length; w++)
@@ -45,7 +19,6 @@ var ParseWangsets = function (wangsets, datas)
             var color;
             var colorIndex;
 
-            // Tiled before v2020.09.09
             if (Array.isArray(wangset.edgecolors))
             {
                 for (c = 0; c < wangset.edgecolors.length; c++)
@@ -74,7 +47,6 @@ var ParseWangsets = function (wangsets, datas)
                 }
             }
 
-            // Tiled after v2020.09.09
             if (Array.isArray(wangset.colors))
             {
                 for (c = 0; c < wangset.colors.length; c++)
@@ -89,7 +61,6 @@ var ParseWangsets = function (wangsets, datas)
                 }
             }
 
-            // The wangid layout is north, northeast, east, southeast, etc.
             var idLayout = [
                 edgeColors, cornerColors, edgeColors, cornerColors,
                 edgeColors, cornerColors, edgeColors, cornerColors

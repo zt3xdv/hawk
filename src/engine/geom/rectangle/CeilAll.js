@@ -1,21 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Rounds a Rectangle's position and size up to the smallest integer greater than or equal to each respective value.
- *
- * @function Phaser.Geom.Rectangle.CeilAll
- * @since 3.0.0
- *
- * @generic {Phaser.Geom.Rectangle} O - [rect,$return]
- *
- * @param {Phaser.Geom.Rectangle} rect - The Rectangle to modify.
- *
- * @return {Phaser.Geom.Rectangle} The modified Rectangle.
- */
 var CeilAll = function (rect)
 {
     rect.x = Math.ceil(rect.x);

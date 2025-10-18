@@ -1,26 +1,6 @@
-/**
- * @author       Florian Vazelle
- * @author       Geoffrey Glaive
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Point = require('../point/Point');
 var LineToCircle = require('./LineToCircle');
 
-/**
- * Checks for intersection between the line segment and circle,
- * and returns the intersection points as a Point object array.
- *
- * @function Phaser.Geom.Intersects.GetLineToCircle
- * @since 3.0.0
- *
- * @param {Phaser.Geom.Line} line - The line segment to check.
- * @param {Phaser.Geom.Circle} circle - The circle to check against the line.
- * @param {array} [out] - An optional array in which to store the points of intersection.
- *
- * @return {array} An array with the points of intersection if objects intersect, otherwise an empty array.
- */
 var GetLineToCircle = function (line, circle, out)
 {
     if (out === undefined) { out = []; }

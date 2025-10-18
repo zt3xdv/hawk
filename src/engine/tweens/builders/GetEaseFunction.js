@@ -1,50 +1,25 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var EaseMap = require('../../math/easing/EaseMap');
 var UppercaseFirst = require('../../utils/string/UppercaseFirst');
 
-/**
- * This internal function is used to return the correct ease function for a Tween.
- *
- * It can take a variety of input, including an EaseMap based string, or a custom function.
- *
- * @function Phaser.Tweens.Builders.GetEaseFunction
- * @since 3.0.0
- *
- * @param {(string|function)} ease - The ease to find. This can be either a string from the EaseMap, or a custom function.
- * @param {number[]} [easeParams] - An optional array of ease parameters to go with the ease.
- *
- * @return {function} The ease function.
- */
 var GetEaseFunction = function (ease, easeParams)
 {
-    //  Default ease function
+
     var easeFunction = EaseMap.Power0;
 
-    //  Prepare ease function
     if (typeof ease === 'string')
     {
-        //  String based look-up
 
-        //  1) They specified it correctly
         if (EaseMap.hasOwnProperty(ease))
         {
             easeFunction = EaseMap[ease];
         }
         else
         {
-            //  Do some string manipulation to try and find it
+
             var direction = '';
 
             if (ease.indexOf('.'))
             {
-                //  quad.in = Quad.easeIn
-                //  quad.out = Quad.easeOut
-                //  quad.inout = Quad.easeInOut
 
                 direction = ease.substring(ease.indexOf('.') + 1);
 
@@ -74,14 +49,13 @@ var GetEaseFunction = function (ease, easeParams)
     }
     else if (typeof ease === 'function')
     {
-        //  Custom function
+
         easeFunction = ease;
     }
 
-    //  No custom ease parameters?
     if (!easeParams)
     {
-        //  Return ease function
+
         return easeFunction;
     }
 
@@ -89,7 +63,6 @@ var GetEaseFunction = function (ease, easeParams)
 
     cloneParams.unshift(0);
 
-    //  Return ease function with custom ease parameters
     return function (v)
     {
         cloneParams[0] = v;

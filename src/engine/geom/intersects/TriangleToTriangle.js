@@ -1,29 +1,9 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var ContainsArray = require('../triangle/ContainsArray');
 var Decompose = require('../triangle/Decompose');
 var LineToLine = require('./LineToLine');
 
-/**
- * Checks if two Triangles intersect.
- *
- * A Triangle intersects another Triangle if any pair of their lines intersects or if any point of one Triangle is within the other Triangle. Thus, the Triangles are considered "solid".
- *
- * @function Phaser.Geom.Intersects.TriangleToTriangle
- * @since 3.0.0
- *
- * @param {Phaser.Geom.Triangle} triangleA - The first Triangle to check for intersection.
- * @param {Phaser.Geom.Triangle} triangleB - The second Triangle to check for intersection.
- *
- * @return {boolean} `true` if the Triangles intersect, otherwise `false`.
- */
 var TriangleToTriangle = function (triangleA, triangleB)
 {
-    //  First the cheapest ones:
 
     if (
         triangleA.left > triangleB.right ||
@@ -42,7 +22,6 @@ var TriangleToTriangle = function (triangleA, triangleB)
     var lineBB = triangleB.getLineB();
     var lineBC = triangleB.getLineC();
 
-    //  Now check the lines against each line of TriangleB
     if (LineToLine(lineAA, lineBA) || LineToLine(lineAA, lineBB) || LineToLine(lineAA, lineBC))
     {
         return true;
@@ -58,8 +37,6 @@ var TriangleToTriangle = function (triangleA, triangleB)
         return true;
     }
 
-    //  Nope, so check to see if any of the points of triangleA are within triangleB
-
     var points = Decompose(triangleA);
     var within = ContainsArray(triangleB, points, true);
 
@@ -67,8 +44,6 @@ var TriangleToTriangle = function (triangleA, triangleB)
     {
         return true;
     }
-
-    //  Finally check to see if any of the points of triangleB are within triangleA
 
     points = Decompose(triangleB);
     within = ContainsArray(triangleA, points, true);

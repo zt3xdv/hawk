@@ -30,6 +30,7 @@ SERVERS.forEach(s => {
 app.disable('x-powered-by');
 
 app.use(express.static(join(__dirname, 'public')));
+app.use(express.static(join(__dirname, 'assets')));
 app.use(express.static(join(__dirname, 'dist')));
 
 authRoutes.setApp(app);

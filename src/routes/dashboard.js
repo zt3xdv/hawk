@@ -1,6 +1,7 @@
 import Game from "../game/Game.js";
 import Preview from "../game/Preview.js";
 import { escapeHtml, apiGet } from '../game/utils/Utils.js';
+import { requestInstall, isInstalled } from '../utils/Utils.js';
 import { DISCORD_SERVER } from '../utils/Constants.js';
 import Cache from '../utils/Cache.js';
 
@@ -12,7 +13,10 @@ export function renderDashboard() {
       <span><canv-icon src="${Cache.getBlob('assets/icons/flag.png').dataUrl}"></canv-icon>Join our <strong>Discord</strong> server</span>
     </button>
     <button class="btn" id="support">
-      <span><canv-icon src="${Cache.getBlob('assets/icons/kofi.png').dataUrl}"></canv-icon>Support us</span>
+      <span><canv-icon src="${Cache.getBlob('assets/icons/kofi.png').dataUrl}"></canv-icon>Become a <strong>supporter</strong>!</span>
+    </button>
+    <button class="btn" id="install">
+      <span><canv-icon src="${Cache.getBlob('assets/icons/createintegration.png').dataUrl}"></canv-icon>Install <strong>Hawk</strong> App</span>
     </button>
   </div>
   <hr>
@@ -48,6 +52,7 @@ export function renderDashboard() {
   const preview = new Preview(previewEl);
 
   const discordBtn = document.getElementById('discord');
+  const installBtn = document.getElementById('install');
   const playBtnTitle = document.getElementById('title');
   const btnText = playBtnTitle.querySelector('.btn-text');
   const btnSpinner = playBtnTitle.querySelector('.btn-spinner');
@@ -120,6 +125,11 @@ export function renderDashboard() {
 
   discordBtn.addEventListener('click', () => {
     location.href = DISCORD_SERVER;
+  });
+  
+  installBtn.style.display = isInstalled() ? installBtn.style.display : "none";
+  installBtn.addEventListener('click', () => {
+    requestInstall();
   });
 
   playBtnTitle.addEventListener('click', () => {

@@ -1,21 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-// The 2D area of a triangle. The area value is always non-negative.
-
-/**
- * Returns the area of a Triangle.
- *
- * @function Phaser.Geom.Triangle.Area
- * @since 3.0.0
- *
- * @param {Phaser.Geom.Triangle} triangle - The Triangle to use.
- *
- * @return {number} The area of the Triangle, always non-negative.
- */
 var Area = function (triangle)
 {
     var x1 = triangle.x1;

@@ -1,26 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @author       Florian Mertens
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Point = require('../point/Point');
 
-/**
- * Get the nearest point on a line perpendicular to the given point.
- *
- * @function Phaser.Geom.Line.GetNearestPoint
- * @since 3.16.0
- *
- * @generic {Phaser.Geom.Point} O - [out,$return]
- *
- * @param {Phaser.Geom.Line} line - The line to get the nearest point on.
- * @param {(Phaser.Geom.Point|object)} point - The point to get the nearest point to.
- * @param {(Phaser.Geom.Point|object)} [out] - An optional point, or point-like object, to store the coordinates of the nearest point on the line.
- *
- * @return {(Phaser.Geom.Point|object)} The nearest point on the line.
- */
 var GetNearestPoint = function (line, point, out)
 {
     if (out === undefined) { out = new Point(); }

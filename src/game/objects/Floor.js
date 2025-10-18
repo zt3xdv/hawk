@@ -1,6 +1,6 @@
-import Phaser from '../../../dist/engine/main.js';
+import HawkEngine from '../../../dist/engine/main.js';
 
-export default class Floor extends Phaser.GameObjects.Container {
+export default class Floor extends HawkEngine.GameObjects.Container {
   constructor(scene, {
     textureKey = 'floor_dynamic',
     mapPixelWidth = 2048,

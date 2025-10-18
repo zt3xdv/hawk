@@ -1,14 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @author       Pavle Goloskokovic <pgoloskokovic@gmail.com> (http://prunegames.com)
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.Sound
- */
-
 module.exports = {
 
     SoundManagerCreator: require('./SoundManagerCreator'),

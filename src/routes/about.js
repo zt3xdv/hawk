@@ -20,7 +20,7 @@ export function renderAbout() {
     <span class="description">About Hawk.</span>
   </div>
   <hr>
-    <p>A game written in <strong>Javascript</strong> using Hawk (based in <a href="https://phaser.io/">Phaser</a>) engine, check <a href="/help">help page</a> for controls and more.</p>
+    <p>A game written in <strong>Javascript</strong> using Hawk engine, check <a href="/help">help page</a> for controls and more.</p>
     
     <h2>Contact</h2>
     <p>You can contact us on <strong>Discord</strong> <a href="${DISCORD_SERVER}">here</a>.</p>

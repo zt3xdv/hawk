@@ -1,10 +1,6 @@
-/**
-* A polyfill for Array.forEach
-* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
-*/
 if (!Array.prototype.forEach)
 {
-    Array.prototype.forEach = function (fun /*, thisArg */)
+    Array.prototype.forEach = function (fun )
     {
         'use strict';
 

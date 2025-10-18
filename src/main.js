@@ -3,10 +3,30 @@ import Features from './game/device/Features.js';
 import Cache from './utils/Cache.js';
 import { list } from './utils/Icons.js';
 import { ASSETS_VERSION, TIPS } from './utils/ConstantsPackage.js';
-import { getRandomFromArray } from './utils/Utils.js';
+import { getRandomFromArray, requestNotificationPermission } from './utils/Utils.js';
 import * as Components from './components/components.js';
 
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.deferredInstallPrompt = e;
+});
+
 window.addEventListener('DOMContentLoaded', async () => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(registration => {
+        console.log('Service worker registered sucessfully.');
+      })
+      .catch(error => {
+        console.error('Error registering service worker:', error);
+      });
+  }
+
+  if (Notification.permission === 'default') {
+    // Work in progress...
+    // requestNotificationPermission();
+  }
+
   const loading = document.getElementById("loading");
   function randomTip() {
     loading.querySelector("#tip").innerHTML = getRandomFromArray(TIPS);
@@ -58,8 +78,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       "assets/game/terrain.png",
       "assets/game/animated.png",
       "assets/game/grass2.png",
-      "assets/game/grass.png",
       "assets/game/dirt.png",
+      "assets/game/grass2_snow.png",
+      "assets/game/dirt_snow.png",
       "assets/masks/lightMask.png",
       "assets/masks/flame.png",
       "assets/masks/candle_flame.png",

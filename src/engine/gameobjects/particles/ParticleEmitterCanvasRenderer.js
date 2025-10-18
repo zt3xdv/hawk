@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var RectangleToRectangle = require('../../geom/intersects/RectangleToRectangle');
 var TransformMatrix = require('../components/TransformMatrix');
 
@@ -12,20 +6,6 @@ var tempMatrix2 = new TransformMatrix();
 var tempMatrix3 = new TransformMatrix();
 var tempMatrix4 = new TransformMatrix();
 
-/**
- * Renders this Game Object with the Canvas Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.Particles.Emitter#renderCanvas
- * @since 3.60.0
- * @private
- *
- * @param {Phaser.Renderer.Canvas.CanvasRenderer} renderer - A reference to the current active Canvas renderer.
- * @param {Phaser.GameObjects.Particles.ParticleEmitter} emitter - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var ParticleEmitterCanvasRenderer = function (renderer, emitter, camera, parentMatrix)
 {
     var camMatrix = tempMatrix1;
@@ -91,11 +71,9 @@ var ParticleEmitterCanvasRenderer = function (renderer, emitter, camera, parentM
 
         camMatrix.multiplyWithOffset(managerMatrix, -camera.scrollX * scrollFactorX, -camera.scrollY * scrollFactorY);
 
-        //  Undo the camera scroll
         particleMatrix.e = particle.x;
         particleMatrix.f = particle.y;
 
-        //  Multiply by the particle matrix, store result in calcMatrix
         camMatrix.multiply(particleMatrix, calcMatrix);
 
         var frame = particle.frame;

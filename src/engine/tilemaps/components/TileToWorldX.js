@@ -1,22 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Converts from tile X coordinates (tile units) to world X coordinates (pixels), factoring in the
- * layer's position, scale and scroll.
- *
- * @function Phaser.Tilemaps.Components.TileToWorldX
- * @since 3.0.0
- *
- * @param {number} tileX - The x coordinate, in tiles, not pixels.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera to use when calculating the tile index from the world values.
- * @param {Phaser.Tilemaps.LayerData} layer - The Tilemap Layer to act upon.
- *
- * @return {number}
- */
 var TileToWorldX = function (tileX, camera, layer)
 {
     var tileWidth = layer.baseTileWidth;

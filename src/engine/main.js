@@ -1,19 +1,9 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 require('./polyfills/requestVideoFrame');
 
 var CONST = require('./const');
 var Extend = require('./utils/object/Extend');
 
-/**
- * @namespace Phaser
- */
-
-var Phaser = {
+var HawkEngine = {
 
     Actions: require('./actions'),
     Animations: require('./animations'),
@@ -51,23 +41,6 @@ var Phaser = {
 
 };
 
-Phaser = Extend(false, Phaser, CONST);
-
-/**
- * The root types namespace.
- *
- * @namespace Phaser.Types
- * @since 3.17.0
- */
-
-//  Export it
-
-module.exports = Phaser;
-
-global.Phaser = Phaser;
-
-/*
- * "Documentation is like pizza: when it is good, it is very, very good;
- * and when it is bad, it is better than nothing."
- *  -- Dick Brandon
- */
+HawkEngine = Extend(false, HawkEngine, CONST);
+module.exports = HawkEngine;
+global.HawkEngine = HawkEngine;

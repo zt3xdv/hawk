@@ -1,19 +1,8 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var CONST = require('./const');
 var Extend = require('../utils/object/Extend');
 
-/**
- * @namespace Phaser.Math
- */
+var HawkMath = {
 
-var PhaserMath = {
-
-    //  Collections of functions
     Angle: require('./angle/'),
     Distance: require('./distance/'),
     Easing: require('./easing/'),
@@ -22,10 +11,8 @@ var PhaserMath = {
     Pow2: require('./pow2/'),
     Snap: require('./snap/'),
 
-    //  Expose the RNG Class
     RandomDataGenerator: require('./random-data-generator/RandomDataGenerator'),
 
-    //  Single functions
     Average: require('./Average'),
     Bernstein: require('./Bernstein'),
     Between: require('./Between'),
@@ -66,7 +53,6 @@ var PhaserMath = {
     Within: require('./Within'),
     Wrap: require('./Wrap'),
 
-    //  Vector classes
     Vector2: require('./Vector2'),
     Vector3: require('./Vector3'),
     Vector4: require('./Vector4'),
@@ -77,10 +63,6 @@ var PhaserMath = {
 
 };
 
-//   Merge in the consts
+HawkMath = Extend(false, HawkMath, CONST);
 
-PhaserMath = Extend(false, PhaserMath, CONST);
-
-//  Export it
-
-module.exports = PhaserMath;
+module.exports = HawkMath;

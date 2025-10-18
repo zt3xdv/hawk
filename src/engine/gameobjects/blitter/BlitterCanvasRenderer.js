@@ -1,23 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Renders this Game Object with the Canvas Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.Blitter#renderCanvas
- * @since 3.0.0
- * @private
- *
- * @param {Phaser.Renderer.Canvas.CanvasRenderer} renderer - A reference to the current active Canvas renderer.
- * @param {Phaser.GameObjects.Blitter} src - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var BlitterCanvasRenderer = function (renderer, src, camera, parentMatrix)
 {
     var list = src.getRenderList();
@@ -33,13 +13,12 @@ var BlitterCanvasRenderer = function (renderer, src, camera, parentMatrix)
 
     if (alpha === 0)
     {
-        //  Nothing to see, so abort early
+
         return;
     }
 
     camera.addToRenderList(src);
 
-    //  Blend Mode + Scale Mode
     ctx.globalCompositeOperation = renderer.blendModes[src.blendMode];
 
     ctx.imageSmoothingEnabled = !src.frame.source.scaleMode;
@@ -56,7 +35,6 @@ var BlitterCanvasRenderer = function (renderer, src, camera, parentMatrix)
 
     var roundPixels = camera.roundPixels;
 
-    //  Render bobs
     for (var i = 0; i < list.length; i++)
     {
         var bob = list[i];

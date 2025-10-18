@@ -1,9 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var Geom = require('../../geom/');
 var GetTilesWithin = require('./GetTilesWithin');
 var Intersects = require('../../geom/intersects/');
@@ -20,22 +14,6 @@ var point = new Vector2();
 var pointStart = new Vector2();
 var pointEnd = new Vector2();
 
-/**
- * Gets the tiles that overlap with the given shape in the given layer. The shape must be a Circle,
- * Line, Rectangle or Triangle. The shape should be in world coordinates.
- * 
- * **Note:** This method currently only works with orthogonal tilemap layers.
- *
- * @function Phaser.Tilemaps.Components.GetTilesWithinShape
- * @since 3.0.0
- *
- * @param {(Phaser.Geom.Circle|Phaser.Geom.Line|Phaser.Geom.Rectangle|Phaser.Geom.Triangle)} shape - A shape in world (pixel) coordinates
- * @param {Phaser.Types.Tilemaps.FilteringOptions} filteringOptions - Optional filters to apply when getting the tiles.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera to use when calculating the tile index from the world values.
- * @param {Phaser.Tilemaps.LayerData} layer - The Tilemap Layer to act upon.
- *
- * @return {Phaser.Tilemaps.Tile[]} Array of Tile objects.
- */
 var GetTilesWithinShape = function (shape, filteringOptions, camera, layer)
 {
     if (layer.orientation !== CONST.ORTHOGONAL)
@@ -46,7 +24,6 @@ var GetTilesWithinShape = function (shape, filteringOptions, camera, layer)
 
     if (shape === undefined) { return []; }
 
-    // intersectTest is a function with parameters: shape, rect
     var intersectTest = NOOP;
 
     if (shape instanceof Geom.Circle)
@@ -66,20 +43,16 @@ var GetTilesWithinShape = function (shape, filteringOptions, camera, layer)
         intersectTest = Intersects.LineToRectangle;
     }
 
-    // Top left corner of the shapes's bounding box, rounded down to include partial tiles
     layer.tilemapLayer.worldToTileXY(shape.left, shape.top, true, pointStart, camera);
 
     var xStart = pointStart.x;
     var yStart = pointStart.y;
 
-    // Bottom right corner of the shapes's bounding box, rounded up to include partial tiles
     layer.tilemapLayer.worldToTileXY(shape.right, shape.bottom, false, pointEnd, camera);
 
     var xEnd = Math.ceil(pointEnd.x);
     var yEnd = Math.ceil(pointEnd.y);
 
-    // Tiles within bounding rectangle of shape. Bounds are forced to be at least 1 x 1 tile in size
-    // to grab tiles for shapes that don't have a height or width (e.g. a horizontal line).
     var width = Math.max(xEnd - xStart, 1);
     var height = Math.max(yEnd - yStart, 1);
 

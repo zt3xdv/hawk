@@ -10,7 +10,7 @@ import HouseOne from '../objects/building/HouseOne.js';
 import Campfire from '../objects/Campfire.js';
 import Crate from '../objects/Crate.js';
 import Outdoor from '../objects/Outdoor.js';
-import Phaser from '../../../dist/engine/main.js';
+import HawkEngine from '../../../dist/engine/main.js';
 
 const CHUNK_SIZE = 500;
 const PAD = 64;
@@ -300,12 +300,12 @@ export default class MapObjectManager {
     this._updateChunks();
     const cam = this.scene.cameras.main;
     const view = cam.worldView;
-    const viewPadded = new Phaser.Geom.Rectangle(view.x - PAD, view.y - PAD, view.width + PAD * 2, view.height + PAD * 2);
+    const viewPadded = new HawkEngine.Geom.Rectangle(view.x - PAD, view.y - PAD, view.width + PAD * 2, view.height + PAD * 2);
     this.list.forEach(element => {
       if (!element) return;
       const child = element.image || element.sprite || element;
       if (!child || !child.getBounds) return;
-      const inView = Phaser.Geom.Intersects.RectangleToRectangle(viewPadded, child.getBounds());
+      const inView = HawkEngine.Geom.Intersects.RectangleToRectangle(viewPadded, child.getBounds());
       if (typeof child.setVisible === 'function') child.setVisible(inView);
       if (child.body && typeof child.body.enable !== 'undefined') child.body.enable = inView;
       element.active = inView;

@@ -1,17 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * A 16 color palette by [Arne](http://androidarts.com/palette/16pal.htm)
- *
- * @name Phaser.Create.Palettes.ARNE16
- * @since 3.0.0
- *
- * @type {Phaser.Types.Create.Palette}
- */
 module.exports = {
     0: '#000',
     1: '#9D9D9D',

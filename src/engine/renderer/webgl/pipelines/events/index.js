@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.Renderer.WebGL.Pipelines.Events
- */
-
 module.exports = {
 
     AFTER_FLUSH: require('./AFTER_FLUSH_EVENT'),

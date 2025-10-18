@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.GameObjects.Events
- */
-
 module.exports = {
 
     ADDED_TO_SCENE: require('./ADDED_TO_SCENE_EVENT'),

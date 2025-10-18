@@ -1,30 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Calculate the full bounds, in local and world space, of a BitmapText Game Object.
- *
- * Returns a BitmapTextSize object that contains global and local variants of the Game Objects x and y coordinates and
- * its width and height. Also includes an array of the line lengths and all word positions.
- *
- * The global position and size take into account the Game Object's position and scale.
- *
- * The local position and size just takes into account the font data.
- *
- * @function GetBitmapTextSize
- * @since 3.0.0
- * @private
- *
- * @param {(Phaser.GameObjects.DynamicBitmapText|Phaser.GameObjects.BitmapText)} src - The BitmapText to calculate the bounds values for.
- * @param {boolean} [round=false] - Whether to round the positions to the nearest integer.
- * @param {boolean} [updateOrigin=false] - Whether to update the origin of the BitmapText after bounds calculations?
- * @param {object} [out] - Object to store the results in, to save constant object creation. If not provided an empty object is returned.
- *
- * @return {Phaser.Types.GameObjects.BitmapText.BitmapTextSize} The calculated bounds values of the BitmapText.
- */
 var GetBitmapTextSize = function (src, round, updateOrigin, out)
 {
     if (updateOrigin === undefined) { updateOrigin = false; }
@@ -106,7 +79,6 @@ var GetBitmapTextSize = function (src, round, updateOrigin, out)
     var characters = [];
     var current = null;
 
-    // Measure the width of the text
     var measureTextWidth = function (text, fontData)
     {
         var width = 0;
@@ -124,15 +96,13 @@ var GetBitmapTextSize = function (src, round, updateOrigin, out)
 
         return width * sx;
     };
-    
-    //  Scan for breach of maxWidth and insert carriage-returns
+
     if (maxWidth > 0)
     {
-        // Split the text into lines
+
         lines = text.split('\n');
         var wrappedLines = [];
 
-        // Loop through each line
         for (i = 0; i < lines.length; i++)
         {
             var line = lines[i];
@@ -141,18 +111,16 @@ var GetBitmapTextSize = function (src, round, updateOrigin, out)
             var lineToCheck = '';
             var lineWithWord = '';
 
-            // Loop through each character in a line
             for (j = 0; j < line.length; j++)
             {
                 charCode = line.charCodeAt(j);
 
                 word += line[j];
 
-                // White space or end of line?
                 if (charCode === wordWrapCharCode || j === line.length - 1)
                 {
                     lineWithWord = lineToCheck + word;
-                    
+
                     var textWidth = measureTextWidth(lineWithWord, src.fontData);
 
                     if (textWidth <= maxWidth)
@@ -161,8 +129,7 @@ var GetBitmapTextSize = function (src, round, updateOrigin, out)
                     }
                     else
                     {
-                        // If the current word is too long to fit on a line, wrap it
-                        // Remove trailing word wrap char to keep text length the same
+
                         wrappedLine = wrappedLine.slice(0, -1);
                         wrappedLine += (wrappedLine ? '\n' : '') + lineToCheck;
                         lineToCheck = word;
@@ -291,7 +258,7 @@ var GetBitmapTextSize = function (src, round, updateOrigin, out)
         {
             if (current === null)
             {
-                //  We're starting a new word, recording the starting index, etc
+
                 current = { word: '', i: charIndex, x: xAdvance, y: yAdvance, w: 0, h: lineHeight };
             }
 
@@ -322,7 +289,6 @@ var GetBitmapTextSize = function (src, round, updateOrigin, out)
         charIndex++;
     }
 
-    //  Last word
     if (current !== null)
     {
         words.push({
@@ -347,7 +313,6 @@ var GetBitmapTextSize = function (src, round, updateOrigin, out)
         shortestLine = currentLineWidth;
     }
 
-    //  Adjust all of the character positions based on alignment
     if (align > 0)
     {
         for (var c = 0; c < characters.length; c++)
@@ -373,7 +338,7 @@ var GetBitmapTextSize = function (src, round, updateOrigin, out)
 
     var local = out.local;
     var global = out.global;
-    
+
     lines = out.lines;
 
     local.x = bx * scale;

@@ -1,8 +1,4 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
+
 
 var Class = require('../utils/Class');
 var CONST = require('./const');
@@ -17,40 +13,7 @@ var PluginCache = require('../plugins/PluginCache');
 var SceneEvents = require('../scene/events');
 var XHRSettings = require('./XHRSettings');
 
-/**
- * @classdesc
- * The Loader handles loading all external content such as Images, Sounds, Texture Atlases and data files.
- * You typically interact with it via `this.load` in your Scene. Scenes can have a `preload` method, which is always
- * called before the Scenes `create` method, allowing you to preload assets that the Scene may need.
- *
- * If you call any `this.load` methods from outside of `Scene.preload` then you need to start the Loader going
- * yourself by calling `Loader.start()`. It's only automatically started during the Scene preload.
- *
- * The Loader uses a combination of tag loading (eg. Audio elements) and XHR and provides progress and completion events.
- * Files are loaded in parallel by default. The amount of concurrent connections can be controlled in your Game Configuration.
- *
- * Once the Loader has started loading you are still able to add files to it. These can be injected as a result of a loader
- * event, the type of file being loaded (such as a pack file) or other external events. As long as the Loader hasn't finished
- * simply adding a new file to it, while running, will ensure it's added into the current queue.
- *
- * Every Scene has its own instance of the Loader and they are bound to the Scene in which they are created. However,
- * assets loaded by the Loader are placed into global game-level caches. For example, loading an XML file will place that
- * file inside `Game.cache.xml`, which is accessible from every Scene in your game, no matter who was responsible
- * for loading it. The same is true of Textures. A texture loaded in one Scene is instantly available to all other Scenes
- * in your game.
- *
- * The Loader works by using custom File Types. These are stored in the FileTypesManager, which injects them into the Loader
- * when it's instantiated. You can create your own custom file types by extending either the File or MultiFile classes.
- * See those files for more details.
- *
- * @class LoaderPlugin
- * @extends Phaser.Events.EventEmitter
- * @memberof Phaser.Loader
- * @constructor
- * @since 3.0.0
- *
- * @param {Phaser.Scene} scene - The Scene which owns this Loader instance.
- */
+
 var LoaderPlugin = new Class({
 
     Extends: EventEmitter,
@@ -64,105 +27,31 @@ var LoaderPlugin = new Class({
         var gameConfig = scene.sys.game.config;
         var sceneConfig = scene.sys.settings.loader;
 
-        /**
-         * The Scene which owns this Loader instance.
-         *
-         * @name Phaser.Loader.LoaderPlugin#scene
-         * @type {Phaser.Scene}
-         * @since 3.0.0
-         */
+        
         this.scene = scene;
 
-        /**
-         * A reference to the Scene Systems.
-         *
-         * @name Phaser.Loader.LoaderPlugin#systems
-         * @type {Phaser.Scenes.Systems}
-         * @since 3.0.0
-         */
+        
         this.systems = scene.sys;
 
-        /**
-         * A reference to the global Cache Manager.
-         *
-         * @name Phaser.Loader.LoaderPlugin#cacheManager
-         * @type {Phaser.Cache.CacheManager}
-         * @since 3.7.0
-         */
+        
         this.cacheManager = scene.sys.cache;
 
-        /**
-         * A reference to the global Texture Manager.
-         *
-         * @name Phaser.Loader.LoaderPlugin#textureManager
-         * @type {Phaser.Textures.TextureManager}
-         * @since 3.7.0
-         */
+        
         this.textureManager = scene.sys.textures;
 
-        /**
-         * A reference to the global Scene Manager.
-         *
-         * @name Phaser.Loader.LoaderPlugin#sceneManager
-         * @type {Phaser.Scenes.SceneManager}
-         * @protected
-         * @since 3.16.0
-         */
+        
         this.sceneManager = scene.sys.game.scene;
 
         //  Inject the available filetypes into the Loader
         FileTypesManager.install(this);
 
-        /**
-         * An optional prefix that is automatically prepended to the start of every file key.
-         * If prefix was `MENU.` and you load an image with the key 'Background' the resulting key would be `MENU.Background`.
-         * You can set this directly, or call `Loader.setPrefix()`. It will then affect every file added to the Loader
-         * from that point on. It does _not_ change any file already in the load queue.
-         *
-         * @name Phaser.Loader.LoaderPlugin#prefix
-         * @type {string}
-         * @default ''
-         * @since 3.7.0
-         */
+        
         this.prefix = '';
 
-        /**
-         * The value of `path`, if set, is placed before any _relative_ file path given. For example:
-         *
-         * ```javascript
-         * this.load.path = "images/sprites/";
-         * this.load.image("ball", "ball.png");
-         * this.load.image("tree", "level1/oaktree.png");
-         * this.load.image("boom", "http://server.com/explode.png");
-         * ```
-         *
-         * Would load the `ball` file from `images/sprites/ball.png` and the tree from
-         * `images/sprites/level1/oaktree.png` but the file `boom` would load from the URL
-         * given as it's an absolute URL.
-         *
-         * Please note that the path is added before the filename but *after* the baseURL (if set.)
-         *
-         * If you set this property directly then it _must_ end with a "/". Alternatively, call `setPath()` and it'll do it for you.
-         *
-         * @name Phaser.Loader.LoaderPlugin#path
-         * @type {string}
-         * @default ''
-         * @since 3.0.0
-         */
+        
         this.path = '';
 
-        /**
-         * If you want to append a URL before the path of any asset you can set this here.
-         *
-         * Useful if allowing the asset base url to be configured outside of the game code.
-         *
-         * If you set this property directly then it _must_ end with a "/". Alternatively, call `setBaseURL()` and it'll do it for you.
-         *
-         * @name Phaser.Loader.LoaderPlugin#baseURL
-         * @type {string}
-         * @default ''
-         * @since 3.0.0
-         */
+        
         this.baseURL = '';
 
         this.setBaseURL(GetFastValue(sceneConfig, 'baseURL', gameConfig.loaderBaseURL));
@@ -171,26 +60,10 @@ var LoaderPlugin = new Class({
 
         this.setPrefix(GetFastValue(sceneConfig, 'prefix', gameConfig.loaderPrefix));
 
-        /**
-         * The number of concurrent / parallel resources to try and fetch at once.
-         *
-         * Old browsers limit 6 requests per domain; modern ones, especially those with HTTP/2 don't limit it at all.
-         *
-         * The default is 32 but you can change this in your Game Config, or by changing this property before the Loader starts.
-         *
-         * @name Phaser.Loader.LoaderPlugin#maxParallelDownloads
-         * @type {number}
-         * @since 3.0.0
-         */
+        
         this.maxParallelDownloads = GetFastValue(sceneConfig, 'maxParallelDownloads', gameConfig.loaderMaxParallelDownloads);
 
-        /**
-         * xhr specific global settings (can be overridden on a per-file basis)
-         *
-         * @name Phaser.Loader.LoaderPlugin#xhr
-         * @type {Phaser.Types.Loader.XHRSettingsObject}
-         * @since 3.0.0
-         */
+        
         this.xhr = XHRSettings(
             GetFastValue(sceneConfig, 'responseType', gameConfig.loaderResponseType),
             GetFastValue(sceneConfig, 'async', gameConfig.loaderAsync),
@@ -200,217 +73,65 @@ var LoaderPlugin = new Class({
             GetFastValue(sceneConfig, 'withCredentials', gameConfig.loaderWithCredentials)
         );
 
-        /**
-         * The crossOrigin value applied to loaded images. Very often this needs to be set to 'anonymous'.
-         *
-         * @name Phaser.Loader.LoaderPlugin#crossOrigin
-         * @type {string}
-         * @since 3.0.0
-         */
+        
         this.crossOrigin = GetFastValue(sceneConfig, 'crossOrigin', gameConfig.loaderCrossOrigin);
 
-        /**
-         * Optional load type for image files. `XHR` is the default. Set to `HTMLImageElement` to load images using the Image tag instead.
-         *
-         * @name Phaser.Loader.LoaderPlugin#imageLoadType
-         * @type {string}
-         * @since 3.60.0
-         */
+        
         this.imageLoadType = GetFastValue(sceneConfig, 'imageLoadType', gameConfig.loaderImageLoadType);
 
-        /**
-         * An array of all schemes that the Loader considers as being 'local'.
-         *
-         * This is populated by the `Phaser.Core.Config#loaderLocalScheme` game configuration setting and defaults to
-         * `[ 'file://', 'capacitor://' ]`. Additional local schemes can be added to this array as needed.
-         *
-         * @name Phaser.Loader.LoaderPlugin#localSchemes
-         * @type {string[]}
-         * @since 3.60.0
-         */
+        
         this.localSchemes = GetFastValue(sceneConfig, 'localScheme', gameConfig.loaderLocalScheme);
 
-        /**
-         * The total number of files to load. It may not always be accurate because you may add to the Loader during the process
-         * of loading, especially if you load a Pack File. Therefore this value can change, but in most cases remains static.
-         *
-         * @name Phaser.Loader.LoaderPlugin#totalToLoad
-         * @type {number}
-         * @default 0
-         * @since 3.0.0
-         */
+        
         this.totalToLoad = 0;
 
-        /**
-         * The progress of the current load queue, as a float value between 0 and 1.
-         * This is updated automatically as files complete loading.
-         * Note that it is possible for this value to go down again if you add content to the current load queue during a load.
-         *
-         * @name Phaser.Loader.LoaderPlugin#progress
-         * @type {number}
-         * @default 0
-         * @since 3.0.0
-         */
+        
         this.progress = 0;
 
-        /**
-         * Files are placed in this Set when they're added to the Loader via `addFile`.
-         *
-         * They are moved to the `inflight` Set when they start loading, and assuming a successful
-         * load, to the `queue` Set for further processing.
-         *
-         * By the end of the load process this Set will be empty.
-         *
-         * @name Phaser.Loader.LoaderPlugin#list
-         * @type {Phaser.Structs.Set.<Phaser.Loader.File>}
-         * @since 3.0.0
-         */
+        
         this.list = new CustomSet();
 
-        /**
-         * Files are stored in this Set while they're in the process of being loaded.
-         *
-         * Upon a successful load they are moved to the `queue` Set.
-         *
-         * By the end of the load process this Set will be empty.
-         *
-         * @name Phaser.Loader.LoaderPlugin#inflight
-         * @type {Phaser.Structs.Set.<Phaser.Loader.File>}
-         * @since 3.0.0
-         */
+        
         this.inflight = new CustomSet();
 
-        /**
-         * Files are stored in this Set while they're being processed.
-         *
-         * If the process is successful they are moved to their final destination, which could be
-         * a Cache or the Texture Manager.
-         *
-         * At the end of the load process this Set will be empty.
-         *
-         * @name Phaser.Loader.LoaderPlugin#queue
-         * @type {Phaser.Structs.Set.<Phaser.Loader.File>}
-         * @since 3.0.0
-         */
+        
         this.queue = new CustomSet();
 
-        /**
-         * A temporary Set in which files are stored after processing,
-         * awaiting destruction at the end of the load process.
-         *
-         * @name Phaser.Loader.LoaderPlugin#_deleteQueue
-         * @type {Phaser.Structs.Set.<Phaser.Loader.File>}
-         * @private
-         * @since 3.7.0
-         */
+        
         this._deleteQueue = new CustomSet();
 
-        /**
-         * The total number of files that failed to load during the most recent load.
-         * This value is reset when you call `Loader.start`.
-         *
-         * @name Phaser.Loader.LoaderPlugin#totalFailed
-         * @type {number}
-         * @default 0
-         * @since 3.7.0
-         */
+        
         this.totalFailed = 0;
 
-        /**
-         * The total number of files that successfully loaded during the most recent load.
-         * This value is reset when you call `Loader.start`.
-         *
-         * @name Phaser.Loader.LoaderPlugin#totalComplete
-         * @type {number}
-         * @default 0
-         * @since 3.7.0
-         */
+        
         this.totalComplete = 0;
 
-        /**
-         * The current state of the Loader.
-         *
-         * @name Phaser.Loader.LoaderPlugin#state
-         * @type {number}
-         * @readonly
-         * @since 3.0.0
-         */
+        
         this.state = CONST.LOADER_IDLE;
 
-        /**
-         * The current index being used by multi-file loaders to avoid key clashes.
-         *
-         * @name Phaser.Loader.LoaderPlugin#multiKeyIndex
-         * @type {number}
-         * @private
-         * @since 3.20.0
-         */
+        
         this.multiKeyIndex = 0;
 
-        /**
-         * The number of times to retry loading a single file before it fails.
-         * 
-         * This property is read by the `File` object when it is created and set to
-         * the internal property of the same name. It's not used by the Loader itself.
-         * 
-         * You can set this value via the Game Config, or you can adjust this property
-         * at any point after the Loader has started. However, it will not apply to files
-         * that have already been added to the Loader, only those added after this value
-         * is changed.
-         *
-         * @name Phaser.Loader.LoaderPlugin#maxRetries
-         * @type {number}
-         * @default 2
-         * @since 3.85.0
-         */
+        
         this.maxRetries = GetFastValue(sceneConfig, 'maxRetries', gameConfig.loaderMaxRetries);
 
         scene.sys.events.once(SceneEvents.BOOT, this.boot, this);
         scene.sys.events.on(SceneEvents.START, this.pluginStart, this);
     },
 
-    /**
-     * This method is called automatically, only once, when the Scene is first created.
-     * Do not invoke it directly.
-     *
-     * @method Phaser.Loader.LoaderPlugin#boot
-     * @private
-     * @since 3.5.1
-     */
+    
     boot: function ()
     {
         this.systems.events.once(SceneEvents.DESTROY, this.destroy, this);
     },
 
-    /**
-     * This method is called automatically by the Scene when it is starting up.
-     * It is responsible for creating local systems, properties and listening for Scene events.
-     * Do not invoke it directly.
-     *
-     * @method Phaser.Loader.LoaderPlugin#pluginStart
-     * @private
-     * @since 3.5.1
-     */
+    
     pluginStart: function ()
     {
         this.systems.events.once(SceneEvents.SHUTDOWN, this.shutdown, this);
     },
 
-    /**
-     * If you want to append a URL before the path of any asset you can set this here.
-     *
-     * Useful if allowing the asset base url to be configured outside of the game code.
-     *
-     * Once a base URL is set it will affect every file loaded by the Loader from that point on. It does _not_ change any
-     * file _already_ being loaded. To reset it, call this method with no arguments.
-     *
-     * @method Phaser.Loader.LoaderPlugin#setBaseURL
-     * @since 3.0.0
-     *
-     * @param {string} [url] - The URL to use. Leave empty to reset.
-     *
-     * @return {this} This Loader object.
-     */
+    
     setBaseURL: function (url)
     {
         if (url === undefined) { url = ''; }
@@ -425,32 +146,7 @@ var LoaderPlugin = new Class({
         return this;
     },
 
-    /**
-     * The value of `path`, if set, is placed before any _relative_ file path given. For example:
-     *
-     * ```javascript
-     * this.load.setPath("images/sprites/");
-     * this.load.image("ball", "ball.png");
-     * this.load.image("tree", "level1/oaktree.png");
-     * this.load.image("boom", "http://server.com/explode.png");
-     * ```
-     *
-     * Would load the `ball` file from `images/sprites/ball.png` and the tree from
-     * `images/sprites/level1/oaktree.png` but the file `boom` would load from the URL
-     * given as it's an absolute URL.
-     *
-     * Please note that the path is added before the filename but *after* the baseURL (if set.)
-     *
-     * Once a path is set it will then affect every file added to the Loader from that point on. It does _not_ change any
-     * file _already_ in the load queue. To reset it, call this method with no arguments.
-     *
-     * @method Phaser.Loader.LoaderPlugin#setPath
-     * @since 3.0.0
-     *
-     * @param {string} [path] - The path to use. Leave empty to reset.
-     *
-     * @return {this} This Loader object.
-     */
+    
     setPath: function (path)
     {
         if (path === undefined) { path = ''; }
@@ -465,21 +161,7 @@ var LoaderPlugin = new Class({
         return this;
     },
 
-    /**
-     * An optional prefix that is automatically prepended to the start of every file key.
-     *
-     * If prefix was `MENU.` and you load an image with the key 'Background' the resulting key would be `MENU.Background`.
-     *
-     * Once a prefix is set it will then affect every file added to the Loader from that point on. It does _not_ change any
-     * file _already_ in the load queue. To reset it, call this method with no arguments.
-     *
-     * @method Phaser.Loader.LoaderPlugin#setPrefix
-     * @since 3.7.0
-     *
-     * @param {string} [prefix] - The prefix to use. Leave empty to reset.
-     *
-     * @return {this} This Loader object.
-     */
+    
     setPrefix: function (prefix)
     {
         if (prefix === undefined) { prefix = ''; }
@@ -489,23 +171,7 @@ var LoaderPlugin = new Class({
         return this;
     },
 
-    /**
-     * Sets the Cross Origin Resource Sharing value used when loading files.
-     *
-     * Files can override this value on a per-file basis by specifying an alternative `crossOrigin` value in their file config.
-     *
-     * Once CORs is set it will then affect every file loaded by the Loader from that point on, as long as they don't have
-     * their own CORs setting. To reset it, call this method with no arguments.
-     *
-     * For more details about CORs see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-     *
-     * @method Phaser.Loader.LoaderPlugin#setCORS
-     * @since 3.0.0
-     *
-     * @param {string} [crossOrigin] - The value to use for the `crossOrigin` property in the load request.
-     *
-     * @return {this} This Loader object.
-     */
+    
     setCORS: function (crossOrigin)
     {
         this.crossOrigin = crossOrigin;
@@ -513,23 +179,7 @@ var LoaderPlugin = new Class({
         return this;
     },
 
-    /**
-     * Adds a file, or array of files, into the load queue.
-     *
-     * The file must be an instance of `Phaser.Loader.File`, or a class that extends it. The Loader will check that the key
-     * used by the file won't conflict with any other key either in the loader, the inflight queue or the target cache.
-     * If allowed it will then add the file into the pending list, ready for the load to start. Or, if the load has already
-     * started, ready for the next batch of files to be pulled from the list to the inflight queue.
-     *
-     * You should not normally call this method directly, but rather use one of the Loader methods like `image` or `atlas`.
-     * However you can call this as long as the file given to it is well formed.
-     *
-     * @method Phaser.Loader.LoaderPlugin#addFile
-     * @fires Phaser.Loader.Events#ADD
-     * @since 3.0.0
-     *
-     * @param {(Phaser.Loader.File|Phaser.Loader.File[])} file - The file, or array of files, to be added to the load queue.
-     */
+    
     addFile: function (file)
     {
         if (!Array.isArray(file))
@@ -558,17 +208,7 @@ var LoaderPlugin = new Class({
         }
     },
 
-    /**
-     * Checks the key and type of the given file to see if it will conflict with anything already
-     * in a Cache, the Texture Manager, or the list or inflight queues.
-     *
-     * @method Phaser.Loader.LoaderPlugin#keyExists
-     * @since 3.7.0
-     *
-     * @param {Phaser.Loader.File} file - The file to check the key of.
-     *
-     * @return {boolean} `true` if adding this file will cause a cache or queue conflict, otherwise `false`.
-     */
+    
     keyExists: function (file)
     {
         var keyConflict = file.hasCacheConflict();
@@ -615,23 +255,7 @@ var LoaderPlugin = new Class({
         return keyConflict;
     },
 
-    /**
-     * Takes a well formed, fully parsed pack file object and adds its entries into the load queue. Usually you do not call
-     * this method directly, but instead use `Loader.pack` and supply a path to a JSON file that holds the
-     * pack data. However, if you've got the data prepared you can pass it to this method.
-     *
-     * You can also provide an optional key. If you do then it will only add the entries from that part of the pack into
-     * to the load queue. If not specified it will add all entries it finds. For more details about the pack file format
-     * see the `LoaderPlugin.pack` method.
-     *
-     * @method Phaser.Loader.LoaderPlugin#addPack
-     * @since 3.7.0
-     *
-     * @param {any} pack - The Pack File data to be parsed and have each entry in it added to the load queue.
-     * @param {string} [packKey] - An optional key to use from the pack file data.
-     *
-     * @return {boolean} `true` if any files were added to the queue, otherwise `false`.
-     */
+    
     addPack: function (pack, packKey)
     {
         //  if no packKey provided we'll add everything to the queue
@@ -697,19 +321,7 @@ var LoaderPlugin = new Class({
         return (total > 0);
     },
 
-    /**
-     * Remove the resources listed in an Asset Pack.
-     *
-     * This removes Animations from the Animation Manager, Textures from the Texture Manager, and all other assets from their respective caches.
-     * It doesn't remove the Pack itself from the JSON cache, if it exists there.
-     * If the Pack includes another Pack, its resources will be removed too.
-     *
-     * @method Phaser.Loader.LoaderPlugin#removePack
-     * @since 3.85.0
-     *
-     * @param {(string|object)} packKey - The key of an Asset Pack in the JSON cache, or a Pack File data.
-     * @param {string} [dataKey] - A key in the Pack data, if you want to process only a section of it.
-     */
+    
     removePack: function (packKey, dataKey)
     {
         var animationManager = this.systems.anims;
@@ -871,47 +483,19 @@ var LoaderPlugin = new Class({
         }
     },
 
-    /**
-     * Is the Loader actively loading, or processing loaded files?
-     *
-     * @method Phaser.Loader.LoaderPlugin#isLoading
-     * @since 3.0.0
-     *
-     * @return {boolean} `true` if the Loader is busy loading or processing, otherwise `false`.
-     */
+    
     isLoading: function ()
     {
         return (this.state === CONST.LOADER_LOADING || this.state === CONST.LOADER_PROCESSING);
     },
 
-    /**
-     * Is the Loader ready to start a new load?
-     *
-     * @method Phaser.Loader.LoaderPlugin#isReady
-     * @since 3.0.0
-     *
-     * @return {boolean} `true` if the Loader is ready to start a new load, otherwise `false`.
-     */
+    
     isReady: function ()
     {
         return (this.state === CONST.LOADER_IDLE || this.state === CONST.LOADER_COMPLETE);
     },
 
-    /**
-     * Starts the Loader running. This will reset the progress and totals and then emit a `start` event.
-     * If there is nothing in the queue the Loader will immediately complete, otherwise it will start
-     * loading the first batch of files.
-     *
-     * The Loader is started automatically if the queue is populated within your Scenes `preload` method.
-     *
-     * However, outside of this, you need to call this method to start it.
-     *
-     * If the Loader is already running this method will simply return.
-     *
-     * @method Phaser.Loader.LoaderPlugin#start
-     * @fires Phaser.Loader.Events#START
-     * @since 3.0.0
-     */
+    
     start: function ()
     {
         if (!this.isReady())
@@ -946,15 +530,7 @@ var LoaderPlugin = new Class({
         }
     },
 
-    /**
-     * Called automatically during the load process.
-     * It updates the `progress` value and then emits a progress event, which you can use to
-     * display a loading bar in your game.
-     *
-     * @method Phaser.Loader.LoaderPlugin#updateProgress
-     * @fires Phaser.Loader.Events#PROGRESS
-     * @since 3.0.0
-     */
+    
     updateProgress: function ()
     {
         this.progress = 1 - ((this.list.size + this.inflight.size) / this.totalToLoad);
@@ -962,12 +538,7 @@ var LoaderPlugin = new Class({
         this.emit(Events.PROGRESS, this.progress);
     },
 
-    /**
-     * Called automatically during the load process.
-     *
-     * @method Phaser.Loader.LoaderPlugin#update
-     * @since 3.10.0
-     */
+    
     update: function ()
     {
         if (this.state === CONST.LOADER_LOADING && this.list.size > 0 && this.inflight.size < this.maxParallelDownloads)
@@ -976,18 +547,7 @@ var LoaderPlugin = new Class({
         }
     },
 
-    /**
-     * An internal method called by the Loader.
-     *
-     * It will check to see if there are any more files in the pending list that need loading, and if so it will move
-     * them from the list Set into the inflight Set, set their CORs flag and start them loading.
-     *
-     * It will carrying on doing this for each file in the pending list until it runs out, or hits the max allowed parallel downloads.
-     *
-     * @method Phaser.Loader.LoaderPlugin#checkLoadQueue
-     * @private
-     * @since 3.7.0
-     */
+    
     checkLoadQueue: function ()
     {
         this.list.each(function (file)
@@ -1016,20 +576,7 @@ var LoaderPlugin = new Class({
         }, this);
     },
 
-    /**
-     * An internal method called automatically by the XHRLoader belonging to a File.
-     *
-     * This method will remove the given file from the inflight Set and update the load progress.
-     * If the file was successful its `onProcess` method is called, otherwise it is added to the delete queue.
-     *
-     * @method Phaser.Loader.LoaderPlugin#nextFile
-     * @fires Phaser.Loader.Events#FILE_LOAD
-     * @fires Phaser.Loader.Events#FILE_LOAD_ERROR
-     * @since 3.0.0
-     *
-     * @param {Phaser.Loader.File} file - The File that just finished loading, or errored during load.
-     * @param {boolean} success - `true` if the file loaded successfully, otherwise `false`.
-     */
+    
     nextFile: function (file, success)
     {
         //  Has the game been destroyed during load? If so, bail out now.
@@ -1064,18 +611,7 @@ var LoaderPlugin = new Class({
         }
     },
 
-    /**
-     * An internal method that is called automatically by the File when it has finished processing.
-     *
-     * If the process was successful, and the File isn't part of a MultiFile, its `addToCache` method is called.
-     *
-     * It is then removed from the queue. If there are no more files to load `loadComplete` is called.
-     *
-     * @method Phaser.Loader.LoaderPlugin#fileProcessComplete
-     * @since 3.7.0
-     *
-     * @param {Phaser.Loader.File} file - The file that has finished processing.
-     */
+    
     fileProcessComplete: function (file)
     {
         //  Has the game been destroyed during load? If so, bail out now.
@@ -1122,17 +658,7 @@ var LoaderPlugin = new Class({
         }
     },
 
-    /**
-     * Called at the end when the load queue is exhausted and all files have either loaded or errored.
-     * By this point every loaded file will now be in its associated cache and ready for use.
-     *
-     * Also clears down the Sets, puts progress to 1 and clears the deletion queue.
-     *
-     * @method Phaser.Loader.LoaderPlugin#loadComplete
-     * @fires Phaser.Loader.Events#COMPLETE
-     * @fires Phaser.Loader.Events#POST_PROCESS
-     * @since 3.7.0
-     */
+    
     loadComplete: function ()
     {
         this.emit(Events.POST_PROCESS, this);
@@ -1155,52 +681,19 @@ var LoaderPlugin = new Class({
         this.emit(Events.COMPLETE, this, this.totalComplete, this.totalFailed);
     },
 
-    /**
-     * Adds a File into the pending-deletion queue.
-     *
-     * @method Phaser.Loader.LoaderPlugin#flagForRemoval
-     * @since 3.7.0
-     *
-     * @param {Phaser.Loader.File} file - The File to be queued for deletion when the Loader completes.
-     */
+    
     flagForRemoval: function (file)
     {
         this._deleteQueue.set(file);
     },
 
-    /**
-     * Converts the given JSON data into a file that the browser then prompts you to download so you can save it locally.
-     *
-     * The data must be well formed JSON and ready-parsed, not a JavaScript object.
-     *
-     * @method Phaser.Loader.LoaderPlugin#saveJSON
-     * @since 3.0.0
-     *
-     * @param {*} data - The JSON data, ready parsed.
-     * @param {string} [filename=file.json] - The name to save the JSON file as.
-     *
-     * @return {this} This Loader plugin.
-     */
+    
     saveJSON: function (data, filename)
     {
         return this.save(JSON.stringify(data), filename);
     },
 
-    /**
-     * Causes the browser to save the given data as a file to its default Downloads folder.
-     *
-     * Creates a DOM level anchor link, assigns it as being a `download` anchor, sets the href
-     * to be an ObjectURL based on the given data, and then invokes a click event.
-     *
-     * @method Phaser.Loader.LoaderPlugin#save
-     * @since 3.0.0
-     *
-     * @param {*} data - The data to be saved. Will be passed through URL.createObjectURL.
-     * @param {string} [filename=file.json] - The filename to save the file as.
-     * @param {string} [filetype=application/json] - The file type to use when saving the file. Defaults to JSON.
-     *
-     * @return {this} This Loader plugin.
-     */
+    
     save: function (data, filename, filetype)
     {
         if (filename === undefined) { filename = 'file.json'; }
@@ -1220,16 +713,7 @@ var LoaderPlugin = new Class({
         return this;
     },
 
-    /**
-     * Resets the Loader.
-     *
-     * This will clear all lists and reset the base URL, path and prefix.
-     *
-     * Warning: If the Loader is currently downloading files, or has files in its queue, they will be aborted.
-     *
-     * @method Phaser.Loader.LoaderPlugin#reset
-     * @since 3.0.0
-     */
+    
     reset: function ()
     {
         this.list.clear();
@@ -1246,14 +730,7 @@ var LoaderPlugin = new Class({
         this.state = CONST.LOADER_IDLE;
     },
 
-    /**
-     * The Scene that owns this plugin is shutting down.
-     * We need to kill and reset all internal properties as well as stop listening to Scene events.
-     *
-     * @method Phaser.Loader.LoaderPlugin#shutdown
-     * @private
-     * @since 3.0.0
-     */
+    
     shutdown: function ()
     {
         this.reset();
@@ -1266,14 +743,7 @@ var LoaderPlugin = new Class({
         this.systems.events.off(SceneEvents.SHUTDOWN, this.shutdown, this);
     },
 
-    /**
-     * The Scene that owns this plugin is being destroyed.
-     * We need to shutdown and then kill off all external references.
-     *
-     * @method Phaser.Loader.LoaderPlugin#destroy
-     * @private
-     * @since 3.0.0
-     */
+    
     destroy: function ()
     {
         this.shutdown();

@@ -1,24 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @author       Felipe Alfonso <@bitnenfer>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * Renders this Game Object with the Canvas Renderer to the given Camera.
- * The object will not render if any of its renderFlags are set or it is being actively filtered out by the Camera.
- * This method should not be called directly. It is a utility function of the Render module.
- *
- * @method Phaser.GameObjects.Container#renderCanvas
- * @since 3.4.0
- * @private
- *
- * @param {Phaser.Renderer.Canvas.CanvasRenderer} renderer - A reference to the current active Canvas renderer.
- * @param {Phaser.GameObjects.Container} container - The Game Object being rendered in this call.
- * @param {Phaser.Cameras.Scene2D.Camera} camera - The Camera that is rendering the Game Object.
- * @param {Phaser.GameObjects.Components.TransformMatrix} parentMatrix - This transform matrix is defined if the game object is nested
- */
 var ContainerCanvasRenderer = function (renderer, container, camera, parentMatrix)
 {
     camera.addToRenderList(container);
@@ -49,7 +28,7 @@ var ContainerCanvasRenderer = function (renderer, container, camera, parentMatri
 
     if (!containerHasBlendMode)
     {
-        //  If Container is SKIP_TEST then set blend mode to be Normal
+
         renderer.setBlendMode(0);
     }
 
@@ -77,18 +56,15 @@ var ContainerCanvasRenderer = function (renderer, container, camera, parentMatri
 
         if (!containerHasBlendMode && child.blendMode !== renderer.currentBlendMode)
         {
-            //  If Container doesn't have its own blend mode, then a child can have one
+
             renderer.setBlendMode(child.blendMode);
         }
 
-        //  Set parent values
         child.setScrollFactor(childScrollFactorX * scrollFactorX, childScrollFactorY * scrollFactorY);
         child.setAlpha(childAlpha * alpha);
 
-        //  Render
         child.renderCanvas(renderer, child, camera, transformMatrix);
 
-        //  Restore original values
         child.setAlpha(childAlpha);
         child.setScrollFactor(childScrollFactorX, childScrollFactorY);
     }

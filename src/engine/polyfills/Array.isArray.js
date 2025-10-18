@@ -1,6 +1,3 @@
-/**
-* A polyfill for Array.isArray
-*/
 if (!Array.isArray)
 {
     Array.isArray = function (arg)

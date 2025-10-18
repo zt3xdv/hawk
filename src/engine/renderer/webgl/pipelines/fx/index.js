@@ -1,13 +1,3 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
-/**
- * @namespace Phaser.Renderer.WebGL.Pipelines.FX
- */
-
 var FX = {
 
     Barrel: require('./BarrelFXPipeline'),
@@ -26,7 +16,5 @@ var FX = {
     Wipe: require('./WipeFXPipeline')
 
 };
-
-//  Export it
 
 module.exports = FX;

@@ -1,21 +1,5 @@
-/**
- * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
- * @license      {@link https://opensource.org/licenses/MIT|MIT License}
- */
-
 var CanvasPool = require('../../display/canvas/CanvasPool');
 
-/**
- * Calculates the ascent, descent and fontSize of a given font style.
- *
- * @function Phaser.GameObjects.MeasureText
- * @since 3.0.0
- *
- * @param {Phaser.GameObjects.TextStyle} textStyle - The TextStyle object to measure.
- *
- * @return {Phaser.Types.GameObjects.Text.TextMetrics} An object containing the ascent, descent and fontSize of the TextStyle.
- */
 var MeasureText = function (textStyle)
 {
     var canvas = CanvasPool.create(this);
@@ -84,7 +68,6 @@ var MeasureText = function (textStyle)
     var idx = 0;
     var stop = false;
 
-    // ascent. scan from top to bottom until we find a non red pixel
     for (i = 0; i < baseline; i++)
     {
         for (j = 0; j < line; j += 4)
@@ -111,7 +94,6 @@ var MeasureText = function (textStyle)
     idx = numPixels - line;
     stop = false;
 
-    // descent. scan from bottom to top until we find a non red pixel
     for (i = height; i > baseline; i--)
     {
         for (j = 0; j < line; j += 4)
