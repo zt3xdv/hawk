@@ -1,4 +1,1 @@
-
-
-
-module.exports = 'addfile';
+module.exports = 'addfile';

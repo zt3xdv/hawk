@@ -1,47 +1,1 @@
-var Extend = require('../../../utils/object/Extend');
-
-var AssignTileProperties = function (mapData)
-{
-    var layerData;
-    var tile;
-    var sid;
-    var set;
-    var row;
-
-    for (var i = 0; i < mapData.layers.length; i++)
-    {
-        layerData = mapData.layers[i];
-
-        set = null;
-
-        for (var j = 0; j < layerData.data.length; j++)
-        {
-            row = layerData.data[j];
-
-            for (var k = 0; k < row.length; k++)
-            {
-                tile = row[k];
-
-                if (tile === null || tile.index < 0)
-                {
-                    continue;
-                }
-
-                sid = mapData.tiles[tile.index][2];
-                set = mapData.tilesets[sid];
-
-                tile.width = set.tileWidth;
-                tile.height = set.tileHeight;
-
-                if (set.tileProperties && set.tileProperties[tile.index - set.firstgid])
-                {
-                    tile.properties = Extend(
-                        tile.properties, set.tileProperties[tile.index - set.firstgid]
-                    );
-                }
-            }
-        }
-    }
-};
-
-module.exports = AssignTileProperties;
+var Extend = require('../../../utils/object/Extend');var AssignTileProperties = function (mapData){    var layerData;    var tile;    var sid;    var set;    var row;    for (var i = 0; i < mapData.layers.length; i++)    {        layerData = mapData.layers[i];        set = null;        for (var j = 0; j < layerData.data.length; j++)        {            row = layerData.data[j];            for (var k = 0; k < row.length; k++)            {                tile = row[k];                if (tile === null || tile.index < 0)                {                    continue;                }                sid = mapData.tiles[tile.index][2];                set = mapData.tilesets[sid];                tile.width = set.tileWidth;                tile.height = set.tileHeight;                if (set.tileProperties && set.tileProperties[tile.index - set.firstgid])                {                    tile.properties = Extend(                        tile.properties, set.tileProperties[tile.index - set.firstgid]                    );                }            }        }    }};module.exports = AssignTileProperties;

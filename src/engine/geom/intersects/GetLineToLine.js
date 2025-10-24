@@ -1,83 +1,1 @@
-var Vector3 = require('../../math/Vector3');
-
-var GetLineToLine = function (line1, line2, isRay, out)
-{
-    if (isRay === undefined) { isRay = false; }
-
-    var x1 = line1.x1;
-    var y1 = line1.y1;
-    var x2 = line1.x2;
-    var y2 = line1.y2;
-
-    var x3 = line2.x1;
-    var y3 = line2.y1;
-    var x4 = line2.x2;
-    var y4 = line2.y2;
-
-    var dx1 = x2 - x1;
-    var dy1 = y2 - y1;
-
-    var dx2 = x4 - x3;
-    var dy2 = y4 - y3;
-
-    var denom = (dx1 * dy2 - dy1 * dx2);
-
-    if (denom === 0)
-    {
-        return null;
-    }
-
-    var t;
-    var u;
-    var s;
-
-    if (isRay)
-    {
-        t = (dx1 * (y3 - y1) + dy1 * (x1 - x3)) / (dx2 * dy1 - dy2 * dx1);
-
-        if (dx1 !== 0)
-        {
-            u = (x3 + dx2 * t - x1) / dx1;
-        }
-        else if (dy1 !== 0)
-        {
-            u = (y3 + dy2 * t - y1) / dy1;
-        }
-        else
-        {
-            return null; 
-        }
-
-        if (u < 0 || t < 0 || t > 1)
-        {
-            return null;
-        }
-
-        s = u;
-    }
-    else
-    {
-        t = ((x3 - x1) * dy2 - (y3 - y1) * dx2) / denom;
-        u = ((y1 - y3) * dx1 - (x1 - x3) * dy1) / denom;
-
-        if (t < 0 || t > 1 || u < 0 || u > 1)
-        {
-            return null;
-        }
-
-        s = t;
-    }
-
-    if (out === undefined)
-    {
-        out = new Vector3();
-    }
-
-    return out.set(
-        x1 + dx1 * s,
-        y1 + dy1 * s,
-        s
-    );
-};
-
-module.exports = GetLineToLine;
+var Vector3 = require('../../math/Vector3');var GetLineToLine = function (line1, line2, isRay, out){    if (isRay === undefined) { isRay = false; }    var x1 = line1.x1;    var y1 = line1.y1;    var x2 = line1.x2;    var y2 = line1.y2;    var x3 = line2.x1;    var y3 = line2.y1;    var x4 = line2.x2;    var y4 = line2.y2;    var dx1 = x2 - x1;    var dy1 = y2 - y1;    var dx2 = x4 - x3;    var dy2 = y4 - y3;    var denom = (dx1 * dy2 - dy1 * dx2);    if (denom === 0)    {        return null;    }    var t;    var u;    var s;    if (isRay)    {        t = (dx1 * (y3 - y1) + dy1 * (x1 - x3)) / (dx2 * dy1 - dy2 * dx1);        if (dx1 !== 0)        {            u = (x3 + dx2 * t - x1) / dx1;        }        else if (dy1 !== 0)        {            u = (y3 + dy2 * t - y1) / dy1;        }        else        {            return null;         }        if (u < 0 || t < 0 || t > 1)        {            return null;        }        s = u;    }    else    {        t = ((x3 - x1) * dy2 - (y3 - y1) * dx2) / denom;        u = ((y1 - y3) * dx1 - (x1 - x3) * dy1) / denom;        if (t < 0 || t > 1 || u < 0 || u > 1)        {            return null;        }        s = t;    }    if (out === undefined)    {        out = new Vector3();    }    return out.set(        x1 + dx1 * s,        y1 + dy1 * s,        s    );};module.exports = GetLineToLine;

@@ -1,36 +1,1 @@
-var Class = require('../../utils/Class');
-var GetFastValue = require('../../utils/object/GetFastValue');
-
-var ObjectLayer = new Class({
-
-    initialize:
-
-    function ObjectLayer (config)
-    {
-        if (config === undefined) { config = {}; }
-
-        this.name = GetFastValue(config, 'name', 'object layer');
-
-        this.id = GetFastValue(config, 'id', 0);
-
-        this.opacity = GetFastValue(config, 'opacity', 1);
-
-        this.properties = GetFastValue(config, 'properties', {});
-
-        this.propertyTypes = GetFastValue(config, 'propertytypes', {});
-
-        this.type = GetFastValue(config, 'type', 'objectgroup');
-
-        this.visible = GetFastValue(config, 'visible', true);
-
-        this.objects = GetFastValue(config, 'objects', []);
-
-        if (!Array.isArray(this.objects))
-        {
-            this.objects = [];
-        }
-    }
-
-});
-
-module.exports = ObjectLayer;
+var Class = require('../../utils/Class');var GetFastValue = require('../../utils/object/GetFastValue');var ObjectLayer = new Class({    initialize:    function ObjectLayer (config)    {        if (config === undefined) { config = {}; }        this.name = GetFastValue(config, 'name', 'object layer');        this.id = GetFastValue(config, 'id', 0);        this.opacity = GetFastValue(config, 'opacity', 1);        this.properties = GetFastValue(config, 'properties', {});        this.propertyTypes = GetFastValue(config, 'propertytypes', {});        this.type = GetFastValue(config, 'type', 'objectgroup');        this.visible = GetFastValue(config, 'visible', true);        this.objects = GetFastValue(config, 'objects', []);        if (!Array.isArray(this.objects))        {            this.objects = [];        }    }});module.exports = ObjectLayer;

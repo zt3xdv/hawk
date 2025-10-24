@@ -1,76 +1,1 @@
-var Tileset = require('../../Tileset');
-
-var BuildTilesetIndex = function (mapData)
-{
-    var i;
-    var set;
-    var tiles = [];
-
-    for (i = 0; i < mapData.imageCollections.length; i++)
-    {
-        var collection = mapData.imageCollections[i];
-        var images = collection.images;
-
-        for (var j = 0; j < images.length; j++)
-        {
-            var image = images[j];
-            var offset = {
-                x: 0,
-                y: image.height - mapData.tileHeight
-            };
-
-            set = new Tileset(image.image, image.gid, image.width, image.height, 0, 0, undefined, undefined, offset);
-
-            set.updateTileData(image.width, image.height);
-
-            mapData.tilesets.push(set);
-        }
-    }
-
-    for (i = 0; i < mapData.tilesets.length; i++)
-    {
-        set = mapData.tilesets[i];
-
-        var x = set.tileMargin;
-        var y = set.tileMargin;
-
-        var count = 0;
-        var countX = 0;
-        var countY = 0;
-
-        for (var t = set.firstgid; t < set.firstgid + set.total; t++)
-        {
-
-            tiles[t] = [ x, y, i ];
-
-            x += set.tileWidth + set.tileSpacing;
-
-            count++;
-
-            if (count === set.total)
-            {
-                break;
-            }
-
-            countX++;
-
-            if (countX === set.columns)
-            {
-                x = set.tileMargin;
-                y += set.tileHeight + set.tileSpacing;
-
-                countX = 0;
-                countY++;
-
-                if (countY === set.rows)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    return tiles;
-};
-
-module.exports = BuildTilesetIndex;
+var Tileset = require('../../Tileset');var BuildTilesetIndex = function (mapData){    var i;    var set;    var tiles = [];    for (i = 0; i < mapData.imageCollections.length; i++)    {        var collection = mapData.imageCollections[i];        var images = collection.images;        for (var j = 0; j < images.length; j++)        {            var image = images[j];            var offset = {                x: 0,                y: image.height - mapData.tileHeight            };            set = new Tileset(image.image, image.gid, image.width, image.height, 0, 0, undefined, undefined, offset);            set.updateTileData(image.width, image.height);            mapData.tilesets.push(set);        }    }    for (i = 0; i < mapData.tilesets.length; i++)    {        set = mapData.tilesets[i];        var x = set.tileMargin;        var y = set.tileMargin;        var count = 0;        var countX = 0;        var countY = 0;        for (var t = set.firstgid; t < set.firstgid + set.total; t++)        {            tiles[t] = [ x, y, i ];            x += set.tileWidth + set.tileSpacing;            count++;            if (count === set.total)            {                break;            }            countX++;            if (countX === set.columns)            {                x = set.tileMargin;                y += set.tileHeight + set.tileSpacing;                countX = 0;                countY++;                if (countY === set.rows)                {                    break;                }            }        }    }    return tiles;};module.exports = BuildTilesetIndex;

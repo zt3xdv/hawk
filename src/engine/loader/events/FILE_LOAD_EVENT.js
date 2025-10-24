@@ -1,4 +1,1 @@
-
-
-
-module.exports = 'load';
+module.exports = 'load';

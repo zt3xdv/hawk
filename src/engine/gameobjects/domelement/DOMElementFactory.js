@@ -1,11 +1,1 @@
-var DOMElement = require('./DOMElement');
-var GameObjectFactory = require('../GameObjectFactory');
-
-GameObjectFactory.register('dom', function (x, y, element, style, innerText)
-{
-    var gameObject = new DOMElement(this.scene, x, y, element, style, innerText);
-
-    this.displayList.add(gameObject);
-
-    return gameObject;
-});
+var DOMElement = require('./DOMElement');var GameObjectFactory = require('../GameObjectFactory');GameObjectFactory.register('dom', function (x, y, element, style, innerText){    var gameObject = new DOMElement(this.scene, x, y, element, style, innerText);    this.displayList.add(gameObject);    return gameObject;});

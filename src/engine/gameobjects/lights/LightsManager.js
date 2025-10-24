@@ -1,151 +1,1 @@
-var CircleToRectangle = require('../../geom/intersects/CircleToRectangle');
-var Class = require('../../utils/Class');
-var DistanceBetween = require('../../math/distance/DistanceBetween');
-var Light = require('./Light');
-var PointLight = require('../pointlight/PointLight');
-var RGB = require('../../display/RGB');
-var SpliceOne = require('../../utils/array/SpliceOne');
-var StableSort = require('../../utils/array/StableSort');
-var Utils = require('../../renderer/webgl/Utils');
-
-var LightsManager = new Class({
-
-    initialize:
-
-    function LightsManager ()
-    {
-
-        this.lights = [];
-
-        this.ambientColor = new RGB(0.1, 0.1, 0.1);
-
-        this.active = false;
-
-        this.maxLights = -1;
-
-        this.visibleLights = 0;
-    },
-
-    addPointLight: function (x, y, color, radius, intensity, attenuation)
-    {
-        return this.systems.displayList.add(new PointLight(this.scene, x, y, color, radius, intensity, attenuation));
-    },
-
-    enable: function ()
-    {
-        if (this.maxLights === -1)
-        {
-            this.maxLights = this.systems.renderer.config.maxLights;
-        }
-
-        this.active = true;
-
-        return this;
-    },
-
-    disable: function ()
-    {
-        this.active = false;
-
-        return this;
-    },
-
-    getLights: function (camera)
-    {
-        var lights = this.lights;
-        var worldView = camera.worldView;
-
-        var visibleLights = [];
-
-        for (var i = 0; i < lights.length; i++)
-        {
-            var light = lights[i];
-
-            if (light.willRender(camera) && CircleToRectangle(light, worldView))
-            {
-                visibleLights.push({
-                    light: light,
-                    distance: DistanceBetween(light.x, light.y, worldView.centerX, worldView.centerY)
-                });
-            }
-        }
-
-        if (visibleLights.length > this.maxLights)
-        {
-
-            StableSort(visibleLights, this.sortByDistance);
-
-            visibleLights = visibleLights.slice(0, this.maxLights);
-        }
-
-        this.visibleLights = visibleLights.length;
-
-        return visibleLights;
-    },
-
-    sortByDistance: function (a, b)
-    {
-        return (a.distance >= b.distance);
-    },
-
-    setAmbientColor: function (rgb)
-    {
-        var color = Utils.getFloatsFromUintRGB(rgb);
-
-        this.ambientColor.set(color[0], color[1], color[2]);
-
-        return this;
-    },
-
-    getMaxVisibleLights: function ()
-    {
-        return this.maxLights;
-    },
-
-    getLightCount: function ()
-    {
-        return this.lights.length;
-    },
-
-    addLight: function (x, y, radius, rgb, intensity)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (radius === undefined) { radius = 128; }
-        if (rgb === undefined) { rgb = 0xffffff; }
-        if (intensity === undefined) { intensity = 1; }
-
-        var color = Utils.getFloatsFromUintRGB(rgb);
-
-        var light = new Light(x, y, radius, color[0], color[1], color[2], intensity);
-
-        this.lights.push(light);
-
-        return light;
-    },
-
-    removeLight: function (light)
-    {
-        var index = this.lights.indexOf(light);
-
-        if (index >= 0)
-        {
-            SpliceOne(this.lights, index);
-        }
-
-        return this;
-    },
-
-    shutdown: function ()
-    {
-        this.lights.length = 0;
-    },
-
-    destroy: function ()
-    {
-        this.shutdown();
-    }
-
-});
-
-module.exports = LightsManager;
+var CircleToRectangle = require('../../geom/intersects/CircleToRectangle');var Class = require('../../utils/Class');var DistanceBetween = require('../../math/distance/DistanceBetween');var Light = require('./Light');var PointLight = require('../pointlight/PointLight');var RGB = require('../../display/RGB');var SpliceOne = require('../../utils/array/SpliceOne');var StableSort = require('../../utils/array/StableSort');var Utils = require('../../renderer/webgl/Utils');var LightsManager = new Class({    initialize:    function LightsManager ()    {        this.lights = [];        this.ambientColor = new RGB(0.1, 0.1, 0.1);        this.active = false;        this.maxLights = -1;        this.visibleLights = 0;    },    addPointLight: function (x, y, color, radius, intensity, attenuation)    {        return this.systems.displayList.add(new PointLight(this.scene, x, y, color, radius, intensity, attenuation));    },    enable: function ()    {        if (this.maxLights === -1)        {            this.maxLights = this.systems.renderer.config.maxLights;        }        this.active = true;        return this;    },    disable: function ()    {        this.active = false;        return this;    },    getLights: function (camera)    {        var lights = this.lights;        var worldView = camera.worldView;        var visibleLights = [];        for (var i = 0; i < lights.length; i++)        {            var light = lights[i];            if (light.willRender(camera) && CircleToRectangle(light, worldView))            {                visibleLights.push({                    light: light,                    distance: DistanceBetween(light.x, light.y, worldView.centerX, worldView.centerY)                });            }        }        if (visibleLights.length > this.maxLights)        {            StableSort(visibleLights, this.sortByDistance);            visibleLights = visibleLights.slice(0, this.maxLights);        }        this.visibleLights = visibleLights.length;        return visibleLights;    },    sortByDistance: function (a, b)    {        return (a.distance >= b.distance);    },    setAmbientColor: function (rgb)    {        var color = Utils.getFloatsFromUintRGB(rgb);        this.ambientColor.set(color[0], color[1], color[2]);        return this;    },    getMaxVisibleLights: function ()    {        return this.maxLights;    },    getLightCount: function ()    {        return this.lights.length;    },    addLight: function (x, y, radius, rgb, intensity)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (radius === undefined) { radius = 128; }        if (rgb === undefined) { rgb = 0xffffff; }        if (intensity === undefined) { intensity = 1; }        var color = Utils.getFloatsFromUintRGB(rgb);        var light = new Light(x, y, radius, color[0], color[1], color[2], intensity);        this.lights.push(light);        return light;    },    removeLight: function (light)    {        var index = this.lights.indexOf(light);        if (index >= 0)        {            SpliceOne(this.lights, index);        }        return this;    },    shutdown: function ()    {        this.lights.length = 0;    },    destroy: function ()    {        this.shutdown();    }});module.exports = LightsManager;

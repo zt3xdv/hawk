@@ -1,8 +1,1 @@
-var FloatBetween = require('../FloatBetween');
-
-var Random = function ()
-{
-    return FloatBetween(-Math.PI, Math.PI);
-};
-
-module.exports = Random;
+var FloatBetween = require('../FloatBetween');var Random = function (){    return FloatBetween(-Math.PI, Math.PI);};module.exports = Random;

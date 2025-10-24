@@ -1,13 +1,1 @@
-var WorldToTileXY = require('./WorldToTileXY');
-var Vector2 = require('../../math/Vector2');
-
-var tempVec = new Vector2();
-
-var WorldToTileX = function (worldX, snapToFloor, camera, layer)
-{
-    WorldToTileXY(worldX, 0, snapToFloor, tempVec, camera, layer);
-
-    return tempVec.x;
-};
-
-module.exports = WorldToTileX;
+var WorldToTileXY = require('./WorldToTileXY');var Vector2 = require('../../math/Vector2');var tempVec = new Vector2();var WorldToTileX = function (worldX, snapToFloor, camera, layer){    WorldToTileXY(worldX, 0, snapToFloor, tempVec, camera, layer);    return tempVec.x;};module.exports = WorldToTileX;

@@ -1,219 +1,1 @@
-var Class = require('../../../utils/Class');
-var IsSizePowerOfTwo = require('../../../math/pow2/IsSizePowerOfTwo');
-
-var WebGLTextureWrapper = new Class({
-
-    initialize:
-
-    function WebGLTextureWrapper (gl, mipLevel, minFilter, magFilter, wrapT, wrapS, format, pixels, width, height, pma, forceSize, flipY)
-    {
-
-        this.webGLTexture = null;
-
-        this.isRenderTexture = false;
-
-        this.gl = gl;
-
-        this.mipLevel = mipLevel;
-
-        this.minFilter = minFilter;
-
-        this.magFilter = magFilter;
-
-        this.wrapT = wrapT;
-
-        this.wrapS = wrapS;
-
-        this.format = format;
-
-        this.pixels = pixels;
-
-        this.width = width;
-
-        this.height = height;
-
-        this.pma = (pma === undefined || pma === null) ? true : pma;
-
-        this.forceSize = !!forceSize;
-
-        this.flipY = !!flipY;
-
-        this.__SPECTOR_Metadata = {};
-
-        this.createResource();
-    },
-
-    createResource: function ()
-    {
-        var gl = this.gl;
-
-        if (gl.isContextLost())
-        {
-
-            return;
-        }
-
-        if (this.pixels instanceof WebGLTextureWrapper)
-        {
-
-            this.webGLTexture = this.pixels.webGLTexture;
-            return;
-        }
-
-        var texture = gl.createTexture();
-
-        texture.__SPECTOR_Metadata = this.__SPECTOR_Metadata;
-
-        this.webGLTexture = texture;
-
-        this._processTexture();
-    },
-
-    update: function (source, width, height, flipY, wrapS, wrapT, minFilter, magFilter, format)
-    {
-        if (width === 0 || height === 0)
-        {
-            return;
-        }
-
-        this.pixels = source;
-        this.width = width;
-        this.height = height;
-        this.flipY = flipY;
-        this.wrapS = wrapS;
-        this.wrapT = wrapT;
-        this.minFilter = minFilter;
-        this.magFilter = magFilter;
-        this.format = format;
-
-        var gl = this.gl;
-
-        if (gl.isContextLost())
-        {
-
-            return;
-        }
-
-        this._processTexture();
-    },
-
-    _processTexture: function ()
-    {
-        var gl = this.gl;
-
-        gl.activeTexture(gl.TEXTURE0);
-
-        var currentTexture = gl.getParameter(gl.TEXTURE_BINDING_2D);
-
-        gl.bindTexture(gl.TEXTURE_2D, this.webGLTexture);
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.minFilter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.magFilter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.wrapS);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.wrapT);
-
-        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.pma);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
-
-        var pixels = this.pixels;
-        var mipLevel = this.mipLevel;
-        var width = this.width;
-        var height = this.height;
-        var format = this.format;
-
-        var generateMipmap = false;
-
-        if (pixels === null || pixels === undefined)
-        {
-            gl.texImage2D(gl.TEXTURE_2D, mipLevel, format, width, height, 0, format, gl.UNSIGNED_BYTE, null);
-
-            generateMipmap = IsSizePowerOfTwo(width, height);
-        }
-        else if (pixels.compressed)
-        {
-            width = pixels.width;
-            height = pixels.height;
-            generateMipmap = pixels.generateMipmap;
-
-            for (var i = 0; i < pixels.mipmaps.length; i++)
-            {
-                gl.compressedTexImage2D(gl.TEXTURE_2D, i, pixels.internalFormat, pixels.mipmaps[i].width, pixels.mipmaps[i].height, 0, pixels.mipmaps[i].data);
-            }
-        }
-        else if (pixels instanceof Uint8Array)
-        {
-            gl.texImage2D(gl.TEXTURE_2D, mipLevel, format, width, height, 0, format, gl.UNSIGNED_BYTE, pixels);
-
-            generateMipmap = IsSizePowerOfTwo(width, height);
-        }
-        else
-        {
-            if (!this.forceSize)
-            {
-                width = pixels.width;
-                height = pixels.height;
-            }
-
-            gl.texImage2D(gl.TEXTURE_2D, mipLevel, format, format, gl.UNSIGNED_BYTE, pixels);
-
-            generateMipmap = IsSizePowerOfTwo(width, height);
-        }
-
-        if (generateMipmap)
-        {
-            gl.generateMipmap(gl.TEXTURE_2D);
-        }
-
-        if (currentTexture)
-        {
-            gl.bindTexture(gl.TEXTURE_2D, currentTexture);
-        }
-        else
-        {
-            gl.bindTexture(gl.TEXTURE_2D, null);
-        }
-    },
-
-    spectorMetadata: {
-
-        get: function ()
-        {
-            return this.__SPECTOR_Metadata;
-        },
-
-        set: function (value)
-        {
-
-            this.__SPECTOR_Metadata = value;
-
-            if (!this.gl.isContextLost())
-            {
-
-                this.webGLTexture.__SPECTOR_Metadata = value;
-            }
-        }
-    },
-
-    destroy: function ()
-    {
-        if (this.webGLTexture === null)
-        {
-            return;
-        }
-
-        if (!this.gl.isContextLost())
-        {
-            if (!(this.pixels instanceof WebGLTextureWrapper))
-            {
-
-                this.gl.deleteTexture(this.webGLTexture);
-            }
-        }
-
-        this.pixels = null;
-        this.webGLTexture = null;
-        this.gl = null;
-    }
-});
-
-module.exports = WebGLTextureWrapper;
+var Class = require('../../../utils/Class');var IsSizePowerOfTwo = require('../../../math/pow2/IsSizePowerOfTwo');var WebGLTextureWrapper = new Class({    initialize:    function WebGLTextureWrapper (gl, mipLevel, minFilter, magFilter, wrapT, wrapS, format, pixels, width, height, pma, forceSize, flipY)    {        this.webGLTexture = null;        this.isRenderTexture = false;        this.gl = gl;        this.mipLevel = mipLevel;        this.minFilter = minFilter;        this.magFilter = magFilter;        this.wrapT = wrapT;        this.wrapS = wrapS;        this.format = format;        this.pixels = pixels;        this.width = width;        this.height = height;        this.pma = (pma === undefined || pma === null) ? true : pma;        this.forceSize = !!forceSize;        this.flipY = !!flipY;        this.__SPECTOR_Metadata = {};        this.createResource();    },    createResource: function ()    {        var gl = this.gl;        if (gl.isContextLost())        {            return;        }        if (this.pixels instanceof WebGLTextureWrapper)        {            this.webGLTexture = this.pixels.webGLTexture;            return;        }        var texture = gl.createTexture();        texture.__SPECTOR_Metadata = this.__SPECTOR_Metadata;        this.webGLTexture = texture;        this._processTexture();    },    update: function (source, width, height, flipY, wrapS, wrapT, minFilter, magFilter, format)    {        if (width === 0 || height === 0)        {            return;        }        this.pixels = source;        this.width = width;        this.height = height;        this.flipY = flipY;        this.wrapS = wrapS;        this.wrapT = wrapT;        this.minFilter = minFilter;        this.magFilter = magFilter;        this.format = format;        var gl = this.gl;        if (gl.isContextLost())        {            return;        }        this._processTexture();    },    _processTexture: function ()    {        var gl = this.gl;        gl.activeTexture(gl.TEXTURE0);        var currentTexture = gl.getParameter(gl.TEXTURE_BINDING_2D);        gl.bindTexture(gl.TEXTURE_2D, this.webGLTexture);        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.minFilter);        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.magFilter);        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.wrapS);        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.wrapT);        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.pma);        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, this.flipY);        var pixels = this.pixels;        var mipLevel = this.mipLevel;        var width = this.width;        var height = this.height;        var format = this.format;        var generateMipmap = false;        if (pixels === null || pixels === undefined)        {            gl.texImage2D(gl.TEXTURE_2D, mipLevel, format, width, height, 0, format, gl.UNSIGNED_BYTE, null);            generateMipmap = IsSizePowerOfTwo(width, height);        }        else if (pixels.compressed)        {            width = pixels.width;            height = pixels.height;            generateMipmap = pixels.generateMipmap;            for (var i = 0; i < pixels.mipmaps.length; i++)            {                gl.compressedTexImage2D(gl.TEXTURE_2D, i, pixels.internalFormat, pixels.mipmaps[i].width, pixels.mipmaps[i].height, 0, pixels.mipmaps[i].data);            }        }        else if (pixels instanceof Uint8Array)        {            gl.texImage2D(gl.TEXTURE_2D, mipLevel, format, width, height, 0, format, gl.UNSIGNED_BYTE, pixels);            generateMipmap = IsSizePowerOfTwo(width, height);        }        else        {            if (!this.forceSize)            {                width = pixels.width;                height = pixels.height;            }            gl.texImage2D(gl.TEXTURE_2D, mipLevel, format, format, gl.UNSIGNED_BYTE, pixels);            generateMipmap = IsSizePowerOfTwo(width, height);        }        if (generateMipmap)        {            gl.generateMipmap(gl.TEXTURE_2D);        }        if (currentTexture)        {            gl.bindTexture(gl.TEXTURE_2D, currentTexture);        }        else        {            gl.bindTexture(gl.TEXTURE_2D, null);        }    },    spectorMetadata: {        get: function ()        {            return this.__SPECTOR_Metadata;        },        set: function (value)        {            this.__SPECTOR_Metadata = value;            if (!this.gl.isContextLost())            {                this.webGLTexture.__SPECTOR_Metadata = value;            }        }    },    destroy: function ()    {        if (this.webGLTexture === null)        {            return;        }        if (!this.gl.isContextLost())        {            if (!(this.pixels instanceof WebGLTextureWrapper))            {                this.gl.deleteTexture(this.webGLTexture);            }        }        this.pixels = null;        this.webGLTexture = null;        this.gl = null;    }});module.exports = WebGLTextureWrapper;

@@ -1,6 +1,1 @@
-var ReverseColumns = function (matrix)
-{
-    return matrix.reverse();
-};
-
-module.exports = ReverseColumns;
+var ReverseColumns = function (matrix){    return matrix.reverse();};module.exports = ReverseColumns;

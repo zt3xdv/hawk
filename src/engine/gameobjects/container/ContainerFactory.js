@@ -1,7 +1,1 @@
-var Container = require('./Container');
-var GameObjectFactory = require('../GameObjectFactory');
-
-GameObjectFactory.register('container', function (x, y, children)
-{
-    return this.displayList.add(new Container(this.scene, x, y, children));
-});
+var Container = require('./Container');var GameObjectFactory = require('../GameObjectFactory');GameObjectFactory.register('container', function (x, y, children){    return this.displayList.add(new Container(this.scene, x, y, children));});

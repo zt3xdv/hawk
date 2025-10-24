@@ -1,7 +1,1 @@
-var Graphics = require('./Graphics');
-var GameObjectFactory = require('../GameObjectFactory');
-
-GameObjectFactory.register('graphics', function (config)
-{
-    return this.displayList.add(new Graphics(this.scene, config));
-});
+var Graphics = require('./Graphics');var GameObjectFactory = require('../GameObjectFactory');GameObjectFactory.register('graphics', function (config){    return this.displayList.add(new Graphics(this.scene, config));});

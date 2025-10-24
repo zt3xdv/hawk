@@ -1,6 +1,1 @@
-var Reverse = function (string)
-{
-    return string.split('').reverse().join('');
-};
-
-module.exports = Reverse;
+var Reverse = function (string){    return string.split('').reverse().join('');};module.exports = Reverse;

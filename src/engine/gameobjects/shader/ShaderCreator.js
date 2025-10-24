@@ -1,26 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var Shader = require('./Shader');
-
-GameObjectCreator.register('shader', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var key = GetAdvancedValue(config, 'key', null);
-    var x = GetAdvancedValue(config, 'x', 0);
-    var y = GetAdvancedValue(config, 'y', 0);
-    var width = GetAdvancedValue(config, 'width', 128);
-    var height = GetAdvancedValue(config, 'height', 128);
-
-    var shader = new Shader(this.scene, key, x, y, width, height);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, shader, config);
-
-    return shader;
-});
+var BuildGameObject = require('../BuildGameObject');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var Shader = require('./Shader');GameObjectCreator.register('shader', function (config, addToScene){    if (config === undefined) { config = {}; }    var key = GetAdvancedValue(config, 'key', null);    var x = GetAdvancedValue(config, 'x', 0);    var y = GetAdvancedValue(config, 'y', 0);    var width = GetAdvancedValue(config, 'width', 128);    var height = GetAdvancedValue(config, 'height', 128);    var shader = new Shader(this.scene, key, x, y, width, height);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, shader, config);    return shader;});

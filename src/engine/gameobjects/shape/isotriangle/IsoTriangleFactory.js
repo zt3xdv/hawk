@@ -1,7 +1,1 @@
-var GameObjectFactory = require('../../GameObjectFactory');
-var IsoTriangle = require('./IsoTriangle');
-
-GameObjectFactory.register('isotriangle', function (x, y, size, height, reversed, fillTop, fillLeft, fillRight)
-{
-    return this.displayList.add(new IsoTriangle(this.scene, x, y, size, height, reversed, fillTop, fillLeft, fillRight));
-});
+var GameObjectFactory = require('../../GameObjectFactory');var IsoTriangle = require('./IsoTriangle');GameObjectFactory.register('isotriangle', function (x, y, size, height, reversed, fillTop, fillLeft, fillRight){    return this.displayList.add(new IsoTriangle(this.scene, x, y, size, height, reversed, fillTop, fillLeft, fillRight));});

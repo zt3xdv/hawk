@@ -1,1 +1,1 @@
-module.exports = 'looped';
+module.exports = 'looped';

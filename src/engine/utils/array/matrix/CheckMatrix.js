@@ -1,21 +1,1 @@
-var CheckMatrix = function (matrix)
-{
-    if (!Array.isArray(matrix) || !Array.isArray(matrix[0]))
-    {
-        return false;
-    }
-
-    var size = matrix[0].length;
-
-    for (var i = 1; i < matrix.length; i++)
-    {
-        if (matrix[i].length !== size)
-        {
-            return false;
-        }
-    }
-
-    return true;
-};
-
-module.exports = CheckMatrix;
+var CheckMatrix = function (matrix){    if (!Array.isArray(matrix) || !Array.isArray(matrix[0]))    {        return false;    }    var size = matrix[0].length;    for (var i = 1; i < matrix.length; i++)    {        if (matrix[i].length !== size)        {            return false;        }    }    return true;};module.exports = CheckMatrix;

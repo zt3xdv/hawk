@@ -1,1 +1,1 @@
-module.exports = 'decodedall';
+module.exports = 'decodedall';

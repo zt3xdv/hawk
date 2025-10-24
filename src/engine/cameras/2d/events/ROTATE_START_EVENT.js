@@ -1,1 +1,1 @@
-module.exports = 'camerarotatestart';
+module.exports = 'camerarotatestart';

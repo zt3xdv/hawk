@@ -1,21 +1,13 @@
 var MathRotateAroundDistance = require('../math/RotateAroundDistance');
-
-var RotateAroundDistance = function (items, point, angle, distance)
-{
-    var x = point.x;
-    var y = point.y;
-
-    if (distance === 0)
-    {
-        return items;
-    }
-
-    for (var i = 0; i < items.length; i++)
-    {
-        MathRotateAroundDistance(items[i], x, y, angle, distance);
-    }
-
+var RotateAroundDistance = function (items, point, angle, distance) {
+  var x = point.x;
+  var y = point.y;
+  if (distance === 0) {
     return items;
+  }
+  for (var i = 0; i < items.length; i++) {
+    MathRotateAroundDistance(items[i], x, y, angle, distance);
+  }
+  return items;
 };
-
 module.exports = RotateAroundDistance;

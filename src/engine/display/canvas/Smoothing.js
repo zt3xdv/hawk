@@ -1,67 +1,1 @@
-var prefix = '';
-
-var Smoothing = function ()
-{
-
-    var getPrefix = function (context)
-    {
-        var vendors = [ 'i', 'webkitI', 'msI', 'mozI', 'oI' ];
-
-        for (var i = 0; i < vendors.length; i++)
-        {
-            var s = vendors[i] + 'mageSmoothingEnabled';
-
-            if (s in context)
-            {
-                return s;
-            }
-        }
-
-        return null;
-    };
-
-    var enable = function (context)
-    {
-        if (prefix === '')
-        {
-            prefix = getPrefix(context);
-        }
-
-        if (prefix)
-        {
-            context[prefix] = true;
-        }
-
-        return context;
-    };
-
-    var disable = function (context)
-    {
-        if (prefix === '')
-        {
-            prefix = getPrefix(context);
-        }
-
-        if (prefix)
-        {
-            context[prefix] = false;
-        }
-
-        return context;
-    };
-
-    var isEnabled = function (context)
-    {
-        return (prefix !== null) ? context[prefix] : null;
-    };
-
-    return {
-        disable: disable,
-        enable: enable,
-        getPrefix: getPrefix,
-        isEnabled: isEnabled
-    };
-
-};
-
-module.exports = Smoothing();
+var prefix = '';var Smoothing = function (){    var getPrefix = function (context)    {        var vendors = [ 'i', 'webkitI', 'msI', 'mozI', 'oI' ];        for (var i = 0; i < vendors.length; i++)        {            var s = vendors[i] + 'mageSmoothingEnabled';            if (s in context)            {                return s;            }        }        return null;    };    var enable = function (context)    {        if (prefix === '')        {            prefix = getPrefix(context);        }        if (prefix)        {            context[prefix] = true;        }        return context;    };    var disable = function (context)    {        if (prefix === '')        {            prefix = getPrefix(context);        }        if (prefix)        {            context[prefix] = false;        }        return context;    };    var isEnabled = function (context)    {        return (prefix !== null) ? context[prefix] : null;    };    return {        disable: disable,        enable: enable,        getPrefix: getPrefix,        isEnabled: isEnabled    };};module.exports = Smoothing();

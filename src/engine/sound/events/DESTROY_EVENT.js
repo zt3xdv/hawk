@@ -1,1 +1,1 @@
-module.exports = 'destroy';
+module.exports = 'destroy';

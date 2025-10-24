@@ -1,6 +1,4 @@
-var MinSub = function (value, amount, min)
-{
-    return Math.max(value - amount, min);
+var MinSub = function (value, amount, min) {
+  return Math.max(value - amount, min);
 };
-
 module.exports = MinSub;

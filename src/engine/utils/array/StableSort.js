@@ -1,120 +1,1 @@
-var Device = require('../../device');
-
-function Compare (a, b)
-{
-    return String(a).localeCompare(b);
-}
-
-function Process (array, compare)
-{
-
-    var len = array.length;
-
-    if (len <= 1)
-    {
-        return array;
-    }
-
-    var buffer = new Array(len);
-
-    for (var chk = 1; chk < len; chk *= 2)
-    {
-        RunPass(array, compare, chk, buffer);
-
-        var tmp = array;
-
-        array = buffer;
-
-        buffer = tmp;
-    }
-
-    return array;
-}
-
-function RunPass (arr, comp, chk, result)
-{
-    var len = arr.length;
-    var i = 0;
-
-    var dbl = chk * 2;
-
-    var l, r, e;
-
-    var li, ri;
-
-    for (l = 0; l < len; l += dbl)
-    {
-        r = l + chk;
-        e = r + chk;
-
-        if (r > len)
-        {
-            r = len;
-        }
-
-        if (e > len)
-        {
-            e = len;
-        }
-
-        li = l;
-        ri = r;
-
-        while (true)
-        {
-
-            if (li < r && ri < e)
-            {
-
-                if (comp(arr[li], arr[ri]) <= 0)
-                {
-                    result[i++] = arr[li++];
-                }
-                else
-                {
-                    result[i++] = arr[ri++];
-                }
-            }
-            else if (li < r)
-            {
-
-                result[i++] = arr[li++];
-            }
-            else if (ri < e)
-            {
-                result[i++] = arr[ri++];
-            }
-            else
-            {
-
-                break;
-            }
-        }
-    }
-}
-
-var StableSort = function (array, compare)
-{
-    if (compare === undefined) { compare = Compare; }
-
-    if (!array || array.length < 2)
-    {
-        return array;
-    }
-
-    if (Device.features.stableSort)
-    {
-        return array.sort(compare);
-    }
-
-    var result = Process(array, compare);
-
-    if (result !== array)
-    {
-        RunPass(result, null, array.length, array);
-    }
-
-    return array;
-};
-
-module.exports = StableSort;
+var Device = require('../../device');function Compare (a, b){    return String(a).localeCompare(b);}function Process (array, compare){    var len = array.length;    if (len <= 1)    {        return array;    }    var buffer = new Array(len);    for (var chk = 1; chk < len; chk *= 2)    {        RunPass(array, compare, chk, buffer);        var tmp = array;        array = buffer;        buffer = tmp;    }    return array;}function RunPass (arr, comp, chk, result){    var len = arr.length;    var i = 0;    var dbl = chk * 2;    var l, r, e;    var li, ri;    for (l = 0; l < len; l += dbl)    {        r = l + chk;        e = r + chk;        if (r > len)        {            r = len;        }        if (e > len)        {            e = len;        }        li = l;        ri = r;        while (true)        {            if (li < r && ri < e)            {                if (comp(arr[li], arr[ri]) <= 0)                {                    result[i++] = arr[li++];                }                else                {                    result[i++] = arr[ri++];                }            }            else if (li < r)            {                result[i++] = arr[li++];            }            else if (ri < e)            {                result[i++] = arr[ri++];            }            else            {                break;            }        }    }}var StableSort = function (array, compare){    if (compare === undefined) { compare = Compare; }    if (!array || array.length < 2)    {        return array;    }    if (Device.features.stableSort)    {        return array.sort(compare);    }    var result = Process(array, compare);    if (result !== array)    {        RunPass(result, null, array.length, array);    }    return array;};module.exports = StableSort;

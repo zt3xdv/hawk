@@ -1,1 +1,1 @@
-module.exports = 'tilecollide';
+module.exports = 'tilecollide';

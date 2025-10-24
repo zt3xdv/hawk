@@ -1,31 +1,1 @@
-var Vector2 = require('../../math/Vector2');
-
-function det (m00, m01, m10, m11)
-{
-    return (m00 * m11) - (m01 * m10);
-}
-
-var CircumCenter = function (triangle, out)
-{
-    if (out === undefined) { out = new Vector2(); }
-
-    var cx = triangle.x3;
-    var cy = triangle.y3;
-
-    var ax = triangle.x1 - cx;
-    var ay = triangle.y1 - cy;
-
-    var bx = triangle.x2 - cx;
-    var by = triangle.y2 - cy;
-
-    var denom = 2 * det(ax, ay, bx, by);
-    var numx = det(ay, ax * ax + ay * ay, by, bx * bx + by * by);
-    var numy = det(ax, ax * ax + ay * ay, bx, bx * bx + by * by);
-
-    out.x = cx - numx / denom;
-    out.y = cy + numy / denom;
-
-    return out;
-};
-
-module.exports = CircumCenter;
+var Vector2 = require('../../math/Vector2');function det (m00, m01, m10, m11){    return (m00 * m11) - (m01 * m10);}var CircumCenter = function (triangle, out){    if (out === undefined) { out = new Vector2(); }    var cx = triangle.x3;    var cy = triangle.y3;    var ax = triangle.x1 - cx;    var ay = triangle.y1 - cy;    var bx = triangle.x2 - cx;    var by = triangle.y2 - cy;    var denom = 2 * det(ax, ay, bx, by);    var numx = det(ay, ax * ax + ay * ay, by, bx * bx + by * by);    var numy = det(ax, ax * ax + ay * ay, bx, bx * bx + by * by);    out.x = cx - numx / denom;    out.y = cy + numy / denom;    return out;};module.exports = CircumCenter;

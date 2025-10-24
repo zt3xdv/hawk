@@ -1,106 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var FileTypesManager = require('../FileTypesManager');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var ImageFile = require('./ImageFile');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-var MultiFile = require('../MultiFile');
-var TextFile = require('./TextFile');
-
-
-var UnityAtlasFile = new Class({
-
-    Extends: MultiFile,
-
-    initialize:
-
-    function UnityAtlasFile (loader, key, textureURL, atlasURL, textureXhrSettings, atlasXhrSettings)
-    {
-        var image;
-        var data;
-
-        if (IsPlainObject(key))
-        {
-            var config = key;
-
-            key = GetFastValue(config, 'key');
-
-            image = new ImageFile(loader, {
-                key: key,
-                url: GetFastValue(config, 'textureURL'),
-                extension: GetFastValue(config, 'textureExtension', 'png'),
-                normalMap: GetFastValue(config, 'normalMap'),
-                xhrSettings: GetFastValue(config, 'textureXhrSettings')
-            });
-
-            data = new TextFile(loader, {
-                key: key,
-                url: GetFastValue(config, 'atlasURL'),
-                extension: GetFastValue(config, 'atlasExtension', 'txt'),
-                xhrSettings: GetFastValue(config, 'atlasXhrSettings')
-            });
-        }
-        else
-        {
-            image = new ImageFile(loader, key, textureURL, textureXhrSettings);
-            data = new TextFile(loader, key, atlasURL, atlasXhrSettings);
-        }
-
-        if (image.linkFile)
-        {
-            //  Image has a normal map
-            MultiFile.call(this, loader, 'unityatlas', key, [ image, data, image.linkFile ]);
-        }
-        else
-        {
-            MultiFile.call(this, loader, 'unityatlas', key, [ image, data ]);
-        }
-    },
-
-    
-    addToCache: function ()
-    {
-        if (this.isReadyToProcess())
-        {
-            var image = this.files[0];
-            var text = this.files[1];
-            var normalMap = (this.files[2]) ? this.files[2].data : null;
-
-            this.loader.textureManager.addUnityAtlas(image.key, image.data, text.data, normalMap);
-
-            this.complete = true;
-        }
-    }
-
-});
-
-
-FileTypesManager.register('unityAtlas', function (key, textureURL, atlasURL, textureXhrSettings, atlasXhrSettings)
-{
-    var multifile;
-
-    //  Supports an Object file definition in the key argument
-    //  Or an array of objects in the key argument
-    //  Or a single entry where all arguments have been defined
-
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            multifile = new UnityAtlasFile(this, key[i]);
-
-            this.addFile(multifile.files);
-        }
-    }
-    else
-    {
-        multifile = new UnityAtlasFile(this, key, textureURL, atlasURL, textureXhrSettings, atlasXhrSettings);
-
-        this.addFile(multifile.files);
-    }
-
-    return this;
-});
-
-module.exports = UnityAtlasFile;
+var Class = require('../../utils/Class');var FileTypesManager = require('../FileTypesManager');var GetFastValue = require('../../utils/object/GetFastValue');var ImageFile = require('./ImageFile');var IsPlainObject = require('../../utils/object/IsPlainObject');var MultiFile = require('../MultiFile');var TextFile = require('./TextFile');var UnityAtlasFile = new Class({    Extends: MultiFile,    initialize:    function UnityAtlasFile (loader, key, textureURL, atlasURL, textureXhrSettings, atlasXhrSettings)    {        var image;        var data;        if (IsPlainObject(key))        {            var config = key;            key = GetFastValue(config, 'key');            image = new ImageFile(loader, {                key: key,                url: GetFastValue(config, 'textureURL'),                extension: GetFastValue(config, 'textureExtension', 'png'),                normalMap: GetFastValue(config, 'normalMap'),                xhrSettings: GetFastValue(config, 'textureXhrSettings')            });            data = new TextFile(loader, {                key: key,                url: GetFastValue(config, 'atlasURL'),                extension: GetFastValue(config, 'atlasExtension', 'txt'),                xhrSettings: GetFastValue(config, 'atlasXhrSettings')            });        }        else        {            image = new ImageFile(loader, key, textureURL, textureXhrSettings);            data = new TextFile(loader, key, atlasURL, atlasXhrSettings);        }        if (image.linkFile)        {            //  Image has a normal map            MultiFile.call(this, loader, 'unityatlas', key, [ image, data, image.linkFile ]);        }        else        {            MultiFile.call(this, loader, 'unityatlas', key, [ image, data ]);        }    },        addToCache: function ()    {        if (this.isReadyToProcess())        {            var image = this.files[0];            var text = this.files[1];            var normalMap = (this.files[2]) ? this.files[2].data : null;            this.loader.textureManager.addUnityAtlas(image.key, image.data, text.data, normalMap);            this.complete = true;        }    }});FileTypesManager.register('unityAtlas', function (key, textureURL, atlasURL, textureXhrSettings, atlasXhrSettings){    var multifile;    //  Supports an Object file definition in the key argument    //  Or an array of objects in the key argument    //  Or a single entry where all arguments have been defined    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            multifile = new UnityAtlasFile(this, key[i]);            this.addFile(multifile.files);        }    }    else    {        multifile = new UnityAtlasFile(this, key, textureURL, atlasURL, textureXhrSettings, atlasXhrSettings);        this.addFile(multifile.files);    }    return this;});module.exports = UnityAtlasFile;

@@ -1,695 +1,1 @@
-var BaseSound = require('../BaseSound');
-var Class = require('../../utils/Class');
-var Events = require('../events');
-var GetFastValue = require('../../utils/object/GetFastValue');
-
-var WebAudioSound = new Class({
-
-    Extends: BaseSound,
-
-    initialize:
-
-    function WebAudioSound (manager, key, config)
-    {
-        if (config === undefined) { config = {}; }
-
-        this.audioBuffer = manager.game.cache.audio.get(key);
-
-        if (!this.audioBuffer)
-        {
-            throw new Error('Audio key "' + key + '" not found in cache');
-        }
-
-        this.source = null;
-
-        this.loopSource = null;
-
-        this.muteNode = manager.context.createGain();
-
-        this.volumeNode = manager.context.createGain();
-
-        this.pannerNode = null;
-
-        this.spatialNode = null;
-
-        this.spatialSource = null;
-
-        this.playTime = 0;
-
-        this.startTime = 0;
-
-        this.loopTime = 0;
-
-        this.rateUpdates = [];
-
-        this.hasEnded = false;
-
-        this.hasLooped = false;
-
-        this.muteNode.connect(this.volumeNode);
-
-        if (manager.context.createPanner)
-        {
-            this.spatialNode = manager.context.createPanner();
-
-            this.volumeNode.connect(this.spatialNode);
-        }
-
-        if (manager.context.createStereoPanner)
-        {
-            this.pannerNode = manager.context.createStereoPanner();
-
-            if (manager.context.createPanner)
-            {
-                this.spatialNode.connect(this.pannerNode);
-            }
-            else
-            {
-                this.volumeNode.connect(this.pannerNode);
-            }
-
-            this.pannerNode.connect(manager.destination);
-        }
-        else if (manager.context.createPanner)
-        {
-            this.spatialNode.connect(manager.destination);
-        }
-        else
-        {
-            this.volumeNode.connect(manager.destination);
-        }
-
-        this.duration = this.audioBuffer.duration;
-
-        this.totalDuration = this.audioBuffer.duration;
-
-        BaseSound.call(this, manager, key, config);
-    },
-
-    play: function (markerName, config)
-    {
-        if (!BaseSound.prototype.play.call(this, markerName, config))
-        {
-            return false;
-        }
-
-        this.stopAndRemoveBufferSource();
-        this.createAndStartBufferSource();
-
-        this.emit(Events.PLAY, this);
-
-        return true;
-    },
-
-    pause: function ()
-    {
-        if (this.manager.context.currentTime < this.startTime)
-        {
-            return false;
-        }
-
-        if (!BaseSound.prototype.pause.call(this))
-        {
-            return false;
-        }
-
-        this.currentConfig.seek = this.getCurrentTime(); 
-        this.stopAndRemoveBufferSource();
-
-        this.emit(Events.PAUSE, this);
-
-        return true;
-    },
-
-    resume: function ()
-    {
-        if (this.manager.context.currentTime < this.startTime)
-        {
-            return false;
-        }
-
-        if (!BaseSound.prototype.resume.call(this))
-        {
-            return false;
-        }
-
-        this.createAndStartBufferSource();
-
-        this.emit(Events.RESUME, this);
-
-        return true;
-    },
-
-    stop: function ()
-    {
-        if (!BaseSound.prototype.stop.call(this))
-        {
-            return false;
-        }
-
-        this.stopAndRemoveBufferSource();
-
-        this.emit(Events.STOP, this);
-
-        return true;
-    },
-
-    createAndStartBufferSource: function ()
-    {
-        var seek = this.currentConfig.seek;
-        var delay = this.currentConfig.delay;
-        var when = this.manager.context.currentTime + delay;
-        var offset = (this.currentMarker ? this.currentMarker.start : 0) + seek;
-        var duration = this.duration - seek;
-
-        this.playTime = when - seek;
-        this.startTime = when;
-        this.source = this.createBufferSource();
-
-        this.applyConfig();
-
-        this.source.start(Math.max(0, when), Math.max(0, offset), Math.max(0, duration));
-
-        this.resetConfig();
-    },
-
-    createAndStartLoopBufferSource: function ()
-    {
-        var when = this.getLoopTime();
-        var offset = this.currentMarker ? this.currentMarker.start : 0;
-        var duration = this.duration;
-
-        this.loopTime = when;
-        this.loopSource = this.createBufferSource();
-        this.loopSource.playbackRate.setValueAtTime(this.totalRate, 0);
-        this.loopSource.start(Math.max(0, when), Math.max(0, offset), Math.max(0, duration));
-    },
-
-    createBufferSource: function ()
-    {
-        var _this = this;
-        var source = this.manager.context.createBufferSource();
-
-        source.buffer = this.audioBuffer;
-
-        source.connect(this.muteNode);
-
-        source.onended = function (ev)
-        {
-            var target = ev.target;
-
-            if (target === _this.source || target === _this.loopSource)
-            {
-
-                if (_this.currentConfig.loop)
-                {
-                    _this.hasLooped = true;
-                }
-                else
-                {
-                    _this.hasEnded = true;
-                }
-            }
-
-        };
-
-        return source;
-    },
-
-    stopAndRemoveBufferSource: function ()
-    {
-        if (this.source)
-        {
-            var tempSource = this.source;
-
-            this.source = null;
-
-            tempSource.stop();
-            tempSource.disconnect();
-        }
-
-        this.playTime = 0;
-        this.startTime = 0;
-        this.hasEnded = false;
-
-        this.stopAndRemoveLoopBufferSource();
-    },
-
-    stopAndRemoveLoopBufferSource: function ()
-    {
-        if (this.loopSource)
-        {
-            this.loopSource.stop();
-            this.loopSource.disconnect();
-            this.loopSource = null;
-        }
-
-        this.loopTime = 0;
-    },
-
-    applyConfig: function ()
-    {
-        this.rateUpdates.length = 0;
-
-        this.rateUpdates.push({
-            time: 0,
-            rate: 1
-        });
-
-        var source = this.currentConfig.source;
-
-        if (source && this.manager.context.createPanner)
-        {
-            var node = this.spatialNode;
-
-            node.panningModel = GetFastValue(source, 'panningModel', 'equalpower');
-            node.distanceModel = GetFastValue(source, 'distanceModel', 'inverse');
-            node.orientationX.value = GetFastValue(source, 'orientationX', 0);
-            node.orientationY.value = GetFastValue(source, 'orientationY', 0);
-            node.orientationZ.value = GetFastValue(source, 'orientationZ', -1);
-            node.refDistance = GetFastValue(source, 'refDistance', 1);
-            node.maxDistance = GetFastValue(source, 'maxDistance', 10000);
-            node.rolloffFactor = GetFastValue(source, 'rolloffFactor', 1);
-            node.coneInnerAngle = GetFastValue(source, 'coneInnerAngle', 360);
-            node.coneOuterAngle = GetFastValue(source, 'coneOuterAngle', 0);
-            node.coneOuterGain = GetFastValue(source, 'coneOuterGain', 0);
-
-            this.spatialSource = GetFastValue(source, 'follow', null);
-
-            if (!this.spatialSource)
-            {
-                node.positionX.value = GetFastValue(source, 'x', 0);
-                node.positionY.value = GetFastValue(source, 'y', 0);
-                node.positionZ.value = GetFastValue(source, 'z', 0);
-            }
-        }
-
-        BaseSound.prototype.applyConfig.call(this);
-    },
-
-    x: {
-
-        get: function ()
-        {
-            if (this.spatialNode)
-            {
-                return this.spatialNode.positionX;
-            }
-            else
-            {
-                return 0;
-            }
-        },
-
-        set: function (value)
-        {
-            if (this.spatialNode)
-            {
-                this.spatialNode.positionX.value = value;
-            }
-        }
-    },
-
-    y: {
-
-        get: function ()
-        {
-            if (this.spatialNode)
-            {
-                return this.spatialNode.positionY;
-            }
-            else
-            {
-                return 0;
-            }
-        },
-
-        set: function (value)
-        {
-            if (this.spatialNode)
-            {
-                this.spatialNode.positionY.value = value;
-            }
-        }
-    },
-
-    update: function ()
-    {
-        if (this.isPlaying && this.spatialSource)
-        {
-            var x = GetFastValue(this.spatialSource, 'x', null);
-            var y = GetFastValue(this.spatialSource, 'y', null);
-
-            if (x && x !== this._spatialx)
-            {
-                this._spatialx = this.spatialNode.positionX.value = x;
-            }
-            if (y && y !== this._spatialy)
-            {
-                this._spatialy = this.spatialNode.positionY.value = y;
-            }
-        }
-
-        if (this.hasEnded)
-        {
-            BaseSound.prototype.stop.call(this);
-
-            this.stopAndRemoveBufferSource();
-
-            this.emit(Events.COMPLETE, this);
-        }
-        else if (this.hasLooped)
-        {
-            this.hasLooped = false;
-            this.source = this.loopSource;
-            this.loopSource = null;
-            this.playTime = this.startTime = this.loopTime;
-            this.rateUpdates.length = 0;
-
-            this.rateUpdates.push({
-                time: 0,
-                rate: this.totalRate
-            });
-
-            this.createAndStartLoopBufferSource();
-
-            this.emit(Events.LOOPED, this);
-        }
-    },
-
-    destroy: function ()
-    {
-        if (this.pendingRemove)
-        {
-            return;
-        }
-
-        BaseSound.prototype.destroy.call(this);
-
-        this.audioBuffer = null;
-        this.stopAndRemoveBufferSource();
-        this.muteNode.disconnect();
-        this.muteNode = null;
-        this.volumeNode.disconnect();
-        this.volumeNode = null;
-
-        if (this.pannerNode)
-        {
-            this.pannerNode.disconnect();
-            this.pannerNode = null;
-        }
-
-        if (this.spatialNode)
-        {
-            this.spatialNode.disconnect();
-            this.spatialNode = null;
-            this.spatialSource = null;
-        }
-
-        this.rateUpdates.length = 0;
-        this.rateUpdates = null;
-    },
-
-    calculateRate: function ()
-    {
-        BaseSound.prototype.calculateRate.call(this);
-
-        var now = this.manager.context.currentTime;
-
-        if (this.source && typeof this.totalRate === 'number')
-        {
-            this.source.playbackRate.setValueAtTime(this.totalRate, now);
-        }
-
-        if (this.isPlaying)
-        {
-            this.rateUpdates.push({
-                time: Math.max(this.startTime, now) - this.playTime,
-                rate: this.totalRate
-            });
-
-            if (this.loopSource)
-            {
-                this.stopAndRemoveLoopBufferSource();
-                this.createAndStartLoopBufferSource();
-            }
-        }
-    },
-
-    getCurrentTime: function ()
-    {
-        var currentTime = 0;
-
-        for (var i = 0; i < this.rateUpdates.length; i++)
-        {
-            var nextTime = 0;
-
-            if (i < this.rateUpdates.length - 1)
-            {
-                nextTime = this.rateUpdates[i + 1].time;
-            }
-            else
-            {
-                nextTime = this.manager.context.currentTime - this.playTime;
-            }
-
-            currentTime += (nextTime - this.rateUpdates[i].time) * this.rateUpdates[i].rate;
-        }
-
-        return currentTime;
-    },
-
-    getLoopTime: function ()
-    {
-        var lastRateUpdateCurrentTime = 0;
-
-        for (var i = 0; i < this.rateUpdates.length - 1; i++)
-        {
-            lastRateUpdateCurrentTime += (this.rateUpdates[i + 1].time - this.rateUpdates[i].time) * this.rateUpdates[i].rate;
-        }
-
-        var lastRateUpdate = this.rateUpdates[this.rateUpdates.length - 1];
-
-        return this.playTime + lastRateUpdate.time + (this.duration - lastRateUpdateCurrentTime) / lastRateUpdate.rate;
-    },
-
-    rate: {
-
-        get: function ()
-        {
-            return this.currentConfig.rate;
-        },
-
-        set: function (value)
-        {
-            this.currentConfig.rate = value;
-
-            this.calculateRate();
-
-            this.emit(Events.RATE, this, value);
-        }
-
-    },
-
-    setRate: function (value)
-    {
-        this.rate = value;
-
-        return this;
-    },
-
-    detune: {
-
-        get: function ()
-        {
-            return this.currentConfig.detune;
-        },
-
-        set: function (value)
-        {
-            this.currentConfig.detune = value;
-
-            this.calculateRate();
-
-            this.emit(Events.DETUNE, this, value);
-        }
-
-    },
-
-    setDetune: function (value)
-    {
-        this.detune = value;
-
-        return this;
-    },
-
-    mute: {
-
-        get: function ()
-        {
-            return (this.muteNode.gain.value === 0);
-        },
-
-        set: function (value)
-        {
-            this.currentConfig.mute = value;
-            this.muteNode.gain.setValueAtTime(value ? 0 : 1, 0);
-
-            this.emit(Events.MUTE, this, value);
-        }
-
-    },
-
-    setMute: function (value)
-    {
-        this.mute = value;
-
-        return this;
-    },
-
-    volume: {
-
-        get: function ()
-        {
-            return this.volumeNode.gain.value;
-        },
-
-        set: function (value)
-        {
-            this.currentConfig.volume = value;
-            this.volumeNode.gain.setValueAtTime(value, 0);
-
-            this.emit(Events.VOLUME, this, value);
-        }
-    },
-
-    setVolume: function (value)
-    {
-        this.volume = value;
-
-        return this;
-    },
-
-    seek: {
-
-        get: function ()
-        {
-            if (this.isPlaying)
-            {
-                if (this.manager.context.currentTime < this.startTime)
-                {
-                    return this.startTime - this.playTime;
-                }
-
-                return this.getCurrentTime();
-            }
-            else if (this.isPaused)
-            {
-                return this.currentConfig.seek;
-            }
-            else
-            {
-                return 0;
-            }
-        },
-
-        set: function (value)
-        {
-            if (this.manager.context.currentTime < this.startTime)
-            {
-                return;
-            }
-
-            if (this.isPlaying || this.isPaused)
-            {
-                value = Math.min(Math.max(0, value), this.duration);
-
-                this.currentConfig.seek = value;
-
-                if (this.isPlaying)
-                {
-                    this.stopAndRemoveBufferSource();
-                    this.createAndStartBufferSource();
-                }
-
-                this.emit(Events.SEEK, this, value);
-            }
-        }
-    },
-
-    setSeek: function (value)
-    {
-        this.seek = value;
-
-        return this;
-    },
-
-    loop: {
-
-        get: function ()
-        {
-            return this.currentConfig.loop;
-        },
-
-        set: function (value)
-        {
-            this.currentConfig.loop = value;
-
-            if (this.isPlaying)
-            {
-                this.stopAndRemoveLoopBufferSource();
-
-                if (value)
-                {
-                    this.createAndStartLoopBufferSource();
-                }
-            }
-
-            this.emit(Events.LOOP, this, value);
-        }
-    },
-
-    setLoop: function (value)
-    {
-        this.loop = value;
-
-        return this;
-    },
-
-    pan: {
-
-        get: function ()
-        {
-            if (this.pannerNode)
-            {
-                return this.pannerNode.pan.value;
-            }
-            else
-            {
-                return 0;
-            }
-        },
-
-        set: function (value)
-        {
-            this.currentConfig.pan = value;
-
-            if (this.pannerNode)
-            {
-                this.pannerNode.pan.setValueAtTime(value, this.manager.context.currentTime);
-            }
-
-            this.emit(Events.PAN, this, value);
-        }
-    },
-
-    setPan: function (value)
-    {
-        this.pan = value;
-
-        return this;
-    }
-
-});
-
-module.exports = WebAudioSound;
+var BaseSound = require('../BaseSound');var Class = require('../../utils/Class');var Events = require('../events');var GetFastValue = require('../../utils/object/GetFastValue');var WebAudioSound = new Class({    Extends: BaseSound,    initialize:    function WebAudioSound (manager, key, config)    {        if (config === undefined) { config = {}; }        this.audioBuffer = manager.game.cache.audio.get(key);        if (!this.audioBuffer)        {            throw new Error('Audio key "' + key + '" not found in cache');        }        this.source = null;        this.loopSource = null;        this.muteNode = manager.context.createGain();        this.volumeNode = manager.context.createGain();        this.pannerNode = null;        this.spatialNode = null;        this.spatialSource = null;        this.playTime = 0;        this.startTime = 0;        this.loopTime = 0;        this.rateUpdates = [];        this.hasEnded = false;        this.hasLooped = false;        this.muteNode.connect(this.volumeNode);        if (manager.context.createPanner)        {            this.spatialNode = manager.context.createPanner();            this.volumeNode.connect(this.spatialNode);        }        if (manager.context.createStereoPanner)        {            this.pannerNode = manager.context.createStereoPanner();            if (manager.context.createPanner)            {                this.spatialNode.connect(this.pannerNode);            }            else            {                this.volumeNode.connect(this.pannerNode);            }            this.pannerNode.connect(manager.destination);        }        else if (manager.context.createPanner)        {            this.spatialNode.connect(manager.destination);        }        else        {            this.volumeNode.connect(manager.destination);        }        this.duration = this.audioBuffer.duration;        this.totalDuration = this.audioBuffer.duration;        BaseSound.call(this, manager, key, config);    },    play: function (markerName, config)    {        if (!BaseSound.prototype.play.call(this, markerName, config))        {            return false;        }        this.stopAndRemoveBufferSource();        this.createAndStartBufferSource();        this.emit(Events.PLAY, this);        return true;    },    pause: function ()    {        if (this.manager.context.currentTime < this.startTime)        {            return false;        }        if (!BaseSound.prototype.pause.call(this))        {            return false;        }        this.currentConfig.seek = this.getCurrentTime();         this.stopAndRemoveBufferSource();        this.emit(Events.PAUSE, this);        return true;    },    resume: function ()    {        if (this.manager.context.currentTime < this.startTime)        {            return false;        }        if (!BaseSound.prototype.resume.call(this))        {            return false;        }        this.createAndStartBufferSource();        this.emit(Events.RESUME, this);        return true;    },    stop: function ()    {        if (!BaseSound.prototype.stop.call(this))        {            return false;        }        this.stopAndRemoveBufferSource();        this.emit(Events.STOP, this);        return true;    },    createAndStartBufferSource: function ()    {        var seek = this.currentConfig.seek;        var delay = this.currentConfig.delay;        var when = this.manager.context.currentTime + delay;        var offset = (this.currentMarker ? this.currentMarker.start : 0) + seek;        var duration = this.duration - seek;        this.playTime = when - seek;        this.startTime = when;        this.source = this.createBufferSource();        this.applyConfig();        this.source.start(Math.max(0, when), Math.max(0, offset), Math.max(0, duration));        this.resetConfig();    },    createAndStartLoopBufferSource: function ()    {        var when = this.getLoopTime();        var offset = this.currentMarker ? this.currentMarker.start : 0;        var duration = this.duration;        this.loopTime = when;        this.loopSource = this.createBufferSource();        this.loopSource.playbackRate.setValueAtTime(this.totalRate, 0);        this.loopSource.start(Math.max(0, when), Math.max(0, offset), Math.max(0, duration));    },    createBufferSource: function ()    {        var _this = this;        var source = this.manager.context.createBufferSource();        source.buffer = this.audioBuffer;        source.connect(this.muteNode);        source.onended = function (ev)        {            var target = ev.target;            if (target === _this.source || target === _this.loopSource)            {                if (_this.currentConfig.loop)                {                    _this.hasLooped = true;                }                else                {                    _this.hasEnded = true;                }            }        };        return source;    },    stopAndRemoveBufferSource: function ()    {        if (this.source)        {            var tempSource = this.source;            this.source = null;            tempSource.stop();            tempSource.disconnect();        }        this.playTime = 0;        this.startTime = 0;        this.hasEnded = false;        this.stopAndRemoveLoopBufferSource();    },    stopAndRemoveLoopBufferSource: function ()    {        if (this.loopSource)        {            this.loopSource.stop();            this.loopSource.disconnect();            this.loopSource = null;        }        this.loopTime = 0;    },    applyConfig: function ()    {        this.rateUpdates.length = 0;        this.rateUpdates.push({            time: 0,            rate: 1        });        var source = this.currentConfig.source;        if (source && this.manager.context.createPanner)        {            var node = this.spatialNode;            node.panningModel = GetFastValue(source, 'panningModel', 'equalpower');            node.distanceModel = GetFastValue(source, 'distanceModel', 'inverse');            node.orientationX.value = GetFastValue(source, 'orientationX', 0);            node.orientationY.value = GetFastValue(source, 'orientationY', 0);            node.orientationZ.value = GetFastValue(source, 'orientationZ', -1);            node.refDistance = GetFastValue(source, 'refDistance', 1);            node.maxDistance = GetFastValue(source, 'maxDistance', 10000);            node.rolloffFactor = GetFastValue(source, 'rolloffFactor', 1);            node.coneInnerAngle = GetFastValue(source, 'coneInnerAngle', 360);            node.coneOuterAngle = GetFastValue(source, 'coneOuterAngle', 0);            node.coneOuterGain = GetFastValue(source, 'coneOuterGain', 0);            this.spatialSource = GetFastValue(source, 'follow', null);            if (!this.spatialSource)            {                node.positionX.value = GetFastValue(source, 'x', 0);                node.positionY.value = GetFastValue(source, 'y', 0);                node.positionZ.value = GetFastValue(source, 'z', 0);            }        }        BaseSound.prototype.applyConfig.call(this);    },    x: {        get: function ()        {            if (this.spatialNode)            {                return this.spatialNode.positionX;            }            else            {                return 0;            }        },        set: function (value)        {            if (this.spatialNode)            {                this.spatialNode.positionX.value = value;            }        }    },    y: {        get: function ()        {            if (this.spatialNode)            {                return this.spatialNode.positionY;            }            else            {                return 0;            }        },        set: function (value)        {            if (this.spatialNode)            {                this.spatialNode.positionY.value = value;            }        }    },    update: function ()    {        if (this.isPlaying && this.spatialSource)        {            var x = GetFastValue(this.spatialSource, 'x', null);            var y = GetFastValue(this.spatialSource, 'y', null);            if (x && x !== this._spatialx)            {                this._spatialx = this.spatialNode.positionX.value = x;            }            if (y && y !== this._spatialy)            {                this._spatialy = this.spatialNode.positionY.value = y;            }        }        if (this.hasEnded)        {            BaseSound.prototype.stop.call(this);            this.stopAndRemoveBufferSource();            this.emit(Events.COMPLETE, this);        }        else if (this.hasLooped)        {            this.hasLooped = false;            this.source = this.loopSource;            this.loopSource = null;            this.playTime = this.startTime = this.loopTime;            this.rateUpdates.length = 0;            this.rateUpdates.push({                time: 0,                rate: this.totalRate            });            this.createAndStartLoopBufferSource();            this.emit(Events.LOOPED, this);        }    },    destroy: function ()    {        if (this.pendingRemove)        {            return;        }        BaseSound.prototype.destroy.call(this);        this.audioBuffer = null;        this.stopAndRemoveBufferSource();        this.muteNode.disconnect();        this.muteNode = null;        this.volumeNode.disconnect();        this.volumeNode = null;        if (this.pannerNode)        {            this.pannerNode.disconnect();            this.pannerNode = null;        }        if (this.spatialNode)        {            this.spatialNode.disconnect();            this.spatialNode = null;            this.spatialSource = null;        }        this.rateUpdates.length = 0;        this.rateUpdates = null;    },    calculateRate: function ()    {        BaseSound.prototype.calculateRate.call(this);        var now = this.manager.context.currentTime;        if (this.source && typeof this.totalRate === 'number')        {            this.source.playbackRate.setValueAtTime(this.totalRate, now);        }        if (this.isPlaying)        {            this.rateUpdates.push({                time: Math.max(this.startTime, now) - this.playTime,                rate: this.totalRate            });            if (this.loopSource)            {                this.stopAndRemoveLoopBufferSource();                this.createAndStartLoopBufferSource();            }        }    },    getCurrentTime: function ()    {        var currentTime = 0;        for (var i = 0; i < this.rateUpdates.length; i++)        {            var nextTime = 0;            if (i < this.rateUpdates.length - 1)            {                nextTime = this.rateUpdates[i + 1].time;            }            else            {                nextTime = this.manager.context.currentTime - this.playTime;            }            currentTime += (nextTime - this.rateUpdates[i].time) * this.rateUpdates[i].rate;        }        return currentTime;    },    getLoopTime: function ()    {        var lastRateUpdateCurrentTime = 0;        for (var i = 0; i < this.rateUpdates.length - 1; i++)        {            lastRateUpdateCurrentTime += (this.rateUpdates[i + 1].time - this.rateUpdates[i].time) * this.rateUpdates[i].rate;        }        var lastRateUpdate = this.rateUpdates[this.rateUpdates.length - 1];        return this.playTime + lastRateUpdate.time + (this.duration - lastRateUpdateCurrentTime) / lastRateUpdate.rate;    },    rate: {        get: function ()        {            return this.currentConfig.rate;        },        set: function (value)        {            this.currentConfig.rate = value;            this.calculateRate();            this.emit(Events.RATE, this, value);        }    },    setRate: function (value)    {        this.rate = value;        return this;    },    detune: {        get: function ()        {            return this.currentConfig.detune;        },        set: function (value)        {            this.currentConfig.detune = value;            this.calculateRate();            this.emit(Events.DETUNE, this, value);        }    },    setDetune: function (value)    {        this.detune = value;        return this;    },    mute: {        get: function ()        {            return (this.muteNode.gain.value === 0);        },        set: function (value)        {            this.currentConfig.mute = value;            this.muteNode.gain.setValueAtTime(value ? 0 : 1, 0);            this.emit(Events.MUTE, this, value);        }    },    setMute: function (value)    {        this.mute = value;        return this;    },    volume: {        get: function ()        {            return this.volumeNode.gain.value;        },        set: function (value)        {            this.currentConfig.volume = value;            this.volumeNode.gain.setValueAtTime(value, 0);            this.emit(Events.VOLUME, this, value);        }    },    setVolume: function (value)    {        this.volume = value;        return this;    },    seek: {        get: function ()        {            if (this.isPlaying)            {                if (this.manager.context.currentTime < this.startTime)                {                    return this.startTime - this.playTime;                }                return this.getCurrentTime();            }            else if (this.isPaused)            {                return this.currentConfig.seek;            }            else            {                return 0;            }        },        set: function (value)        {            if (this.manager.context.currentTime < this.startTime)            {                return;            }            if (this.isPlaying || this.isPaused)            {                value = Math.min(Math.max(0, value), this.duration);                this.currentConfig.seek = value;                if (this.isPlaying)                {                    this.stopAndRemoveBufferSource();                    this.createAndStartBufferSource();                }                this.emit(Events.SEEK, this, value);            }        }    },    setSeek: function (value)    {        this.seek = value;        return this;    },    loop: {        get: function ()        {            return this.currentConfig.loop;        },        set: function (value)        {            this.currentConfig.loop = value;            if (this.isPlaying)            {                this.stopAndRemoveLoopBufferSource();                if (value)                {                    this.createAndStartLoopBufferSource();                }            }            this.emit(Events.LOOP, this, value);        }    },    setLoop: function (value)    {        this.loop = value;        return this;    },    pan: {        get: function ()        {            if (this.pannerNode)            {                return this.pannerNode.pan.value;            }            else            {                return 0;            }        },        set: function (value)        {            this.currentConfig.pan = value;            if (this.pannerNode)            {                this.pannerNode.pan.setValueAtTime(value, this.manager.context.currentTime);            }            this.emit(Events.PAN, this, value);        }    },    setPan: function (value)    {        this.pan = value;        return this;    }});module.exports = WebAudioSound;

@@ -1,1 +1,1 @@
-module.exports = 'pipelinedestroy';
+module.exports = 'pipelinedestroy';

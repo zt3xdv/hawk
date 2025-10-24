@@ -1,649 +1,1 @@
-var Class = require('../../../utils/Class');
-var Earcut = require('../../../geom/polygon/Earcut');
-var GetFastValue = require('../../../utils/object/GetFastValue');
-var ShaderSourceFS = require('../shaders/Multi-frag');
-var ShaderSourceVS = require('../shaders/Multi-vert');
-var TransformMatrix = require('../../../gameobjects/components/TransformMatrix');
-var Utils = require('../Utils');
-var WEBGL_CONST = require('../const');
-var WebGLPipeline = require('../WebGLPipeline');
-
-var MultiPipeline = new Class({
-
-    Extends: WebGLPipeline,
-
-    initialize:
-
-    function MultiPipeline (config)
-    {
-        var renderer = config.game.renderer;
-
-        var fragmentShaderSource = GetFastValue(config, 'fragShader', ShaderSourceFS);
-
-        config.fragShader = Utils.parseFragmentShaderMaxTextures(fragmentShaderSource, renderer.maxTextures);
-        config.vertShader = GetFastValue(config, 'vertShader', ShaderSourceVS);
-        config.attributes = GetFastValue(config, 'attributes', [
-            {
-                name: 'inPosition',
-                size: 2
-            },
-            {
-                name: 'inTexCoord',
-                size: 2
-            },
-            {
-                name: 'inTexId'
-            },
-            {
-                name: 'inTintEffect'
-            },
-            {
-                name: 'inTint',
-                size: 4,
-                type: WEBGL_CONST.UNSIGNED_BYTE,
-                normalized: true
-            }
-        ]);
-        config.resizeUniform = 'uResolution';
-
-        WebGLPipeline.call(this, config);
-
-        this._tempMatrix1 = new TransformMatrix();
-
-        this._tempMatrix2 = new TransformMatrix();
-
-        this._tempMatrix3 = new TransformMatrix();
-
-        this.calcMatrix = new TransformMatrix();
-
-        this.tempTriangle = [
-            { x: 0, y: 0, width: 0 },
-            { x: 0, y: 0, width: 0 },
-            { x: 0, y: 0, width: 0 },
-            { x: 0, y: 0, width: 0 }
-        ];
-
-        this.strokeTint = { TL: 0, TR: 0, BL: 0, BR: 0 };
-
-        this.fillTint = { TL: 0, TR: 0, BL: 0, BR: 0 };
-
-        this.currentFrame = { u0: 0, v0: 0, u1: 1, v1: 1 };
-
-        this.firstQuad = [ 0, 0, 0, 0, 0 ];
-
-        this.prevQuad = [ 0, 0, 0, 0, 0 ];
-
-        this.polygonCache = [];
-    },
-
-    boot: function ()
-    {
-        WebGLPipeline.prototype.boot.call(this);
-
-        var renderer = this.renderer;
-
-        this.set1iv('uMainSampler', renderer.textureIndexes);
-        this.set2f('uResolution', renderer.width, renderer.height);
-    },
-
-    batchSprite: function (gameObject, camera, parentTransformMatrix)
-    {
-        this.manager.set(this, gameObject);
-
-        var camMatrix = this._tempMatrix1;
-        var spriteMatrix = this._tempMatrix2;
-        var calcMatrix = this._tempMatrix3;
-
-        var frame = gameObject.frame;
-        var texture = frame.glTexture;
-
-        var u0 = frame.u0;
-        var v0 = frame.v0;
-        var u1 = frame.u1;
-        var v1 = frame.v1;
-        var frameX = frame.x;
-        var frameY = frame.y;
-        var frameWidth = frame.cutWidth;
-        var frameHeight = frame.cutHeight;
-        var customPivot = frame.customPivot;
-
-        var displayOriginX = gameObject.displayOriginX;
-        var displayOriginY = gameObject.displayOriginY;
-
-        var x = -displayOriginX + frameX;
-        var y = -displayOriginY + frameY;
-
-        if (gameObject.isCropped)
-        {
-            var crop = gameObject._crop;
-
-            if (crop.flipX !== gameObject.flipX || crop.flipY !== gameObject.flipY)
-            {
-                frame.updateCropUVs(crop, gameObject.flipX, gameObject.flipY);
-            }
-
-            u0 = crop.u0;
-            v0 = crop.v0;
-            u1 = crop.u1;
-            v1 = crop.v1;
-
-            frameWidth = crop.width;
-            frameHeight = crop.height;
-
-            frameX = crop.x;
-            frameY = crop.y;
-
-            x = -displayOriginX + frameX;
-            y = -displayOriginY + frameY;
-        }
-
-        var flipX = 1;
-        var flipY = 1;
-
-        if (gameObject.flipX)
-        {
-            if (!customPivot)
-            {
-                x += (-frame.realWidth + (displayOriginX * 2));
-            }
-
-            flipX = -1;
-        }
-
-        if (gameObject.flipY)
-        {
-            if (!customPivot)
-            {
-                y += (-frame.realHeight + (displayOriginY * 2));
-            }
-
-            flipY = -1;
-        }
-
-        var gx = gameObject.x;
-        var gy = gameObject.y;
-
-        if (camera.roundPixels)
-        {
-            gx = Math.floor(gx);
-            gy = Math.floor(gy);
-        }
-
-        spriteMatrix.applyITRS(gx, gy, gameObject.rotation, gameObject.scaleX * flipX, gameObject.scaleY * flipY);
-
-        camMatrix.copyFrom(camera.matrix);
-
-        if (parentTransformMatrix)
-        {
-
-            camMatrix.multiplyWithOffset(parentTransformMatrix, -camera.scrollX * gameObject.scrollFactorX, -camera.scrollY * gameObject.scrollFactorY);
-
-            spriteMatrix.e = gx;
-            spriteMatrix.f = gy;
-        }
-        else
-        {
-            spriteMatrix.e -= camera.scrollX * gameObject.scrollFactorX;
-            spriteMatrix.f -= camera.scrollY * gameObject.scrollFactorY;
-        }
-
-        camMatrix.multiply(spriteMatrix, calcMatrix);
-
-        var quad = calcMatrix.setQuad(x, y, x + frameWidth, y + frameHeight, camera.renderRoundPixels);
-
-        var getTint = Utils.getTintAppendFloatAlpha;
-        var cameraAlpha = camera.alpha;
-
-        var tintTL = getTint(gameObject.tintTopLeft, cameraAlpha * gameObject._alphaTL);
-        var tintTR = getTint(gameObject.tintTopRight, cameraAlpha * gameObject._alphaTR);
-        var tintBL = getTint(gameObject.tintBottomLeft, cameraAlpha * gameObject._alphaBL);
-        var tintBR = getTint(gameObject.tintBottomRight, cameraAlpha * gameObject._alphaBR);
-
-        if (this.shouldFlush(6))
-        {
-            this.flush();
-        }
-
-        var unit = this.setGameObject(gameObject, frame);
-
-        this.manager.preBatch(gameObject);
-
-        this.batchQuad(gameObject, quad[0], quad[1], quad[2], quad[3], quad[4], quad[5], quad[6], quad[7], u0, v0, u1, v1, tintTL, tintTR, tintBL, tintBR, gameObject.tintFill, texture, unit);
-
-        this.manager.postBatch(gameObject);
-    },
-
-    batchTexture: function (
-        gameObject,
-        texture,
-        textureWidth, textureHeight,
-        srcX, srcY,
-        srcWidth, srcHeight,
-        scaleX, scaleY,
-        rotation,
-        flipX, flipY,
-        scrollFactorX, scrollFactorY,
-        displayOriginX, displayOriginY,
-        frameX, frameY, frameWidth, frameHeight,
-        tintTL, tintTR, tintBL, tintBR, tintEffect,
-        uOffset, vOffset,
-        camera,
-        parentTransformMatrix,
-        skipFlip,
-        textureUnit,
-        skipPrePost)
-    {
-        if (skipPrePost === undefined) { skipPrePost = false; }
-
-        this.manager.set(this, gameObject);
-
-        var camMatrix = this._tempMatrix1;
-        var spriteMatrix = this._tempMatrix2;
-        var calcMatrix = this._tempMatrix3;
-
-        var u0 = (frameX / textureWidth) + uOffset;
-        var v0 = (frameY / textureHeight) + vOffset;
-        var u1 = (frameX + frameWidth) / textureWidth + uOffset;
-        var v1 = (frameY + frameHeight) / textureHeight + vOffset;
-
-        var width = srcWidth;
-        var height = srcHeight;
-
-        var x = -displayOriginX;
-        var y = -displayOriginY;
-
-        if (gameObject.isCropped)
-        {
-            var crop = gameObject._crop;
-
-            var cropWidth = crop.width;
-            var cropHeight = crop.height;
-
-            width = cropWidth;
-            height = cropHeight;
-
-            srcWidth = cropWidth;
-            srcHeight = cropHeight;
-
-            frameX = crop.x;
-            frameY = crop.y;
-
-            var ox = frameX;
-            var oy = frameY;
-
-            if (flipX)
-            {
-                ox = (frameWidth - crop.x - cropWidth);
-            }
-
-            if (flipY)
-            {
-                oy = (frameHeight - crop.y - cropHeight);
-            }
-
-            u0 = (ox / textureWidth) + uOffset;
-            v0 = (oy / textureHeight) + vOffset;
-            u1 = (ox + cropWidth) / textureWidth + uOffset;
-            v1 = (oy + cropHeight) / textureHeight + vOffset;
-
-            x = -displayOriginX + frameX;
-            y = -displayOriginY + frameY;
-        }
-
-        flipY = flipY ^ (!skipFlip && texture.isRenderTexture ? 1 : 0);
-
-        if (flipX)
-        {
-            width *= -1;
-            x += srcWidth;
-        }
-
-        if (flipY)
-        {
-            height *= -1;
-            y += srcHeight;
-        }
-
-        if (camera.roundPixels)
-        {
-            srcX = Math.floor(srcX);
-            srcY = Math.floor(srcY);
-        }
-
-        spriteMatrix.applyITRS(srcX, srcY, rotation, scaleX, scaleY);
-
-        camMatrix.copyFrom(camera.matrix);
-
-        if (parentTransformMatrix)
-        {
-
-            camMatrix.multiplyWithOffset(parentTransformMatrix, -camera.scrollX * scrollFactorX, -camera.scrollY * scrollFactorY);
-
-            spriteMatrix.e = srcX;
-            spriteMatrix.f = srcY;
-        }
-        else
-        {
-            spriteMatrix.e -= camera.scrollX * scrollFactorX;
-            spriteMatrix.f -= camera.scrollY * scrollFactorY;
-        }
-
-        camMatrix.multiply(spriteMatrix, calcMatrix);
-
-        var quad = calcMatrix.setQuad(x, y, x + width, y + height, camera.renderRoundPixels);
-
-        if (textureUnit === undefined || textureUnit === null)
-        {
-            textureUnit = this.setTexture2D(texture);
-        }
-
-        if (gameObject && !skipPrePost)
-        {
-            this.manager.preBatch(gameObject);
-        }
-
-        this.batchQuad(gameObject, quad[0], quad[1], quad[2], quad[3], quad[4], quad[5], quad[6], quad[7], u0, v0, u1, v1, tintTL, tintTR, tintBL, tintBR, tintEffect, texture, textureUnit);
-
-        if (gameObject && !skipPrePost)
-        {
-            this.manager.postBatch(gameObject);
-        }
-    },
-
-    batchTextureFrame: function (
-        frame,
-        x, y,
-        tint, alpha,
-        transformMatrix,
-        parentTransformMatrix
-    )
-    {
-        this.manager.set(this);
-
-        var spriteMatrix = this._tempMatrix1.copyFrom(transformMatrix);
-        var calcMatrix = this._tempMatrix2;
-
-        if (parentTransformMatrix)
-        {
-            spriteMatrix.multiply(parentTransformMatrix, calcMatrix);
-        }
-        else
-        {
-            calcMatrix = spriteMatrix;
-        }
-
-        var quad = calcMatrix.setQuad(x, y, x + frame.width, y + frame.height);
-
-        var unit = this.setTexture2D(frame.source.glTexture);
-
-        tint = Utils.getTintAppendFloatAlpha(tint, alpha);
-
-        this.batchQuad(null, quad[0], quad[1], quad[2], quad[3], quad[4], quad[5], quad[6], quad[7], frame.u0, frame.v0, frame.u1, frame.v1, tint, tint, tint, tint, 0, frame.glTexture, unit);
-    },
-
-    batchFillRect: function (x, y, width, height, currentMatrix, parentMatrix)
-    {
-        this.renderer.pipelines.set(this);
-
-        var calcMatrix = this.calcMatrix;
-
-        if (parentMatrix)
-        {
-            parentMatrix.multiply(currentMatrix, calcMatrix);
-        }
-
-        var quad = calcMatrix.setQuad(x, y, x + width, y + height);
-
-        var tint = this.fillTint;
-
-        this.batchQuad(null, quad[0], quad[1], quad[2], quad[3], quad[4], quad[5], quad[6], quad[7], 0, 0, 1, 1, tint.TL, tint.TR, tint.BL, tint.BR, 2);
-    },
-
-    batchFillTriangle: function (x0, y0, x1, y1, x2, y2, currentMatrix, parentMatrix)
-    {
-        this.renderer.pipelines.set(this);
-
-        var calcMatrix = this.calcMatrix;
-
-        if (parentMatrix)
-        {
-            parentMatrix.multiply(currentMatrix, calcMatrix);
-        }
-
-        var tx0 = calcMatrix.getX(x0, y0);
-        var ty0 = calcMatrix.getY(x0, y0);
-
-        var tx1 = calcMatrix.getX(x1, y1);
-        var ty1 = calcMatrix.getY(x1, y1);
-
-        var tx2 = calcMatrix.getX(x2, y2);
-        var ty2 = calcMatrix.getY(x2, y2);
-
-        var tint = this.fillTint;
-
-        this.batchTri(null, tx0, ty0, tx1, ty1, tx2, ty2, 0, 0, 1, 1, tint.TL, tint.TR, tint.BL, 2);
-    },
-
-    batchStrokeTriangle: function (x0, y0, x1, y1, x2, y2, lineWidth, currentMatrix, parentMatrix)
-    {
-        var tempTriangle = this.tempTriangle;
-
-        tempTriangle[0].x = x0;
-        tempTriangle[0].y = y0;
-        tempTriangle[0].width = lineWidth;
-
-        tempTriangle[1].x = x1;
-        tempTriangle[1].y = y1;
-        tempTriangle[1].width = lineWidth;
-
-        tempTriangle[2].x = x2;
-        tempTriangle[2].y = y2;
-        tempTriangle[2].width = lineWidth;
-
-        tempTriangle[3].x = x0;
-        tempTriangle[3].y = y0;
-        tempTriangle[3].width = lineWidth;
-
-        this.batchStrokePath(tempTriangle, lineWidth, false, currentMatrix, parentMatrix);
-    },
-
-    batchFillPath: function (path, currentMatrix, parentMatrix)
-    {
-        this.renderer.pipelines.set(this);
-
-        var calcMatrix = this.calcMatrix;
-
-        if (parentMatrix)
-        {
-            parentMatrix.multiply(currentMatrix, calcMatrix);
-        }
-
-        var length = path.length;
-        var polygonCache = this.polygonCache;
-        var polygonIndexArray;
-        var point;
-
-        var tintTL = this.fillTint.TL;
-        var tintTR = this.fillTint.TR;
-        var tintBL = this.fillTint.BL;
-
-        for (var pathIndex = 0; pathIndex < length; ++pathIndex)
-        {
-            point = path[pathIndex];
-            polygonCache.push(point.x, point.y);
-        }
-
-        polygonIndexArray = Earcut(polygonCache);
-        length = polygonIndexArray.length;
-
-        for (var index = 0; index < length; index += 3)
-        {
-            var p0 = polygonIndexArray[index + 0] * 2;
-            var p1 = polygonIndexArray[index + 1] * 2;
-            var p2 = polygonIndexArray[index + 2] * 2;
-
-            var x0 = polygonCache[p0 + 0];
-            var y0 = polygonCache[p0 + 1];
-            var x1 = polygonCache[p1 + 0];
-            var y1 = polygonCache[p1 + 1];
-            var x2 = polygonCache[p2 + 0];
-            var y2 = polygonCache[p2 + 1];
-
-            var tx0 = calcMatrix.getX(x0, y0);
-            var ty0 = calcMatrix.getY(x0, y0);
-
-            var tx1 = calcMatrix.getX(x1, y1);
-            var ty1 = calcMatrix.getY(x1, y1);
-
-            var tx2 = calcMatrix.getX(x2, y2);
-            var ty2 = calcMatrix.getY(x2, y2);
-
-            this.batchTri(null, tx0, ty0, tx1, ty1, tx2, ty2, 0, 0, 1, 1, tintTL, tintTR, tintBL, 2);
-        }
-
-        polygonCache.length = 0;
-    },
-
-    batchStrokePath: function (path, lineWidth, pathOpen, currentMatrix, parentMatrix)
-    {
-        this.renderer.pipelines.set(this);
-
-        this.prevQuad[4] = 0;
-        this.firstQuad[4] = 0;
-
-        var pathLength = path.length - 1;
-
-        for (var pathIndex = 0; pathIndex < pathLength; pathIndex++)
-        {
-            var point0 = path[pathIndex];
-            var point1 = path[pathIndex + 1];
-
-            this.batchLine(
-                point0.x,
-                point0.y,
-                point1.x,
-                point1.y,
-                point0.width / 2,
-                point1.width / 2,
-                lineWidth,
-                pathIndex,
-                !pathOpen && (pathIndex === pathLength - 1),
-                currentMatrix,
-                parentMatrix
-            );
-        }
-    },
-
-    batchLine: function (ax, ay, bx, by, aLineWidth, bLineWidth, lineWidth, index, closePath, currentMatrix, parentMatrix)
-    {
-        this.renderer.pipelines.set(this);
-
-        var calcMatrix = this.calcMatrix;
-
-        if (parentMatrix)
-        {
-            parentMatrix.multiply(currentMatrix, calcMatrix);
-        }
-
-        var dx = bx - ax;
-        var dy = by - ay;
-
-        var len = Math.sqrt(dx * dx + dy * dy);
-
-        if (len === 0)
-        {
-
-            return;
-        }
-
-        var al0 = aLineWidth * (by - ay) / len;
-        var al1 = aLineWidth * (ax - bx) / len;
-        var bl0 = bLineWidth * (by - ay) / len;
-        var bl1 = bLineWidth * (ax - bx) / len;
-
-        var lx0 = bx - bl0;
-        var ly0 = by - bl1;
-        var lx1 = ax - al0;
-        var ly1 = ay - al1;
-        var lx2 = bx + bl0;
-        var ly2 = by + bl1;
-        var lx3 = ax + al0;
-        var ly3 = ay + al1;
-
-        var brX = calcMatrix.getX(lx0, ly0);
-        var brY = calcMatrix.getY(lx0, ly0);
-
-        var blX = calcMatrix.getX(lx1, ly1);
-        var blY = calcMatrix.getY(lx1, ly1);
-
-        var trX = calcMatrix.getX(lx2, ly2);
-        var trY = calcMatrix.getY(lx2, ly2);
-
-        var tlX = calcMatrix.getX(lx3, ly3);
-        var tlY = calcMatrix.getY(lx3, ly3);
-
-        var tint = this.strokeTint;
-
-        var tintTL = tint.TL;
-        var tintTR = tint.TR;
-        var tintBL = tint.BL;
-        var tintBR = tint.BR;
-
-        this.batchQuad(null, tlX, tlY, blX, blY, brX, brY, trX, trY, 0, 0, 1, 1, tintTL, tintTR, tintBL, tintBR, 2);
-
-        if (lineWidth <= 2)
-        {
-
-            return;
-        }
-
-        var prev = this.prevQuad;
-        var first = this.firstQuad;
-
-        if (index > 0 && prev[4])
-        {
-            this.batchQuad(null, tlX, tlY, blX, blY, prev[0], prev[1], prev[2], prev[3], 0, 0, 1, 1, tintTL, tintTR, tintBL, tintBR, 2);
-        }
-        else
-        {
-            first[0] = tlX;
-            first[1] = tlY;
-            first[2] = blX;
-            first[3] = blY;
-            first[4] = 1;
-        }
-
-        if (closePath && first[4])
-        {
-
-            this.batchQuad(null, brX, brY, trX, trY, first[0], first[1], first[2], first[3], 0, 0, 1, 1, tintTL, tintTR, tintBL, tintBR, 2);
-        }
-        else
-        {
-
-            prev[0] = brX;
-            prev[1] = brY;
-            prev[2] = trX;
-            prev[3] = trY;
-            prev[4] = 1;
-        }
-    },
-
-    destroy: function ()
-    {
-        this._tempMatrix1.destroy();
-        this._tempMatrix2.destroy();
-        this._tempMatrix3.destroy();
-
-        this._tempMatrix1 = null;
-        this._tempMatrix1 = null;
-        this._tempMatrix1 = null;
-
-        WebGLPipeline.prototype.destroy.call(this);
-
-        return this;
-    }
-
-});
-
-module.exports = MultiPipeline;
+var Class = require('../../../utils/Class');var Earcut = require('../../../geom/polygon/Earcut');var GetFastValue = require('../../../utils/object/GetFastValue');var ShaderSourceFS = require('../shaders/Multi-frag');var ShaderSourceVS = require('../shaders/Multi-vert');var TransformMatrix = require('../../../gameobjects/components/TransformMatrix');var Utils = require('../Utils');var WEBGL_CONST = require('../const');var WebGLPipeline = require('../WebGLPipeline');var MultiPipeline = new Class({    Extends: WebGLPipeline,    initialize:    function MultiPipeline (config)    {        var renderer = config.game.renderer;        var fragmentShaderSource = GetFastValue(config, 'fragShader', ShaderSourceFS);        config.fragShader = Utils.parseFragmentShaderMaxTextures(fragmentShaderSource, renderer.maxTextures);        config.vertShader = GetFastValue(config, 'vertShader', ShaderSourceVS);        config.attributes = GetFastValue(config, 'attributes', [            {                name: 'inPosition',                size: 2            },            {                name: 'inTexCoord',                size: 2            },            {                name: 'inTexId'            },            {                name: 'inTintEffect'            },            {                name: 'inTint',                size: 4,                type: WEBGL_CONST.UNSIGNED_BYTE,                normalized: true            }        ]);        config.resizeUniform = 'uResolution';        WebGLPipeline.call(this, config);        this._tempMatrix1 = new TransformMatrix();        this._tempMatrix2 = new TransformMatrix();        this._tempMatrix3 = new TransformMatrix();        this.calcMatrix = new TransformMatrix();        this.tempTriangle = [            { x: 0, y: 0, width: 0 },            { x: 0, y: 0, width: 0 },            { x: 0, y: 0, width: 0 },            { x: 0, y: 0, width: 0 }        ];        this.strokeTint = { TL: 0, TR: 0, BL: 0, BR: 0 };        this.fillTint = { TL: 0, TR: 0, BL: 0, BR: 0 };        this.currentFrame = { u0: 0, v0: 0, u1: 1, v1: 1 };        this.firstQuad = [ 0, 0, 0, 0, 0 ];        this.prevQuad = [ 0, 0, 0, 0, 0 ];        this.polygonCache = [];    },    boot: function ()    {        WebGLPipeline.prototype.boot.call(this);        var renderer = this.renderer;        this.set1iv('uMainSampler', renderer.textureIndexes);        this.set2f('uResolution', renderer.width, renderer.height);    },    batchSprite: function (gameObject, camera, parentTransformMatrix)    {        this.manager.set(this, gameObject);        var camMatrix = this._tempMatrix1;        var spriteMatrix = this._tempMatrix2;        var calcMatrix = this._tempMatrix3;        var frame = gameObject.frame;        var texture = frame.glTexture;        var u0 = frame.u0;        var v0 = frame.v0;        var u1 = frame.u1;        var v1 = frame.v1;        var frameX = frame.x;        var frameY = frame.y;        var frameWidth = frame.cutWidth;        var frameHeight = frame.cutHeight;        var customPivot = frame.customPivot;        var displayOriginX = gameObject.displayOriginX;        var displayOriginY = gameObject.displayOriginY;        var x = -displayOriginX + frameX;        var y = -displayOriginY + frameY;        if (gameObject.isCropped)        {            var crop = gameObject._crop;            if (crop.flipX !== gameObject.flipX || crop.flipY !== gameObject.flipY)            {                frame.updateCropUVs(crop, gameObject.flipX, gameObject.flipY);            }            u0 = crop.u0;            v0 = crop.v0;            u1 = crop.u1;            v1 = crop.v1;            frameWidth = crop.width;            frameHeight = crop.height;            frameX = crop.x;            frameY = crop.y;            x = -displayOriginX + frameX;            y = -displayOriginY + frameY;        }        var flipX = 1;        var flipY = 1;        if (gameObject.flipX)        {            if (!customPivot)            {                x += (-frame.realWidth + (displayOriginX * 2));            }            flipX = -1;        }        if (gameObject.flipY)        {            if (!customPivot)            {                y += (-frame.realHeight + (displayOriginY * 2));            }            flipY = -1;        }        var gx = gameObject.x;        var gy = gameObject.y;        if (camera.roundPixels)        {            gx = Math.floor(gx);            gy = Math.floor(gy);        }        spriteMatrix.applyITRS(gx, gy, gameObject.rotation, gameObject.scaleX * flipX, gameObject.scaleY * flipY);        camMatrix.copyFrom(camera.matrix);        if (parentTransformMatrix)        {            camMatrix.multiplyWithOffset(parentTransformMatrix, -camera.scrollX * gameObject.scrollFactorX, -camera.scrollY * gameObject.scrollFactorY);            spriteMatrix.e = gx;            spriteMatrix.f = gy;        }        else        {            spriteMatrix.e -= camera.scrollX * gameObject.scrollFactorX;            spriteMatrix.f -= camera.scrollY * gameObject.scrollFactorY;        }        camMatrix.multiply(spriteMatrix, calcMatrix);        var quad = calcMatrix.setQuad(x, y, x + frameWidth, y + frameHeight, camera.renderRoundPixels);        var getTint = Utils.getTintAppendFloatAlpha;        var cameraAlpha = camera.alpha;        var tintTL = getTint(gameObject.tintTopLeft, cameraAlpha * gameObject._alphaTL);        var tintTR = getTint(gameObject.tintTopRight, cameraAlpha * gameObject._alphaTR);        var tintBL = getTint(gameObject.tintBottomLeft, cameraAlpha * gameObject._alphaBL);        var tintBR = getTint(gameObject.tintBottomRight, cameraAlpha * gameObject._alphaBR);        if (this.shouldFlush(6))        {            this.flush();        }        var unit = this.setGameObject(gameObject, frame);        this.manager.preBatch(gameObject);        this.batchQuad(gameObject, quad[0], quad[1], quad[2], quad[3], quad[4], quad[5], quad[6], quad[7], u0, v0, u1, v1, tintTL, tintTR, tintBL, tintBR, gameObject.tintFill, texture, unit);        this.manager.postBatch(gameObject);    },    batchTexture: function (        gameObject,        texture,        textureWidth, textureHeight,        srcX, srcY,        srcWidth, srcHeight,        scaleX, scaleY,        rotation,        flipX, flipY,        scrollFactorX, scrollFactorY,        displayOriginX, displayOriginY,        frameX, frameY, frameWidth, frameHeight,        tintTL, tintTR, tintBL, tintBR, tintEffect,        uOffset, vOffset,        camera,        parentTransformMatrix,        skipFlip,        textureUnit,        skipPrePost)    {        if (skipPrePost === undefined) { skipPrePost = false; }        this.manager.set(this, gameObject);        var camMatrix = this._tempMatrix1;        var spriteMatrix = this._tempMatrix2;        var calcMatrix = this._tempMatrix3;        var u0 = (frameX / textureWidth) + uOffset;        var v0 = (frameY / textureHeight) + vOffset;        var u1 = (frameX + frameWidth) / textureWidth + uOffset;        var v1 = (frameY + frameHeight) / textureHeight + vOffset;        var width = srcWidth;        var height = srcHeight;        var x = -displayOriginX;        var y = -displayOriginY;        if (gameObject.isCropped)        {            var crop = gameObject._crop;            var cropWidth = crop.width;            var cropHeight = crop.height;            width = cropWidth;            height = cropHeight;            srcWidth = cropWidth;            srcHeight = cropHeight;            frameX = crop.x;            frameY = crop.y;            var ox = frameX;            var oy = frameY;            if (flipX)            {                ox = (frameWidth - crop.x - cropWidth);            }            if (flipY)            {                oy = (frameHeight - crop.y - cropHeight);            }            u0 = (ox / textureWidth) + uOffset;            v0 = (oy / textureHeight) + vOffset;            u1 = (ox + cropWidth) / textureWidth + uOffset;            v1 = (oy + cropHeight) / textureHeight + vOffset;            x = -displayOriginX + frameX;            y = -displayOriginY + frameY;        }        flipY = flipY ^ (!skipFlip && texture.isRenderTexture ? 1 : 0);        if (flipX)        {            width *= -1;            x += srcWidth;        }        if (flipY)        {            height *= -1;            y += srcHeight;        }        if (camera.roundPixels)        {            srcX = Math.floor(srcX);            srcY = Math.floor(srcY);        }        spriteMatrix.applyITRS(srcX, srcY, rotation, scaleX, scaleY);        camMatrix.copyFrom(camera.matrix);        if (parentTransformMatrix)        {            camMatrix.multiplyWithOffset(parentTransformMatrix, -camera.scrollX * scrollFactorX, -camera.scrollY * scrollFactorY);            spriteMatrix.e = srcX;            spriteMatrix.f = srcY;        }        else        {            spriteMatrix.e -= camera.scrollX * scrollFactorX;            spriteMatrix.f -= camera.scrollY * scrollFactorY;        }        camMatrix.multiply(spriteMatrix, calcMatrix);        var quad = calcMatrix.setQuad(x, y, x + width, y + height, camera.renderRoundPixels);        if (textureUnit === undefined || textureUnit === null)        {            textureUnit = this.setTexture2D(texture);        }        if (gameObject && !skipPrePost)        {            this.manager.preBatch(gameObject);        }        this.batchQuad(gameObject, quad[0], quad[1], quad[2], quad[3], quad[4], quad[5], quad[6], quad[7], u0, v0, u1, v1, tintTL, tintTR, tintBL, tintBR, tintEffect, texture, textureUnit);        if (gameObject && !skipPrePost)        {            this.manager.postBatch(gameObject);        }    },    batchTextureFrame: function (        frame,        x, y,        tint, alpha,        transformMatrix,        parentTransformMatrix    )    {        this.manager.set(this);        var spriteMatrix = this._tempMatrix1.copyFrom(transformMatrix);        var calcMatrix = this._tempMatrix2;        if (parentTransformMatrix)        {            spriteMatrix.multiply(parentTransformMatrix, calcMatrix);        }        else        {            calcMatrix = spriteMatrix;        }        var quad = calcMatrix.setQuad(x, y, x + frame.width, y + frame.height);        var unit = this.setTexture2D(frame.source.glTexture);        tint = Utils.getTintAppendFloatAlpha(tint, alpha);        this.batchQuad(null, quad[0], quad[1], quad[2], quad[3], quad[4], quad[5], quad[6], quad[7], frame.u0, frame.v0, frame.u1, frame.v1, tint, tint, tint, tint, 0, frame.glTexture, unit);    },    batchFillRect: function (x, y, width, height, currentMatrix, parentMatrix)    {        this.renderer.pipelines.set(this);        var calcMatrix = this.calcMatrix;        if (parentMatrix)        {            parentMatrix.multiply(currentMatrix, calcMatrix);        }        var quad = calcMatrix.setQuad(x, y, x + width, y + height);        var tint = this.fillTint;        this.batchQuad(null, quad[0], quad[1], quad[2], quad[3], quad[4], quad[5], quad[6], quad[7], 0, 0, 1, 1, tint.TL, tint.TR, tint.BL, tint.BR, 2);    },    batchFillTriangle: function (x0, y0, x1, y1, x2, y2, currentMatrix, parentMatrix)    {        this.renderer.pipelines.set(this);        var calcMatrix = this.calcMatrix;        if (parentMatrix)        {            parentMatrix.multiply(currentMatrix, calcMatrix);        }        var tx0 = calcMatrix.getX(x0, y0);        var ty0 = calcMatrix.getY(x0, y0);        var tx1 = calcMatrix.getX(x1, y1);        var ty1 = calcMatrix.getY(x1, y1);        var tx2 = calcMatrix.getX(x2, y2);        var ty2 = calcMatrix.getY(x2, y2);        var tint = this.fillTint;        this.batchTri(null, tx0, ty0, tx1, ty1, tx2, ty2, 0, 0, 1, 1, tint.TL, tint.TR, tint.BL, 2);    },    batchStrokeTriangle: function (x0, y0, x1, y1, x2, y2, lineWidth, currentMatrix, parentMatrix)    {        var tempTriangle = this.tempTriangle;        tempTriangle[0].x = x0;        tempTriangle[0].y = y0;        tempTriangle[0].width = lineWidth;        tempTriangle[1].x = x1;        tempTriangle[1].y = y1;        tempTriangle[1].width = lineWidth;        tempTriangle[2].x = x2;        tempTriangle[2].y = y2;        tempTriangle[2].width = lineWidth;        tempTriangle[3].x = x0;        tempTriangle[3].y = y0;        tempTriangle[3].width = lineWidth;        this.batchStrokePath(tempTriangle, lineWidth, false, currentMatrix, parentMatrix);    },    batchFillPath: function (path, currentMatrix, parentMatrix)    {        this.renderer.pipelines.set(this);        var calcMatrix = this.calcMatrix;        if (parentMatrix)        {            parentMatrix.multiply(currentMatrix, calcMatrix);        }        var length = path.length;        var polygonCache = this.polygonCache;        var polygonIndexArray;        var point;        var tintTL = this.fillTint.TL;        var tintTR = this.fillTint.TR;        var tintBL = this.fillTint.BL;        for (var pathIndex = 0; pathIndex < length; ++pathIndex)        {            point = path[pathIndex];            polygonCache.push(point.x, point.y);        }        polygonIndexArray = Earcut(polygonCache);        length = polygonIndexArray.length;        for (var index = 0; index < length; index += 3)        {            var p0 = polygonIndexArray[index + 0] * 2;            var p1 = polygonIndexArray[index + 1] * 2;            var p2 = polygonIndexArray[index + 2] * 2;            var x0 = polygonCache[p0 + 0];            var y0 = polygonCache[p0 + 1];            var x1 = polygonCache[p1 + 0];            var y1 = polygonCache[p1 + 1];            var x2 = polygonCache[p2 + 0];            var y2 = polygonCache[p2 + 1];            var tx0 = calcMatrix.getX(x0, y0);            var ty0 = calcMatrix.getY(x0, y0);            var tx1 = calcMatrix.getX(x1, y1);            var ty1 = calcMatrix.getY(x1, y1);            var tx2 = calcMatrix.getX(x2, y2);            var ty2 = calcMatrix.getY(x2, y2);            this.batchTri(null, tx0, ty0, tx1, ty1, tx2, ty2, 0, 0, 1, 1, tintTL, tintTR, tintBL, 2);        }        polygonCache.length = 0;    },    batchStrokePath: function (path, lineWidth, pathOpen, currentMatrix, parentMatrix)    {        this.renderer.pipelines.set(this);        this.prevQuad[4] = 0;        this.firstQuad[4] = 0;        var pathLength = path.length - 1;        for (var pathIndex = 0; pathIndex < pathLength; pathIndex++)        {            var point0 = path[pathIndex];            var point1 = path[pathIndex + 1];            this.batchLine(                point0.x,                point0.y,                point1.x,                point1.y,                point0.width / 2,                point1.width / 2,                lineWidth,                pathIndex,                !pathOpen && (pathIndex === pathLength - 1),                currentMatrix,                parentMatrix            );        }    },    batchLine: function (ax, ay, bx, by, aLineWidth, bLineWidth, lineWidth, index, closePath, currentMatrix, parentMatrix)    {        this.renderer.pipelines.set(this);        var calcMatrix = this.calcMatrix;        if (parentMatrix)        {            parentMatrix.multiply(currentMatrix, calcMatrix);        }        var dx = bx - ax;        var dy = by - ay;        var len = Math.sqrt(dx * dx + dy * dy);        if (len === 0)        {            return;        }        var al0 = aLineWidth * (by - ay) / len;        var al1 = aLineWidth * (ax - bx) / len;        var bl0 = bLineWidth * (by - ay) / len;        var bl1 = bLineWidth * (ax - bx) / len;        var lx0 = bx - bl0;        var ly0 = by - bl1;        var lx1 = ax - al0;        var ly1 = ay - al1;        var lx2 = bx + bl0;        var ly2 = by + bl1;        var lx3 = ax + al0;        var ly3 = ay + al1;        var brX = calcMatrix.getX(lx0, ly0);        var brY = calcMatrix.getY(lx0, ly0);        var blX = calcMatrix.getX(lx1, ly1);        var blY = calcMatrix.getY(lx1, ly1);        var trX = calcMatrix.getX(lx2, ly2);        var trY = calcMatrix.getY(lx2, ly2);        var tlX = calcMatrix.getX(lx3, ly3);        var tlY = calcMatrix.getY(lx3, ly3);        var tint = this.strokeTint;        var tintTL = tint.TL;        var tintTR = tint.TR;        var tintBL = tint.BL;        var tintBR = tint.BR;        this.batchQuad(null, tlX, tlY, blX, blY, brX, brY, trX, trY, 0, 0, 1, 1, tintTL, tintTR, tintBL, tintBR, 2);        if (lineWidth <= 2)        {            return;        }        var prev = this.prevQuad;        var first = this.firstQuad;        if (index > 0 && prev[4])        {            this.batchQuad(null, tlX, tlY, blX, blY, prev[0], prev[1], prev[2], prev[3], 0, 0, 1, 1, tintTL, tintTR, tintBL, tintBR, 2);        }        else        {            first[0] = tlX;            first[1] = tlY;            first[2] = blX;            first[3] = blY;            first[4] = 1;        }        if (closePath && first[4])        {            this.batchQuad(null, brX, brY, trX, trY, first[0], first[1], first[2], first[3], 0, 0, 1, 1, tintTL, tintTR, tintBL, tintBR, 2);        }        else        {            prev[0] = brX;            prev[1] = brY;            prev[2] = trX;            prev[3] = trY;            prev[4] = 1;        }    },    destroy: function ()    {        this._tempMatrix1.destroy();        this._tempMatrix2.destroy();        this._tempMatrix3.destroy();        this._tempMatrix1 = null;        this._tempMatrix1 = null;        this._tempMatrix1 = null;        WebGLPipeline.prototype.destroy.call(this);        return this;    }});module.exports = MultiPipeline;

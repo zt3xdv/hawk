@@ -1,1 +1,1 @@
-module.exports = 'mute';
+module.exports = 'mute';

@@ -1,1 +1,1 @@
-module.exports = 'blur';
+module.exports = 'blur';

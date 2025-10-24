@@ -1,494 +1,1 @@
-var BlendModes = require('../../BlendModes');
-var CenterOn = require('../../../geom/rectangle/CenterOn');
-var Class = require('../../../utils/Class');
-var ColorMatrixFS = require('../shaders/ColorMatrix-frag');
-var GetFastValue = require('../../../utils/object/GetFastValue');
-var MultiPipeline = require('./MultiPipeline');
-var PostFXFS = require('../shaders/PostFX-frag');
-var Rectangle = require('../../../geom/rectangle/Rectangle');
-var RenderTarget = require('../RenderTarget');
-var SingleQuadFS = require('../shaders/Single-frag');
-var SingleQuadVS = require('../shaders/Single-vert');
-var WebGLPipeline = require('../WebGLPipeline');
-
-var PreFXPipeline = new Class({
-
-    Extends: MultiPipeline,
-
-    initialize:
-
-    function PreFXPipeline (config)
-    {
-        var fragShader = GetFastValue(config, 'fragShader', PostFXFS);
-        var vertShader = GetFastValue(config, 'vertShader', SingleQuadVS);
-        var drawShader = GetFastValue(config, 'drawShader', PostFXFS);
-
-        var defaultShaders = [
-            {
-                name: 'DrawSprite',
-                fragShader: SingleQuadFS,
-                vertShader: SingleQuadVS
-            },
-            {
-                name: 'CopySprite',
-                fragShader: fragShader,
-                vertShader: vertShader
-            },
-            {
-                name: 'DrawGame',
-                fragShader: drawShader,
-                vertShader: SingleQuadVS
-            },
-            {
-                name: 'ColorMatrix',
-                fragShader: ColorMatrixFS
-            }
-        ];
-
-        var configShaders = GetFastValue(config, 'shaders', []);
-
-        config.shaders = defaultShaders.concat(configShaders);
-
-        if (!config.vertShader)
-        {
-            config.vertShader = vertShader;
-        }
-
-        config.batchSize = 1;
-
-        MultiPipeline.call(this, config);
-
-        this.isPreFX = true;
-
-        this.customMainSampler = null;
-
-        this.drawSpriteShader;
-
-        this.copyShader;
-
-        this.gameShader;
-
-        this.colorMatrixShader;
-
-        this.quadVertexData;
-
-        this.quadVertexBuffer;
-
-        this.quadVertexViewF32;
-
-        this.spriteBounds = new Rectangle();
-
-        this.targetBounds = new Rectangle();
-
-        this.fsTarget;
-
-        this.tempSprite;
-
-        if (this.renderer.isBooted)
-        {
-            this.manager = this.renderer.pipelines;
-
-            this.boot();
-        }
-    },
-
-    boot: function ()
-    {
-        WebGLPipeline.prototype.boot.call(this);
-
-        var shaders = this.shaders;
-        var renderer = this.renderer;
-
-        this.drawSpriteShader = shaders[0];
-        this.copyShader = shaders[1];
-        this.gameShader = shaders[2];
-        this.colorMatrixShader = shaders[3];
-
-        this.fsTarget = new RenderTarget(renderer, renderer.width, renderer.height, 1, 0, true, true);
-
-        this.renderTargets = this.manager.renderTargets.concat(this.fsTarget);
-
-        var data = new ArrayBuffer(168);
-
-        this.quadVertexData = data;
-
-        this.quadVertexViewF32 = new Float32Array(data);
-
-        this.quadVertexBuffer = renderer.createVertexBuffer(data, this.gl.STATIC_DRAW);
-
-        this.onResize(renderer.width, renderer.height);
-
-        this.currentShader = this.copyShader;
-
-        this.set2f('uResolution', renderer.width, renderer.height);
-    },
-
-    onResize: function (width, height)
-    {
-        var vertexViewF32 = this.quadVertexViewF32;
-
-        vertexViewF32[1] = height; 
-        vertexViewF32[22] = height; 
-        vertexViewF32[14] = width; 
-        vertexViewF32[28] = width; 
-        vertexViewF32[35] = width; 
-        vertexViewF32[36] = height; 
-    },
-
-    batchQuad: function (gameObject, x0, y0, x1, y1, x2, y2, x3, y3, u0, v0, u1, v1, tintTL, tintTR, tintBL, tintBR, tintEffect, texture)
-    {
-        var bx = Math.min(x0, x1, x2, x3);
-        var by = Math.min(y0, y1, y2, y3);
-        var br = Math.max(x0, x1, x2, x3);
-        var bb = Math.max(y0, y1, y2, y3);
-        var bw = br - bx;
-        var bh = bb - by;
-
-        var bounds = this.spriteBounds.setTo(bx, by, bw, bh);
-
-        var padding = (gameObject) ? gameObject.preFX.padding : 0;
-        var width = bw + (padding * 2);
-        var height = bh + (padding * 2);
-        var maxDimension = Math.abs(Math.max(width, height));
-
-        var target = this.manager.getRenderTarget(maxDimension);
-
-        var targetBounds = this.targetBounds.setTo(0, 0, target.width, target.height);
-
-        CenterOn(targetBounds, Math.round(bounds.centerX), Math.round(bounds.centerY));
-
-        this.tempSprite = gameObject;
-
-        var gl = this.gl;
-        var renderer = this.renderer;
-
-        renderer.clearStencilMask();
-
-        this.setShader(this.drawSpriteShader);
-
-        this.set1i('uMainSampler', 0);
-        this.set2f('uResolution', renderer.width, renderer.height);
-
-        this.flipProjectionMatrix(true);
-
-        if (gameObject)
-        {
-            this.onDrawSprite(gameObject, target);
-
-            gameObject.preFX.onFX(this);
-        }
-
-        var fsTarget = this.fsTarget;
-
-        this.flush();
-
-        gl.viewport(0, 0, renderer.width, renderer.height);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fsTarget.framebuffer.webGLFramebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fsTarget.texture.webGLTexture, 0);
-
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        this.setTexture2D(texture);
-
-        this.batchVert(x0, y0, u0, v0, 0, tintEffect, tintTL);
-        this.batchVert(x1, y1, u0, v1, 0, tintEffect, tintBL);
-        this.batchVert(x2, y2, u1, v1, 0, tintEffect, tintBR);
-
-        this.batchVert(x0, y0, u0, v0, 0, tintEffect, tintTL);
-        this.batchVert(x2, y2, u1, v1, 0, tintEffect, tintBR);
-        this.batchVert(x3, y3, u1, v0, 0, tintEffect, tintTR);
-
-        this.flush();
-
-        this.flipProjectionMatrix(false);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, target.texture.webGLTexture);
-        gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, targetBounds.x, targetBounds.y, targetBounds.width, targetBounds.height);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-        this.onBatch(gameObject);
-
-        this.currentShader = this.copyShader;
-
-        this.onDraw(target, this.manager.getSwapRenderTarget(), this.manager.getAltSwapRenderTarget());
-
-        return true;
-    },
-
-    onDrawSprite: function ()
-    {
-    },
-
-    onCopySprite: function ()
-    {
-    },
-
-    copySprite: function (source, target, clear, clearAlpha, eraseMode, colorMatrix, shader)
-    {
-        if (clear === undefined) { clear = true; }
-        if (clearAlpha === undefined) { clearAlpha = true; }
-        if (eraseMode === undefined) { eraseMode = false; }
-        if (shader === undefined) { shader = this.copyShader; }
-
-        var gl = this.gl;
-        var sprite = this.tempSprite;
-
-        if (colorMatrix)
-        {
-            shader = this.colorMatrixShader;
-        }
-
-        this.currentShader = shader;
-
-        var wasBound = this.setVertexBuffer(this.quadVertexBuffer);
-
-        shader.bind(wasBound, false);
-
-        var renderer = this.renderer;
-
-        this.set1i('uMainSampler', 0);
-        this.set2f('uResolution', renderer.width, renderer.height);
-
-        sprite.preFX.onFXCopy(this);
-
-        this.onCopySprite(source, target, sprite);
-
-        if (colorMatrix)
-        {
-            this.set1fv('uColorMatrix', colorMatrix.getData());
-            this.set1f('uAlpha', colorMatrix.alpha);
-        }
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);
-
-        if (source.height > target.height)
-        {
-            gl.viewport(0, 0, source.width, source.height);
-
-            this.setTargetUVs(source, target);
-        }
-        else
-        {
-            var diff = target.height - source.height;
-
-            gl.viewport(0, diff, source.width, source.height);
-
-            this.resetUVs();
-        }
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);
-
-        if (clear)
-        {
-            gl.clearColor(0, 0, 0, Number(!clearAlpha));
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-
-        if (eraseMode)
-        {
-            var blendMode = this.renderer.currentBlendMode;
-
-            this.renderer.setBlendMode(BlendModes.ERASE);
-        }
-
-        gl.bufferData(gl.ARRAY_BUFFER, this.quadVertexData, gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        if (eraseMode)
-        {
-            this.renderer.setBlendMode(blendMode);
-        }
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    },
-
-    copy: function (source, target)
-    {
-        var gl = this.gl;
-
-        this.set1i('uMainSampler', 0);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);
-
-        gl.viewport(0, 0, source.width, source.height);
-
-        this.setUVs(0, 0, 0, 1, 1, 1, 1, 0);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);
-
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        gl.bufferData(gl.ARRAY_BUFFER, this.quadVertexData, gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    },
-
-    blendFrames: function (source1, source2, target, strength, clearAlpha)
-    {
-        this.manager.blendFrames(source1, source2, target, strength, clearAlpha);
-    },
-
-    blendFramesAdditive: function (source1, source2, target, strength, clearAlpha)
-    {
-        this.manager.blendFramesAdditive(source1, source2, target, strength, clearAlpha);
-    },
-
-    drawToGame: function (source)
-    {
-        this.currentShader = null;
-
-        this.setShader(this.copyShader);
-
-        this.bindAndDraw(source);
-    },
-
-    copyToGame: function (source)
-    {
-        this.currentShader = null;
-
-        this.setShader(this.gameShader);
-
-        this.bindAndDraw(source);
-    },
-
-    bindAndDraw: function (source)
-    {
-        var gl = this.gl;
-        var renderer = this.renderer;
-
-        this.set1i('uMainSampler', 0);
-
-        if (this.customMainSampler)
-        {
-            this.setTexture2D(this.customMainSampler);
-        }
-        else
-        {
-            this.setTexture2D(source.texture);
-        }
-
-        var matrix = this._tempMatrix1.loadIdentity();
-
-        var x = this.targetBounds.x;
-        var y = this.targetBounds.y;
-
-        var xw = x + source.width;
-        var yh = y + source.height;
-
-        var x0 = matrix.getX(x, y);
-        var x1 = matrix.getX(x, yh);
-        var x2 = matrix.getX(xw, yh);
-        var x3 = matrix.getX(xw, y);
-
-        var y0 = matrix.getY(x, y);
-        var y1 = matrix.getY(x, yh);
-        var y2 = matrix.getY(xw, yh);
-        var y3 = matrix.getY(xw, y);
-
-        var white = 0xffffff;
-
-        this.batchVert(x0, y0, 0, 0, 0, 0, white);
-        this.batchVert(x1, y1, 0, 1, 0, 0, white);
-        this.batchVert(x2, y2, 1, 1, 0, 0, white);
-        this.batchVert(x0, y0, 0, 0, 0, 0, white);
-        this.batchVert(x2, y2, 1, 1, 0, 0, white);
-        this.batchVert(x3, y3, 1, 0, 0, 0, white);
-
-        renderer.restoreFramebuffer(false, true);
-
-        if (!renderer.currentFramebuffer)
-        {
-            gl.viewport(0, 0, renderer.width, renderer.height);
-        }
-
-        renderer.restoreStencilMask();
-
-        this.flush();
-
-        this.tempSprite = null;
-    },
-
-    onDraw: function (target)
-    {
-        this.drawToGame(target);
-    },
-
-    setUVs: function (uA, vA, uB, vB, uC, vC, uD, vD)
-    {
-        var vertexViewF32 = this.quadVertexViewF32;
-
-        vertexViewF32[2] = uA;
-        vertexViewF32[3] = vA;
-
-        vertexViewF32[9] = uB;
-        vertexViewF32[10] = vB;
-
-        vertexViewF32[16] = uC;
-        vertexViewF32[17] = vC;
-
-        vertexViewF32[23] = uA;
-        vertexViewF32[24] = vA;
-
-        vertexViewF32[30] = uC;
-        vertexViewF32[31] = vC;
-
-        vertexViewF32[37] = uD;
-        vertexViewF32[38] = vD;
-    },
-
-    setTargetUVs: function (source, target)
-    {
-        var diff = (target.height / source.height);
-
-        if (diff > 0.5)
-        {
-            diff = 0.5 - (diff - 0.5);
-        }
-        else
-        {
-            diff = 0.5 + (0.5 - diff);
-        }
-
-        this.setUVs(0, diff, 0, 1 + diff, 1, 1 + diff, 1, diff);
-    },
-
-    resetUVs: function ()
-    {
-        this.setUVs(0, 0, 0, 1, 1, 1, 1, 0);
-    },
-
-    destroy: function ()
-    {
-        this.renderer.deleteBuffer(this.quadVertexBuffer);
-
-        this.drawSpriteShader = null;
-        this.copyShader = null;
-        this.gameShader = null;
-        this.colorMatrixShader = null;
-
-        this.quadVertexData = null;
-        this.quadVertexBuffer = null;
-        this.quadVertexViewF32 = null;
-
-        this.fsTarget = null;
-        this.tempSprite = null;
-
-        MultiPipeline.prototype.destroy.call(this);
-
-        return this;
-    }
-
-});
-
-module.exports = PreFXPipeline;
+var BlendModes = require('../../BlendModes');var CenterOn = require('../../../geom/rectangle/CenterOn');var Class = require('../../../utils/Class');var ColorMatrixFS = require('../shaders/ColorMatrix-frag');var GetFastValue = require('../../../utils/object/GetFastValue');var MultiPipeline = require('./MultiPipeline');var PostFXFS = require('../shaders/PostFX-frag');var Rectangle = require('../../../geom/rectangle/Rectangle');var RenderTarget = require('../RenderTarget');var SingleQuadFS = require('../shaders/Single-frag');var SingleQuadVS = require('../shaders/Single-vert');var WebGLPipeline = require('../WebGLPipeline');var PreFXPipeline = new Class({    Extends: MultiPipeline,    initialize:    function PreFXPipeline (config)    {        var fragShader = GetFastValue(config, 'fragShader', PostFXFS);        var vertShader = GetFastValue(config, 'vertShader', SingleQuadVS);        var drawShader = GetFastValue(config, 'drawShader', PostFXFS);        var defaultShaders = [            {                name: 'DrawSprite',                fragShader: SingleQuadFS,                vertShader: SingleQuadVS            },            {                name: 'CopySprite',                fragShader: fragShader,                vertShader: vertShader            },            {                name: 'DrawGame',                fragShader: drawShader,                vertShader: SingleQuadVS            },            {                name: 'ColorMatrix',                fragShader: ColorMatrixFS            }        ];        var configShaders = GetFastValue(config, 'shaders', []);        config.shaders = defaultShaders.concat(configShaders);        if (!config.vertShader)        {            config.vertShader = vertShader;        }        config.batchSize = 1;        MultiPipeline.call(this, config);        this.isPreFX = true;        this.customMainSampler = null;        this.drawSpriteShader;        this.copyShader;        this.gameShader;        this.colorMatrixShader;        this.quadVertexData;        this.quadVertexBuffer;        this.quadVertexViewF32;        this.spriteBounds = new Rectangle();        this.targetBounds = new Rectangle();        this.fsTarget;        this.tempSprite;        if (this.renderer.isBooted)        {            this.manager = this.renderer.pipelines;            this.boot();        }    },    boot: function ()    {        WebGLPipeline.prototype.boot.call(this);        var shaders = this.shaders;        var renderer = this.renderer;        this.drawSpriteShader = shaders[0];        this.copyShader = shaders[1];        this.gameShader = shaders[2];        this.colorMatrixShader = shaders[3];        this.fsTarget = new RenderTarget(renderer, renderer.width, renderer.height, 1, 0, true, true);        this.renderTargets = this.manager.renderTargets.concat(this.fsTarget);        var data = new ArrayBuffer(168);        this.quadVertexData = data;        this.quadVertexViewF32 = new Float32Array(data);        this.quadVertexBuffer = renderer.createVertexBuffer(data, this.gl.STATIC_DRAW);        this.onResize(renderer.width, renderer.height);        this.currentShader = this.copyShader;        this.set2f('uResolution', renderer.width, renderer.height);    },    onResize: function (width, height)    {        var vertexViewF32 = this.quadVertexViewF32;        vertexViewF32[1] = height;         vertexViewF32[22] = height;         vertexViewF32[14] = width;         vertexViewF32[28] = width;         vertexViewF32[35] = width;         vertexViewF32[36] = height;     },    batchQuad: function (gameObject, x0, y0, x1, y1, x2, y2, x3, y3, u0, v0, u1, v1, tintTL, tintTR, tintBL, tintBR, tintEffect, texture)    {        var bx = Math.min(x0, x1, x2, x3);        var by = Math.min(y0, y1, y2, y3);        var br = Math.max(x0, x1, x2, x3);        var bb = Math.max(y0, y1, y2, y3);        var bw = br - bx;        var bh = bb - by;        var bounds = this.spriteBounds.setTo(bx, by, bw, bh);        var padding = (gameObject) ? gameObject.preFX.padding : 0;        var width = bw + (padding * 2);        var height = bh + (padding * 2);        var maxDimension = Math.abs(Math.max(width, height));        var target = this.manager.getRenderTarget(maxDimension);        var targetBounds = this.targetBounds.setTo(0, 0, target.width, target.height);        CenterOn(targetBounds, Math.round(bounds.centerX), Math.round(bounds.centerY));        this.tempSprite = gameObject;        var gl = this.gl;        var renderer = this.renderer;        renderer.clearStencilMask();        this.setShader(this.drawSpriteShader);        this.set1i('uMainSampler', 0);        this.set2f('uResolution', renderer.width, renderer.height);        this.flipProjectionMatrix(true);        if (gameObject)        {            this.onDrawSprite(gameObject, target);            gameObject.preFX.onFX(this);        }        var fsTarget = this.fsTarget;        this.flush();        gl.viewport(0, 0, renderer.width, renderer.height);        gl.bindFramebuffer(gl.FRAMEBUFFER, fsTarget.framebuffer.webGLFramebuffer);        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fsTarget.texture.webGLTexture, 0);        gl.clearColor(0, 0, 0, 0);        gl.clear(gl.COLOR_BUFFER_BIT);        this.setTexture2D(texture);        this.batchVert(x0, y0, u0, v0, 0, tintEffect, tintTL);        this.batchVert(x1, y1, u0, v1, 0, tintEffect, tintBL);        this.batchVert(x2, y2, u1, v1, 0, tintEffect, tintBR);        this.batchVert(x0, y0, u0, v0, 0, tintEffect, tintTL);        this.batchVert(x2, y2, u1, v1, 0, tintEffect, tintBR);        this.batchVert(x3, y3, u1, v0, 0, tintEffect, tintTR);        this.flush();        this.flipProjectionMatrix(false);        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, target.texture.webGLTexture);        gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, targetBounds.x, targetBounds.y, targetBounds.width, targetBounds.height);        gl.bindFramebuffer(gl.FRAMEBUFFER, null);        gl.bindTexture(gl.TEXTURE_2D, null);        this.onBatch(gameObject);        this.currentShader = this.copyShader;        this.onDraw(target, this.manager.getSwapRenderTarget(), this.manager.getAltSwapRenderTarget());        return true;    },    onDrawSprite: function ()    {    },    onCopySprite: function ()    {    },    copySprite: function (source, target, clear, clearAlpha, eraseMode, colorMatrix, shader)    {        if (clear === undefined) { clear = true; }        if (clearAlpha === undefined) { clearAlpha = true; }        if (eraseMode === undefined) { eraseMode = false; }        if (shader === undefined) { shader = this.copyShader; }        var gl = this.gl;        var sprite = this.tempSprite;        if (colorMatrix)        {            shader = this.colorMatrixShader;        }        this.currentShader = shader;        var wasBound = this.setVertexBuffer(this.quadVertexBuffer);        shader.bind(wasBound, false);        var renderer = this.renderer;        this.set1i('uMainSampler', 0);        this.set2f('uResolution', renderer.width, renderer.height);        sprite.preFX.onFXCopy(this);        this.onCopySprite(source, target, sprite);        if (colorMatrix)        {            this.set1fv('uColorMatrix', colorMatrix.getData());            this.set1f('uAlpha', colorMatrix.alpha);        }        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);        if (source.height > target.height)        {            gl.viewport(0, 0, source.width, source.height);            this.setTargetUVs(source, target);        }        else        {            var diff = target.height - source.height;            gl.viewport(0, diff, source.width, source.height);            this.resetUVs();        }        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);        if (clear)        {            gl.clearColor(0, 0, 0, Number(!clearAlpha));            gl.clear(gl.COLOR_BUFFER_BIT);        }        if (eraseMode)        {            var blendMode = this.renderer.currentBlendMode;            this.renderer.setBlendMode(BlendModes.ERASE);        }        gl.bufferData(gl.ARRAY_BUFFER, this.quadVertexData, gl.STATIC_DRAW);        gl.drawArrays(gl.TRIANGLES, 0, 6);        if (eraseMode)        {            this.renderer.setBlendMode(blendMode);        }        gl.bindFramebuffer(gl.FRAMEBUFFER, null);    },    copy: function (source, target)    {        var gl = this.gl;        this.set1i('uMainSampler', 0);        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);        gl.viewport(0, 0, source.width, source.height);        this.setUVs(0, 0, 0, 1, 1, 1, 1, 0);        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);        gl.clearColor(0, 0, 0, 0);        gl.clear(gl.COLOR_BUFFER_BIT);        gl.bufferData(gl.ARRAY_BUFFER, this.quadVertexData, gl.STATIC_DRAW);        gl.drawArrays(gl.TRIANGLES, 0, 6);        gl.bindFramebuffer(gl.FRAMEBUFFER, null);    },    blendFrames: function (source1, source2, target, strength, clearAlpha)    {        this.manager.blendFrames(source1, source2, target, strength, clearAlpha);    },    blendFramesAdditive: function (source1, source2, target, strength, clearAlpha)    {        this.manager.blendFramesAdditive(source1, source2, target, strength, clearAlpha);    },    drawToGame: function (source)    {        this.currentShader = null;        this.setShader(this.copyShader);        this.bindAndDraw(source);    },    copyToGame: function (source)    {        this.currentShader = null;        this.setShader(this.gameShader);        this.bindAndDraw(source);    },    bindAndDraw: function (source)    {        var gl = this.gl;        var renderer = this.renderer;        this.set1i('uMainSampler', 0);        if (this.customMainSampler)        {            this.setTexture2D(this.customMainSampler);        }        else        {            this.setTexture2D(source.texture);        }        var matrix = this._tempMatrix1.loadIdentity();        var x = this.targetBounds.x;        var y = this.targetBounds.y;        var xw = x + source.width;        var yh = y + source.height;        var x0 = matrix.getX(x, y);        var x1 = matrix.getX(x, yh);        var x2 = matrix.getX(xw, yh);        var x3 = matrix.getX(xw, y);        var y0 = matrix.getY(x, y);        var y1 = matrix.getY(x, yh);        var y2 = matrix.getY(xw, yh);        var y3 = matrix.getY(xw, y);        var white = 0xffffff;        this.batchVert(x0, y0, 0, 0, 0, 0, white);        this.batchVert(x1, y1, 0, 1, 0, 0, white);        this.batchVert(x2, y2, 1, 1, 0, 0, white);        this.batchVert(x0, y0, 0, 0, 0, 0, white);        this.batchVert(x2, y2, 1, 1, 0, 0, white);        this.batchVert(x3, y3, 1, 0, 0, 0, white);        renderer.restoreFramebuffer(false, true);        if (!renderer.currentFramebuffer)        {            gl.viewport(0, 0, renderer.width, renderer.height);        }        renderer.restoreStencilMask();        this.flush();        this.tempSprite = null;    },    onDraw: function (target)    {        this.drawToGame(target);    },    setUVs: function (uA, vA, uB, vB, uC, vC, uD, vD)    {        var vertexViewF32 = this.quadVertexViewF32;        vertexViewF32[2] = uA;        vertexViewF32[3] = vA;        vertexViewF32[9] = uB;        vertexViewF32[10] = vB;        vertexViewF32[16] = uC;        vertexViewF32[17] = vC;        vertexViewF32[23] = uA;        vertexViewF32[24] = vA;        vertexViewF32[30] = uC;        vertexViewF32[31] = vC;        vertexViewF32[37] = uD;        vertexViewF32[38] = vD;    },    setTargetUVs: function (source, target)    {        var diff = (target.height / source.height);        if (diff > 0.5)        {            diff = 0.5 - (diff - 0.5);        }        else        {            diff = 0.5 + (0.5 - diff);        }        this.setUVs(0, diff, 0, 1 + diff, 1, 1 + diff, 1, diff);    },    resetUVs: function ()    {        this.setUVs(0, 0, 0, 1, 1, 1, 1, 0);    },    destroy: function ()    {        this.renderer.deleteBuffer(this.quadVertexBuffer);        this.drawSpriteShader = null;        this.copyShader = null;        this.gameShader = null;        this.colorMatrixShader = null;        this.quadVertexData = null;        this.quadVertexBuffer = null;        this.quadVertexViewF32 = null;        this.fsTarget = null;        this.tempSprite = null;        MultiPipeline.prototype.destroy.call(this);        return this;    }});module.exports = PreFXPipeline;

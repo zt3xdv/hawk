@@ -1,22 +1,1 @@
-var Color = require('./Color');
-
-var RGBStringToColor = function (rgb)
-{
-    var color = new Color();
-
-    var result = (/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*(\d+(?:\.\d+)?))?\s*\)$/).exec(rgb.toLowerCase());
-
-    if (result)
-    {
-        var r = parseInt(result[1], 10);
-        var g = parseInt(result[2], 10);
-        var b = parseInt(result[3], 10);
-        var a = (result[4] !== undefined) ? parseFloat(result[4]) : 1;
-
-        color.setTo(r, g, b, a * 255);
-    }
-
-    return color;
-};
-
-module.exports = RGBStringToColor;
+var Color = require('./Color');var RGBStringToColor = function (rgb){    var color = new Color();    var result = (/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*(\d+(?:\.\d+)?))?\s*\)$/).exec(rgb.toLowerCase());    if (result)    {        var r = parseInt(result[1], 10);        var g = parseInt(result[2], 10);        var b = parseInt(result[3], 10);        var a = (result[4] !== undefined) ? parseFloat(result[4]) : 1;        color.setTo(r, g, b, a * 255);    }    return color;};module.exports = RGBStringToColor;

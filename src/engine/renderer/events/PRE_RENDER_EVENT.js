@@ -1,1 +1,1 @@
-module.exports = 'prerender';
+module.exports = 'prerender';

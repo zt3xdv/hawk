@@ -1,49 +1,1 @@
-var Class = require('../../../utils/Class');
-
-var WebGLAttribLocationWrapper = new Class({
-
-    initialize:
-
-    function WebGLAttribLocationWrapper (gl, program, name)
-    {
-
-        this.webGLAttribLocation = -1;
-
-        this.gl = gl;
-
-        this.program = program;
-
-        this.name = name;
-
-        this.createResource();
-    },
-
-    createResource: function ()
-    {
-        if (this.program.webGLProgram === null)
-        {
-            this.webGLAttribLocation = -1;
-            return;
-        }
-
-        var gl = this.gl;
-
-        if (gl.isContextLost())
-        {
-
-            return;
-        }
-
-        this.webGLAttribLocation = gl.getAttribLocation(this.program.webGLProgram, this.name);
-    },
-
-    destroy: function ()
-    {
-        this.gl = null;
-        this.program = null;
-        this.name = null;
-        this.webGLAttribLocation = -1;
-    }
-});
-
-module.exports = WebGLAttribLocationWrapper;
+var Class = require('../../../utils/Class');var WebGLAttribLocationWrapper = new Class({    initialize:    function WebGLAttribLocationWrapper (gl, program, name)    {        this.webGLAttribLocation = -1;        this.gl = gl;        this.program = program;        this.name = name;        this.createResource();    },    createResource: function ()    {        if (this.program.webGLProgram === null)        {            this.webGLAttribLocation = -1;            return;        }        var gl = this.gl;        if (gl.isContextLost())        {            return;        }        this.webGLAttribLocation = gl.getAttribLocation(this.program.webGLProgram, this.name);    },    destroy: function ()    {        this.gl = null;        this.program = null;        this.name = null;        this.webGLAttribLocation = -1;    }});module.exports = WebGLAttribLocationWrapper;

@@ -1,20 +1,1 @@
-var FX = {
-
-    Barrel: require('./BarrelFXPipeline'),
-    Bloom: require('./BloomFXPipeline'),
-    Blur: require('./BlurFXPipeline'),
-    Bokeh: require('./BokehFXPipeline'),
-    Circle: require('./CircleFXPipeline'),
-    ColorMatrix: require('./ColorMatrixFXPipeline'),
-    Displacement: require('./DisplacementFXPipeline'),
-    Glow: require('./GlowFXPipeline'),
-    Gradient: require('./GradientFXPipeline'),
-    Pixelate: require('./PixelateFXPipeline'),
-    Shadow: require('./ShadowFXPipeline'),
-    Shine: require('./ShineFXPipeline'),
-    Vignette: require('./VignetteFXPipeline'),
-    Wipe: require('./WipeFXPipeline')
-
-};
-
-module.exports = FX;
+var FX = {    Barrel: require('./BarrelFXPipeline'),    Bloom: require('./BloomFXPipeline'),    Blur: require('./BlurFXPipeline'),    Bokeh: require('./BokehFXPipeline'),    Circle: require('./CircleFXPipeline'),    ColorMatrix: require('./ColorMatrixFXPipeline'),    Displacement: require('./DisplacementFXPipeline'),    Glow: require('./GlowFXPipeline'),    Gradient: require('./GradientFXPipeline'),    Pixelate: require('./PixelateFXPipeline'),    Shadow: require('./ShadowFXPipeline'),    Shine: require('./ShineFXPipeline'),    Vignette: require('./VignetteFXPipeline'),    Wipe: require('./WipeFXPipeline')};module.exports = FX;

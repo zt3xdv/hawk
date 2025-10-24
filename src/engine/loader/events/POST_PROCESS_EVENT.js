@@ -1,4 +1,1 @@
-
-
-
-module.exports = 'postprocess';
+module.exports = 'postprocess';

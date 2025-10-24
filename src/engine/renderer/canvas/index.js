@@ -1,7 +1,1 @@
-module.exports = {
-
-    CanvasRenderer: require('./CanvasRenderer'),
-    GetBlendModes: require('./utils/GetBlendModes'),
-    SetTransform: require('./utils/SetTransform')
-
-};
+module.exports = {    CanvasRenderer: require('./CanvasRenderer'),    GetBlendModes: require('./utils/GetBlendModes'),    SetTransform: require('./utils/SetTransform')};

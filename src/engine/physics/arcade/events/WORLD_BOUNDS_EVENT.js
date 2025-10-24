@@ -1,1 +1,1 @@
-module.exports = 'worldbounds';
+module.exports = 'worldbounds';

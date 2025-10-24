@@ -1,1 +1,1 @@
-module.exports = 'leavefullscreen';
+module.exports = 'leavefullscreen';

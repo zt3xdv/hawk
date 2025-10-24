@@ -1,1 +1,1 @@
-module.exports = 'gameobjectdown';
+module.exports = 'gameobjectdown';

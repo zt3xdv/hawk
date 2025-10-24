@@ -1,865 +1,1 @@
-var AddToDOM = require('../../dom/AddToDOM');
-var CanvasPool = require('../../display/canvas/CanvasPool');
-var Class = require('../../utils/Class');
-var Components = require('../components');
-var GameObject = require('../GameObject');
-var GetTextSize = require('./GetTextSize');
-var GetValue = require('../../utils/object/GetValue');
-var RemoveFromDOM = require('../../dom/RemoveFromDOM');
-var TextRender = require('./TextRender');
-var TextStyle = require('./TextStyle');
-var UUID = require('../../utils/string/UUID');
-
-var Text = new Class({
-
-    Extends: GameObject,
-
-    Mixins: [
-        Components.Alpha,
-        Components.BlendMode,
-        Components.ComputedSize,
-        Components.Crop,
-        Components.Depth,
-        Components.Flip,
-        Components.GetBounds,
-        Components.Mask,
-        Components.Origin,
-        Components.Pipeline,
-        Components.PostPipeline,
-        Components.ScrollFactor,
-        Components.Tint,
-        Components.Transform,
-        Components.Visible,
-        TextRender
-    ],
-
-    initialize:
-
-    function Text (scene, x, y, text, style)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-
-        GameObject.call(this, scene, 'Text');
-
-        this.renderer = scene.sys.renderer;
-
-        this.setPosition(x, y);
-        this.setOrigin(0, 0);
-        this.initPipeline();
-        this.initPostPipeline(true);
-
-        this.canvas = CanvasPool.create(this);
-
-        this.context;
-
-        this.style = new TextStyle(this, style);
-
-        this.autoRound = true;
-
-        this.splitRegExp = /(?:\r\n|\r|\n)/;
-
-        this._text = undefined;
-
-        this.padding = { left: 0, right: 0, top: 0, bottom: 0 };
-
-        this.width = 1;
-
-        this.height = 1;
-
-        this.lineSpacing = 0;
-
-        this.letterSpacing = 0;
-
-        if (this.style.resolution === 0)
-        {
-            this.style.resolution = 1;
-        }
-
-        this._crop = this.resetCropObject();
-
-        this._textureKey = UUID();
-
-        this.texture = scene.sys.textures.addCanvas(this._textureKey, this.canvas);
-
-        this.context = this.texture.context;
-
-        this.frame = this.texture.get();
-
-        this.frame.source.resolution = this.style.resolution;
-
-        if (this.renderer && this.renderer.gl)
-        {
-
-            this.renderer.deleteTexture(this.frame.source.glTexture);
-
-            this.frame.source.glTexture = null;
-        }
-
-        this.initRTL();
-
-        this.setText(text);
-
-        if (style && style.padding)
-        {
-            this.setPadding(style.padding);
-        }
-
-        if (style && style.lineSpacing)
-        {
-            this.setLineSpacing(style.lineSpacing);
-        }
-
-        if (style && style.letterSpacing)
-        {
-            this.setLetterSpacing(style.letterSpacing);
-        }
-    },
-
-    initRTL: function ()
-    {
-        if (!this.style.rtl)
-        {
-            this.canvas.dir = 'ltr';
-            this.context.direction = 'ltr';
-            return;
-        }
-
-        this.canvas.dir = 'rtl';
-
-        this.context.direction = 'rtl';
-
-        this.canvas.style.display = 'none';
-
-        AddToDOM(this.canvas, this.scene.sys.canvas);
-
-        this.originX = 1;
-    },
-
-    runWordWrap: function (text)
-    {
-        var style = this.style;
-
-        if (style.wordWrapCallback)
-        {
-            var wrappedLines = style.wordWrapCallback.call(style.wordWrapCallbackScope, text, this);
-
-            if (Array.isArray(wrappedLines))
-            {
-                wrappedLines = wrappedLines.join('\n');
-            }
-
-            return wrappedLines;
-        }
-        else if (style.wordWrapWidth)
-        {
-            if (style.wordWrapUseAdvanced)
-            {
-                return this.advancedWordWrap(text, this.context, this.style.wordWrapWidth);
-            }
-            else
-            {
-                return this.basicWordWrap(text, this.context, this.style.wordWrapWidth);
-            }
-        }
-        else
-        {
-            return text;
-        }
-    },
-
-    advancedWordWrap: function (text, context, wordWrapWidth)
-    {
-        var output = '';
-
-        var lines = text
-            .replace(/ +/gi, ' ')
-            .split(this.splitRegExp);
-
-        var linesCount = lines.length;
-
-        for (var i = 0; i < linesCount; i++)
-        {
-            var line = lines[i];
-            var out = '';
-
-            line = line.replace(/^ *|\s*$/gi, '');
-
-            var lineLetterSpacingWidth = line.length * this.letterSpacing;
-            var lineWidth = context.measureText(line).width + lineLetterSpacingWidth;
-
-            if (lineWidth < wordWrapWidth)
-            {
-                output += line + '\n';
-                continue;
-            }
-
-            var currentLineWidth = wordWrapWidth;
-
-            var words = line.split(' ');
-
-            for (var j = 0; j < words.length; j++)
-            {
-                var word = words[j];
-                var wordWithSpace = word + ' ';
-                var letterSpacingWidth = wordWithSpace.length * this.letterSpacing;
-                var wordWidth = context.measureText(wordWithSpace).width + letterSpacingWidth;
-
-                if (wordWidth > currentLineWidth)
-                {
-
-                    if (j === 0)
-                    {
-
-                        var newWord = wordWithSpace;
-
-                        while (newWord.length)
-                        {
-                            newWord = newWord.slice(0, -1);
-                            var newLetterSpacingWidth = newWord.length * this.letterSpacing;
-                            wordWidth = context.measureText(newWord).width + newLetterSpacingWidth;
-
-                            if (wordWidth <= currentLineWidth)
-                            {
-                                break;
-                            }
-                        }
-
-                        if (!newWord.length)
-                        {
-                            throw new Error('wordWrapWidth < a single character');
-                        }
-
-                        var secondPart = word.substr(newWord.length);
-
-                        words[j] = secondPart;
-
-                        out += newWord;
-                    }
-
-                    var offset = (words[j].length) ? j : j + 1;
-
-                    var remainder = words.slice(offset).join(' ').replace(/[ \n]*$/gi, '');
-
-                    lines.splice(i + 1, 0, remainder);
-
-                    linesCount = lines.length;
-                    break; 
-
-                }
-                else
-                {
-                    out += wordWithSpace;
-                    currentLineWidth -= wordWidth;
-                }
-            }
-
-            output += out.replace(/[ \n]*$/gi, '') + '\n';
-        }
-
-        output = output.replace(/[\s|\n]*$/gi, '');
-
-        return output;
-    },
-
-    basicWordWrap: function (text, context, wordWrapWidth)
-    {
-        var result = '';
-        var lines = text.split(this.splitRegExp);
-        var lastLineIndex = lines.length - 1;
-        var whiteSpaceWidth = context.measureText(' ').width;
-
-        for (var i = 0; i <= lastLineIndex; i++)
-        {
-            var spaceLeft = wordWrapWidth;
-            var words = lines[i].split(' ');
-            var lastWordIndex = words.length - 1;
-
-            for (var j = 0; j <= lastWordIndex; j++)
-            {
-                var word = words[j];
-                var letterSpacingWidth = word.length * this.letterSpacing;
-                var wordWidth = context.measureText(word).width + letterSpacingWidth;
-                var wordWidthWithSpace = wordWidth;
-
-                if (j < lastWordIndex)
-                {
-                    wordWidthWithSpace += whiteSpaceWidth;
-                }
-
-                if (wordWidthWithSpace > spaceLeft)
-                {
-
-                    if (j > 0)
-                    {
-                        result += '\n';
-                        spaceLeft = wordWrapWidth;
-                    }
-                }
-
-                result += word;
-
-                if (j < lastWordIndex)
-                {
-                    result += ' ';
-                    spaceLeft -= wordWidthWithSpace;
-                }
-                else
-                {
-                    spaceLeft -= wordWidth;
-                }
-            }
-
-            if (i < lastLineIndex)
-            {
-                result += '\n';
-            }
-        }
-
-        return result;
-    },
-
-    getWrappedText: function (text)
-    {
-        if (text === undefined) { text = this._text; }
-
-        this.style.syncFont(this.canvas, this.context);
-
-        var wrappedLines = this.runWordWrap(text);
-
-        return wrappedLines.split(this.splitRegExp);
-    },
-
-    setText: function (value)
-    {
-        if (!value && value !== 0)
-        {
-            value = '';
-        }
-
-        if (Array.isArray(value))
-        {
-            value = value.join('\n');
-        }
-
-        if (value !== this._text)
-        {
-            this._text = value.toString();
-
-            this.updateText();
-        }
-
-        return this;
-    },
-
-    appendText: function (value, addCR)
-    {
-        if (addCR === undefined) { addCR = true; }
-
-        if (!value && value !== 0)
-        {
-            value = '';
-        }
-
-        if (Array.isArray(value))
-        {
-            value = value.join('\n');
-        }
-
-        value = value.toString();
-
-        var newText = this._text.concat((addCR) ? '\n' + value : value);
-
-        if (newText !== this._text)
-        {
-            this._text = newText;
-
-            this.updateText();
-        }
-
-        return this;
-    },
-
-    setStyle: function (style)
-    {
-        return this.style.setStyle(style);
-    },
-
-    setFont: function (font)
-    {
-        return this.style.setFont(font);
-    },
-
-    setFontFamily: function (family)
-    {
-        return this.style.setFontFamily(family);
-    },
-
-    setFontSize: function (size)
-    {
-        return this.style.setFontSize(size);
-    },
-
-    setFontStyle: function (style)
-    {
-        return this.style.setFontStyle(style);
-    },
-
-    setFixedSize: function (width, height)
-    {
-        return this.style.setFixedSize(width, height);
-    },
-
-    setBackgroundColor: function (color)
-    {
-        return this.style.setBackgroundColor(color);
-    },
-
-    setFill: function (fillStyle)
-    {
-        return this.style.setFill(fillStyle);
-    },
-
-    setColor: function (color)
-    {
-        return this.style.setColor(color);
-    },
-
-    setStroke: function (color, thickness)
-    {
-        return this.style.setStroke(color, thickness);
-    },
-
-    setShadow: function (x, y, color, blur, shadowStroke, shadowFill)
-    {
-        return this.style.setShadow(x, y, color, blur, shadowStroke, shadowFill);
-    },
-
-    setShadowOffset: function (x, y)
-    {
-        return this.style.setShadowOffset(x, y);
-    },
-
-    setShadowColor: function (color)
-    {
-        return this.style.setShadowColor(color);
-    },
-
-    setShadowBlur: function (blur)
-    {
-        return this.style.setShadowBlur(blur);
-    },
-
-    setShadowStroke: function (enabled)
-    {
-        return this.style.setShadowStroke(enabled);
-    },
-
-    setShadowFill: function (enabled)
-    {
-        return this.style.setShadowFill(enabled);
-    },
-
-    setWordWrapWidth: function (width, useAdvancedWrap)
-    {
-        return this.style.setWordWrapWidth(width, useAdvancedWrap);
-    },
-
-    setWordWrapCallback: function (callback, scope)
-    {
-        return this.style.setWordWrapCallback(callback, scope);
-    },
-
-    setAlign: function (align)
-    {
-        return this.style.setAlign(align);
-    },
-
-    setResolution: function (value)
-    {
-        return this.style.setResolution(value);
-    },
-
-    setLineSpacing: function (value)
-    {
-        this.lineSpacing = value;
-
-        return this.updateText();
-    },
-
-    setLetterSpacing: function (value)
-    {
-        this.letterSpacing = value;
-
-        return this.updateText();
-    },
-
-    setPadding: function (left, top, right, bottom)
-    {
-        if (typeof left === 'object')
-        {
-            var config = left;
-
-            var x = GetValue(config, 'x', null);
-
-            if (x !== null)
-            {
-                left = x;
-                right = x;
-            }
-            else
-            {
-                left = GetValue(config, 'left', 0);
-                right = GetValue(config, 'right', left);
-            }
-
-            var y = GetValue(config, 'y', null);
-
-            if (y !== null)
-            {
-                top = y;
-                bottom = y;
-            }
-            else
-            {
-                top = GetValue(config, 'top', 0);
-                bottom = GetValue(config, 'bottom', top);
-            }
-        }
-        else
-        {
-            if (left === undefined) { left = 0; }
-            if (top === undefined) { top = left; }
-            if (right === undefined) { right = left; }
-            if (bottom === undefined) { bottom = top; }
-        }
-
-        this.padding.left = left;
-        this.padding.top = top;
-        this.padding.right = right;
-        this.padding.bottom = bottom;
-
-        return this.updateText();
-    },
-
-    setMaxLines: function (max)
-    {
-        return this.style.setMaxLines(max);
-    },
-
-    setRTL: function (rtl)
-    {
-        if (rtl === undefined) { rtl = true; }
-
-        var style = this.style;
-
-        if (style.rtl === rtl)
-        {
-            return this;
-        }
-
-        style.rtl = rtl;
-
-        if (rtl)
-        {
-            this.canvas.dir = 'rtl';
-            this.context.direction = 'rtl';
-            this.canvas.style.display = 'none';
-
-            AddToDOM(this.canvas, this.scene.sys.canvas);
-        }
-        else
-        {
-            this.canvas.dir = 'ltr';
-            this.context.direction = 'ltr';
-        }
-
-        if (style.align === 'left')
-        {
-            style.align = 'right';
-        }
-        else if (style.align === 'right')
-        {
-            style.align = 'left';
-        }
-
-        return this;
-    },
-
-    updateText: function ()
-    {
-        var canvas = this.canvas;
-        var context = this.context;
-        var style = this.style;
-        var resolution = style.resolution;
-        var size = style.metrics;
-
-        style.syncFont(canvas, context);
-
-        var outputText = this._text;
-
-        if (style.wordWrapWidth || style.wordWrapCallback)
-        {
-            outputText = this.runWordWrap(this._text);
-        }
-
-        var lines = outputText.split(this.splitRegExp);
-
-        var textSize = GetTextSize(this, size, lines);
-
-        var padding = this.padding;
-
-        var textWidth;
-
-        if (style.fixedWidth === 0)
-        {
-            this.width = textSize.width + padding.left + padding.right;
-
-            textWidth = textSize.width;
-        }
-        else
-        {
-            this.width = style.fixedWidth;
-
-            textWidth = this.width - padding.left - padding.right;
-
-            if (textWidth < textSize.width)
-            {
-                textWidth = textSize.width;
-            }
-        }
-
-        if (style.fixedHeight === 0)
-        {
-            this.height = textSize.height + padding.top + padding.bottom;
-        }
-        else
-        {
-            this.height = style.fixedHeight;
-        }
-
-        var w = this.width;
-        var h = this.height;
-
-        this.updateDisplayOrigin();
-
-        w *= resolution;
-        h *= resolution;
-
-        w = Math.max(w, 1);
-        h = Math.max(h, 1);
-
-        if (canvas.width !== w || canvas.height !== h)
-        {
-            canvas.width = w;
-            canvas.height = h;
-
-            this.frame.setSize(w, h);
-
-            style.syncFont(canvas, context);
-
-            if (style.rtl)
-            {
-                context.direction = 'rtl';
-            }
-        }
-        else
-        {
-            context.clearRect(0, 0, w, h);
-        }
-
-        context.save();
-
-        context.scale(resolution, resolution);
-
-        if (style.backgroundColor)
-        {
-            context.fillStyle = style.backgroundColor;
-            context.fillRect(0, 0, w, h);
-        }
-
-        style.syncStyle(canvas, context);
-
-        context.translate(padding.left, padding.top);
-
-        var linePositionX;
-        var linePositionY;
-
-        for (var i = 0; i < textSize.lines; i++)
-        {
-            linePositionX = style.strokeThickness / 2;
-            linePositionY = (style.strokeThickness / 2 + i * textSize.lineHeight) + size.ascent;
-
-            if (i > 0)
-            {
-                linePositionY += (textSize.lineSpacing * i);
-            }
-
-            if (style.rtl)
-            {
-                linePositionX = w - linePositionX - padding.left - padding.right;
-            }
-            else if (style.align === 'right')
-            {
-                linePositionX += textWidth - textSize.lineWidths[i];
-            }
-            else if (style.align === 'center')
-            {
-                linePositionX += (textWidth - textSize.lineWidths[i]) / 2;
-            }
-            else if (style.align === 'justify')
-            {
-
-                var minimumLengthToApplyJustification = 0.85;
-
-                if (textSize.lineWidths[i] / textSize.width >= minimumLengthToApplyJustification)
-                {
-                    var extraSpace = textSize.width - textSize.lineWidths[i];
-                    var spaceSize = context.measureText(' ').width;
-                    var trimmedLine = lines[i].trim();
-                    var array = trimmedLine.split(' ');
-
-                    extraSpace += (lines[i].length - trimmedLine.length) * spaceSize;
-
-                    var extraSpaceCharacters = Math.floor(extraSpace / spaceSize);
-                    var idx = 0;
-
-                    while (extraSpaceCharacters > 0)
-                    {
-                        array[idx] += ' ';
-                        idx = (idx + 1) % (array.length - 1 || 1);
-                        --extraSpaceCharacters;
-                    }
-
-                    lines[i] = array.join(' ');
-                }
-            }
-
-            if (this.autoRound)
-            {
-                linePositionX = Math.round(linePositionX);
-                linePositionY = Math.round(linePositionY);
-            }
-
-            var letterSpacing = this.letterSpacing;
-
-            if (style.strokeThickness && letterSpacing === 0)
-            {
-                style.syncShadow(context, style.shadowStroke);
-
-                context.strokeText(lines[i], linePositionX, linePositionY);
-            }
-
-            if (style.color)
-            {
-                style.syncShadow(context, style.shadowFill);
-
-                if (letterSpacing !== 0)
-                {
-                    var charPositionX = 0;
-
-                    var line = lines[i].split('');
-
-                    for (var l = 0; l < line.length; l++)
-                    {
-                        if (style.strokeThickness)
-                        {
-                            style.syncShadow(context, style.shadowStroke);
-
-                            context.strokeText(line[l], linePositionX + charPositionX, linePositionY);
-
-                            style.syncShadow(context, style.shadowFill);
-                        }
-
-                        context.fillText(line[l], linePositionX + charPositionX, linePositionY);
-
-                        charPositionX += context.measureText(line[l]).width + letterSpacing;
-                    }
-                }
-                else
-                {
-                    context.fillText(lines[i], linePositionX, linePositionY);
-                }
-            }
-        }
-
-        context.restore();
-
-        if (this.renderer && this.renderer.gl)
-        {
-            this.frame.source.glTexture = this.renderer.canvasToTexture(canvas, this.frame.source.glTexture, true);
-
-            if (typeof WEBGL_DEBUG)
-            {
-                this.frame.glTexture.spectorMetadata = { textureKey: 'Text Game Object' };
-            }
-        }
-
-        var input = this.input;
-
-        if (input && !input.customHitArea)
-        {
-            input.hitArea.width = this.width;
-            input.hitArea.height = this.height;
-        }
-
-        return this;
-    },
-
-    getTextMetrics: function ()
-    {
-        return this.style.getTextMetrics();
-    },
-
-    text: {
-
-        get: function ()
-        {
-            return this._text;
-        },
-
-        set: function (value)
-        {
-            this.setText(value);
-        }
-
-    },
-
-    toJSON: function ()
-    {
-        var out = Components.ToJSON(this);
-
-        var data = {
-            autoRound: this.autoRound,
-            text: this._text,
-            style: this.style.toJSON(),
-            padding: {
-                left: this.padding.left,
-                right: this.padding.right,
-                top: this.padding.top,
-                bottom: this.padding.bottom
-            }
-        };
-
-        out.data = data;
-
-        return out;
-    },
-
-    preDestroy: function ()
-    {
-        RemoveFromDOM(this.canvas);
-
-        CanvasPool.remove(this.canvas);
-
-        var texture = this.texture;
-
-        if (texture)
-        {
-            texture.destroy();
-        }
-    }
-
-});
-
-module.exports = Text;
+var AddToDOM = require('../../dom/AddToDOM');var CanvasPool = require('../../display/canvas/CanvasPool');var Class = require('../../utils/Class');var Components = require('../components');var GameObject = require('../GameObject');var GetTextSize = require('./GetTextSize');var GetValue = require('../../utils/object/GetValue');var RemoveFromDOM = require('../../dom/RemoveFromDOM');var TextRender = require('./TextRender');var TextStyle = require('./TextStyle');var UUID = require('../../utils/string/UUID');var Text = new Class({    Extends: GameObject,    Mixins: [        Components.Alpha,        Components.BlendMode,        Components.ComputedSize,        Components.Crop,        Components.Depth,        Components.Flip,        Components.GetBounds,        Components.Mask,        Components.Origin,        Components.Pipeline,        Components.PostPipeline,        Components.ScrollFactor,        Components.Tint,        Components.Transform,        Components.Visible,        TextRender    ],    initialize:    function Text (scene, x, y, text, style)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        GameObject.call(this, scene, 'Text');        this.renderer = scene.sys.renderer;        this.setPosition(x, y);        this.setOrigin(0, 0);        this.initPipeline();        this.initPostPipeline(true);        this.canvas = CanvasPool.create(this);        this.context;        this.style = new TextStyle(this, style);        this.autoRound = true;        this.splitRegExp = /(?:\r\n|\r|\n)/;        this._text = undefined;        this.padding = { left: 0, right: 0, top: 0, bottom: 0 };        this.width = 1;        this.height = 1;        this.lineSpacing = 0;        this.letterSpacing = 0;        if (this.style.resolution === 0)        {            this.style.resolution = 1;        }        this._crop = this.resetCropObject();        this._textureKey = UUID();        this.texture = scene.sys.textures.addCanvas(this._textureKey, this.canvas);        this.context = this.texture.context;        this.frame = this.texture.get();        this.frame.source.resolution = this.style.resolution;        if (this.renderer && this.renderer.gl)        {            this.renderer.deleteTexture(this.frame.source.glTexture);            this.frame.source.glTexture = null;        }        this.initRTL();        this.setText(text);        if (style && style.padding)        {            this.setPadding(style.padding);        }        if (style && style.lineSpacing)        {            this.setLineSpacing(style.lineSpacing);        }        if (style && style.letterSpacing)        {            this.setLetterSpacing(style.letterSpacing);        }    },    initRTL: function ()    {        if (!this.style.rtl)        {            this.canvas.dir = 'ltr';            this.context.direction = 'ltr';            return;        }        this.canvas.dir = 'rtl';        this.context.direction = 'rtl';        this.canvas.style.display = 'none';        AddToDOM(this.canvas, this.scene.sys.canvas);        this.originX = 1;    },    runWordWrap: function (text)    {        var style = this.style;        if (style.wordWrapCallback)        {            var wrappedLines = style.wordWrapCallback.call(style.wordWrapCallbackScope, text, this);            if (Array.isArray(wrappedLines))            {                wrappedLines = wrappedLines.join('\n');            }            return wrappedLines;        }        else if (style.wordWrapWidth)        {            if (style.wordWrapUseAdvanced)            {                return this.advancedWordWrap(text, this.context, this.style.wordWrapWidth);            }            else            {                return this.basicWordWrap(text, this.context, this.style.wordWrapWidth);            }        }        else        {            return text;        }    },    advancedWordWrap: function (text, context, wordWrapWidth)    {        var output = '';        var lines = text            .replace(/ +/gi, ' ')            .split(this.splitRegExp);        var linesCount = lines.length;        for (var i = 0; i < linesCount; i++)        {            var line = lines[i];            var out = '';            line = line.replace(/^ *|\s*$/gi, '');            var lineLetterSpacingWidth = line.length * this.letterSpacing;            var lineWidth = context.measureText(line).width + lineLetterSpacingWidth;            if (lineWidth < wordWrapWidth)            {                output += line + '\n';                continue;            }            var currentLineWidth = wordWrapWidth;            var words = line.split(' ');            for (var j = 0; j < words.length; j++)            {                var word = words[j];                var wordWithSpace = word + ' ';                var letterSpacingWidth = wordWithSpace.length * this.letterSpacing;                var wordWidth = context.measureText(wordWithSpace).width + letterSpacingWidth;                if (wordWidth > currentLineWidth)                {                    if (j === 0)                    {                        var newWord = wordWithSpace;                        while (newWord.length)                        {                            newWord = newWord.slice(0, -1);                            var newLetterSpacingWidth = newWord.length * this.letterSpacing;                            wordWidth = context.measureText(newWord).width + newLetterSpacingWidth;                            if (wordWidth <= currentLineWidth)                            {                                break;                            }                        }                        if (!newWord.length)                        {                            throw new Error('wordWrapWidth < a single character');                        }                        var secondPart = word.substr(newWord.length);                        words[j] = secondPart;                        out += newWord;                    }                    var offset = (words[j].length) ? j : j + 1;                    var remainder = words.slice(offset).join(' ').replace(/[ \n]*$/gi, '');                    lines.splice(i + 1, 0, remainder);                    linesCount = lines.length;                    break;                 }                else                {                    out += wordWithSpace;                    currentLineWidth -= wordWidth;                }            }            output += out.replace(/[ \n]*$/gi, '') + '\n';        }        output = output.replace(/[\s|\n]*$/gi, '');        return output;    },    basicWordWrap: function (text, context, wordWrapWidth)    {        var result = '';        var lines = text.split(this.splitRegExp);        var lastLineIndex = lines.length - 1;        var whiteSpaceWidth = context.measureText(' ').width;        for (var i = 0; i <= lastLineIndex; i++)        {            var spaceLeft = wordWrapWidth;            var words = lines[i].split(' ');            var lastWordIndex = words.length - 1;            for (var j = 0; j <= lastWordIndex; j++)            {                var word = words[j];                var letterSpacingWidth = word.length * this.letterSpacing;                var wordWidth = context.measureText(word).width + letterSpacingWidth;                var wordWidthWithSpace = wordWidth;                if (j < lastWordIndex)                {                    wordWidthWithSpace += whiteSpaceWidth;                }                if (wordWidthWithSpace > spaceLeft)                {                    if (j > 0)                    {                        result += '\n';                        spaceLeft = wordWrapWidth;                    }                }                result += word;                if (j < lastWordIndex)                {                    result += ' ';                    spaceLeft -= wordWidthWithSpace;                }                else                {                    spaceLeft -= wordWidth;                }            }            if (i < lastLineIndex)            {                result += '\n';            }        }        return result;    },    getWrappedText: function (text)    {        if (text === undefined) { text = this._text; }        this.style.syncFont(this.canvas, this.context);        var wrappedLines = this.runWordWrap(text);        return wrappedLines.split(this.splitRegExp);    },    setText: function (value)    {        if (!value && value !== 0)        {            value = '';        }        if (Array.isArray(value))        {            value = value.join('\n');        }        if (value !== this._text)        {            this._text = value.toString();            this.updateText();        }        return this;    },    appendText: function (value, addCR)    {        if (addCR === undefined) { addCR = true; }        if (!value && value !== 0)        {            value = '';        }        if (Array.isArray(value))        {            value = value.join('\n');        }        value = value.toString();        var newText = this._text.concat((addCR) ? '\n' + value : value);        if (newText !== this._text)        {            this._text = newText;            this.updateText();        }        return this;    },    setStyle: function (style)    {        return this.style.setStyle(style);    },    setFont: function (font)    {        return this.style.setFont(font);    },    setFontFamily: function (family)    {        return this.style.setFontFamily(family);    },    setFontSize: function (size)    {        return this.style.setFontSize(size);    },    setFontStyle: function (style)    {        return this.style.setFontStyle(style);    },    setFixedSize: function (width, height)    {        return this.style.setFixedSize(width, height);    },    setBackgroundColor: function (color)    {        return this.style.setBackgroundColor(color);    },    setFill: function (fillStyle)    {        return this.style.setFill(fillStyle);    },    setColor: function (color)    {        return this.style.setColor(color);    },    setStroke: function (color, thickness)    {        return this.style.setStroke(color, thickness);    },    setShadow: function (x, y, color, blur, shadowStroke, shadowFill)    {        return this.style.setShadow(x, y, color, blur, shadowStroke, shadowFill);    },    setShadowOffset: function (x, y)    {        return this.style.setShadowOffset(x, y);    },    setShadowColor: function (color)    {        return this.style.setShadowColor(color);    },    setShadowBlur: function (blur)    {        return this.style.setShadowBlur(blur);    },    setShadowStroke: function (enabled)    {        return this.style.setShadowStroke(enabled);    },    setShadowFill: function (enabled)    {        return this.style.setShadowFill(enabled);    },    setWordWrapWidth: function (width, useAdvancedWrap)    {        return this.style.setWordWrapWidth(width, useAdvancedWrap);    },    setWordWrapCallback: function (callback, scope)    {        return this.style.setWordWrapCallback(callback, scope);    },    setAlign: function (align)    {        return this.style.setAlign(align);    },    setResolution: function (value)    {        return this.style.setResolution(value);    },    setLineSpacing: function (value)    {        this.lineSpacing = value;        return this.updateText();    },    setLetterSpacing: function (value)    {        this.letterSpacing = value;        return this.updateText();    },    setPadding: function (left, top, right, bottom)    {        if (typeof left === 'object')        {            var config = left;            var x = GetValue(config, 'x', null);            if (x !== null)            {                left = x;                right = x;            }            else            {                left = GetValue(config, 'left', 0);                right = GetValue(config, 'right', left);            }            var y = GetValue(config, 'y', null);            if (y !== null)            {                top = y;                bottom = y;            }            else            {                top = GetValue(config, 'top', 0);                bottom = GetValue(config, 'bottom', top);            }        }        else        {            if (left === undefined) { left = 0; }            if (top === undefined) { top = left; }            if (right === undefined) { right = left; }            if (bottom === undefined) { bottom = top; }        }        this.padding.left = left;        this.padding.top = top;        this.padding.right = right;        this.padding.bottom = bottom;        return this.updateText();    },    setMaxLines: function (max)    {        return this.style.setMaxLines(max);    },    setRTL: function (rtl)    {        if (rtl === undefined) { rtl = true; }        var style = this.style;        if (style.rtl === rtl)        {            return this;        }        style.rtl = rtl;        if (rtl)        {            this.canvas.dir = 'rtl';            this.context.direction = 'rtl';            this.canvas.style.display = 'none';            AddToDOM(this.canvas, this.scene.sys.canvas);        }        else        {            this.canvas.dir = 'ltr';            this.context.direction = 'ltr';        }        if (style.align === 'left')        {            style.align = 'right';        }        else if (style.align === 'right')        {            style.align = 'left';        }        return this;    },    updateText: function ()    {        var canvas = this.canvas;        var context = this.context;        var style = this.style;        var resolution = style.resolution;        var size = style.metrics;        style.syncFont(canvas, context);        var outputText = this._text;        if (style.wordWrapWidth || style.wordWrapCallback)        {            outputText = this.runWordWrap(this._text);        }        var lines = outputText.split(this.splitRegExp);        var textSize = GetTextSize(this, size, lines);        var padding = this.padding;        var textWidth;        if (style.fixedWidth === 0)        {            this.width = textSize.width + padding.left + padding.right;            textWidth = textSize.width;        }        else        {            this.width = style.fixedWidth;            textWidth = this.width - padding.left - padding.right;            if (textWidth < textSize.width)            {                textWidth = textSize.width;            }        }        if (style.fixedHeight === 0)        {            this.height = textSize.height + padding.top + padding.bottom;        }        else        {            this.height = style.fixedHeight;        }        var w = this.width;        var h = this.height;        this.updateDisplayOrigin();        w *= resolution;        h *= resolution;        w = Math.max(w, 1);        h = Math.max(h, 1);        if (canvas.width !== w || canvas.height !== h)        {            canvas.width = w;            canvas.height = h;            this.frame.setSize(w, h);            style.syncFont(canvas, context);            if (style.rtl)            {                context.direction = 'rtl';            }        }        else        {            context.clearRect(0, 0, w, h);        }        context.save();        context.scale(resolution, resolution);        if (style.backgroundColor)        {            context.fillStyle = style.backgroundColor;            context.fillRect(0, 0, w, h);        }        style.syncStyle(canvas, context);        context.translate(padding.left, padding.top);        var linePositionX;        var linePositionY;        for (var i = 0; i < textSize.lines; i++)        {            linePositionX = style.strokeThickness / 2;            linePositionY = (style.strokeThickness / 2 + i * textSize.lineHeight) + size.ascent;            if (i > 0)            {                linePositionY += (textSize.lineSpacing * i);            }            if (style.rtl)            {                linePositionX = w - linePositionX - padding.left - padding.right;            }            else if (style.align === 'right')            {                linePositionX += textWidth - textSize.lineWidths[i];            }            else if (style.align === 'center')            {                linePositionX += (textWidth - textSize.lineWidths[i]) / 2;            }            else if (style.align === 'justify')            {                var minimumLengthToApplyJustification = 0.85;                if (textSize.lineWidths[i] / textSize.width >= minimumLengthToApplyJustification)                {                    var extraSpace = textSize.width - textSize.lineWidths[i];                    var spaceSize = context.measureText(' ').width;                    var trimmedLine = lines[i].trim();                    var array = trimmedLine.split(' ');                    extraSpace += (lines[i].length - trimmedLine.length) * spaceSize;                    var extraSpaceCharacters = Math.floor(extraSpace / spaceSize);                    var idx = 0;                    while (extraSpaceCharacters > 0)                    {                        array[idx] += ' ';                        idx = (idx + 1) % (array.length - 1 || 1);                        --extraSpaceCharacters;                    }                    lines[i] = array.join(' ');                }            }            if (this.autoRound)            {                linePositionX = Math.round(linePositionX);                linePositionY = Math.round(linePositionY);            }            var letterSpacing = this.letterSpacing;            if (style.strokeThickness && letterSpacing === 0)            {                style.syncShadow(context, style.shadowStroke);                context.strokeText(lines[i], linePositionX, linePositionY);            }            if (style.color)            {                style.syncShadow(context, style.shadowFill);                if (letterSpacing !== 0)                {                    var charPositionX = 0;                    var line = lines[i].split('');                    for (var l = 0; l < line.length; l++)                    {                        if (style.strokeThickness)                        {                            style.syncShadow(context, style.shadowStroke);                            context.strokeText(line[l], linePositionX + charPositionX, linePositionY);                            style.syncShadow(context, style.shadowFill);                        }                        context.fillText(line[l], linePositionX + charPositionX, linePositionY);                        charPositionX += context.measureText(line[l]).width + letterSpacing;                    }                }                else                {                    context.fillText(lines[i], linePositionX, linePositionY);                }            }        }        context.restore();        if (this.renderer && this.renderer.gl)        {            this.frame.source.glTexture = this.renderer.canvasToTexture(canvas, this.frame.source.glTexture, true);            if (typeof WEBGL_DEBUG)            {                this.frame.glTexture.spectorMetadata = { textureKey: 'Text Game Object' };            }        }        var input = this.input;        if (input && !input.customHitArea)        {            input.hitArea.width = this.width;            input.hitArea.height = this.height;        }        return this;    },    getTextMetrics: function ()    {        return this.style.getTextMetrics();    },    text: {        get: function ()        {            return this._text;        },        set: function (value)        {            this.setText(value);        }    },    toJSON: function ()    {        var out = Components.ToJSON(this);        var data = {            autoRound: this.autoRound,            text: this._text,            style: this.style.toJSON(),            padding: {                left: this.padding.left,                right: this.padding.right,                top: this.padding.top,                bottom: this.padding.bottom            }        };        out.data = data;        return out;    },    preDestroy: function ()    {        RemoveFromDOM(this.canvas);        CanvasPool.remove(this.canvas);        var texture = this.texture;        if (texture)        {            texture.destroy();        }    }});module.exports = Text;

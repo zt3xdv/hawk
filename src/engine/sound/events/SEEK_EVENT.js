@@ -1,1 +1,1 @@
-module.exports = 'seek';
+module.exports = 'seek';

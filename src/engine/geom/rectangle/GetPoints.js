@@ -1,23 +1,1 @@
-var GetPoint = require('./GetPoint');
-var Perimeter = require('./Perimeter');
-
-var GetPoints = function (rectangle, quantity, stepRate, out)
-{
-    if (out === undefined) { out = []; }
-
-    if (!quantity && stepRate > 0)
-    {
-        quantity = Perimeter(rectangle) / stepRate;
-    }
-
-    for (var i = 0; i < quantity; i++)
-    {
-        var position = i / quantity;
-
-        out.push(GetPoint(rectangle, position));
-    }
-
-    return out;
-};
-
-module.exports = GetPoints;
+var GetPoint = require('./GetPoint');var Perimeter = require('./Perimeter');var GetPoints = function (rectangle, quantity, stepRate, out){    if (out === undefined) { out = []; }    if (!quantity && stepRate > 0)    {        quantity = Perimeter(rectangle) / stepRate;    }    for (var i = 0; i < quantity; i++)    {        var position = i / quantity;        out.push(GetPoint(rectangle, position));    }    return out;};module.exports = GetPoints;

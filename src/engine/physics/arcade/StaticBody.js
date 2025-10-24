@@ -1,494 +1,1 @@
-var CircleContains = require('../../geom/circle/Contains');
-var Class = require('../../utils/Class');
-var CollisionComponent = require('./components/Collision');
-var CONST = require('./const');
-var RectangleContains = require('../../geom/rectangle/Contains');
-var SetCollisionObject = require('./SetCollisionObject');
-var Vector2 = require('../../math/Vector2');
-
-var StaticBody = new Class({
-
-    Mixins: [
-        CollisionComponent
-    ],
-
-    initialize:
-
-    function StaticBody (world, gameObject)
-    {
-        var width = 64;
-        var height = 64;
-
-        var dummyGameObject = {
-            x: 0,
-            y: 0,
-            angle: 0,
-            rotation: 0,
-            scaleX: 1,
-            scaleY: 1,
-            displayOriginX: 0,
-            displayOriginY: 0
-        };
-
-        var hasGameObject = (gameObject !== undefined);
-
-        if (hasGameObject && gameObject.displayWidth)
-        {
-            width = gameObject.displayWidth;
-            height = gameObject.displayHeight;
-        }
-
-        if (!hasGameObject)
-        {
-            gameObject = dummyGameObject;
-        }
-
-        this.world = world;
-
-        this.gameObject = (hasGameObject) ? gameObject : undefined;
-
-        this.isBody = true;
-
-        this.debugShowBody = world.defaults.debugShowStaticBody;
-
-        this.debugBodyColor = world.defaults.staticBodyDebugColor;
-
-        this.enable = true;
-
-        this.isCircle = false;
-
-        this.radius = 0;
-
-        this.offset = new Vector2();
-
-        this.position = new Vector2(gameObject.x - (width * gameObject.originX), gameObject.y - (height * gameObject.originY));
-
-        this.width = width;
-
-        this.height = height;
-
-        this.halfWidth = Math.abs(this.width / 2);
-
-        this.halfHeight = Math.abs(this.height / 2);
-
-        this.center = new Vector2(this.position.x + this.halfWidth, this.position.y + this.halfHeight);
-
-        this.velocity = Vector2.ZERO;
-
-        this.allowGravity = false;
-
-        this.gravity = Vector2.ZERO;
-
-        this.bounce = Vector2.ZERO;
-
-        this.onWorldBounds = false;
-
-        this.onCollide = false;
-
-        this.onOverlap = false;
-
-        this.mass = 1;
-
-        this.immovable = true;
-
-        this.pushable = false;
-
-        this.customSeparateX = false;
-
-        this.customSeparateY = false;
-
-        this.overlapX = 0;
-
-        this.overlapY = 0;
-
-        this.overlapR = 0;
-
-        this.embedded = false;
-
-        this.collideWorldBounds = false;
-
-        this.checkCollision = SetCollisionObject(false);
-
-        this.touching = SetCollisionObject(true);
-
-        this.wasTouching = SetCollisionObject(true);
-
-        this.blocked = SetCollisionObject(true);
-
-        this.physicsType = CONST.STATIC_BODY;
-
-        this.collisionCategory = 0x0001;
-
-        this.collisionMask = 1;
-
-        this._dx = 0;
-
-        this._dy = 0;
-    },
-
-    setGameObject: function (gameObject, update, enable)
-    {
-        if (update === undefined) { update = true; }
-        if (enable === undefined) { enable = true; }
-
-        if (!gameObject || !gameObject.hasTransformComponent)
-        {
-
-            return this;
-        }
-
-        var world = this.world;
-
-        if (this.gameObject && this.gameObject.body)
-        {
-            world.disable(this.gameObject);
-
-            this.gameObject.body = null;
-        }
-
-        if (gameObject.body)
-        {
-
-            world.disable(gameObject);
-        }
-
-        this.gameObject = gameObject;
-
-        gameObject.body = this;
-
-        this.setSize();
-
-        if (update)
-        {
-            this.updateFromGameObject();
-        }
-
-        this.enable = enable;
-
-        return this;
-    },
-
-    updateFromGameObject: function ()
-    {
-        this.world.staticTree.remove(this);
-
-        var gameObject = this.gameObject;
-
-        gameObject.getTopLeft(this.position);
-
-        this.width = gameObject.displayWidth;
-        this.height = gameObject.displayHeight;
-
-        this.halfWidth = Math.abs(this.width / 2);
-        this.halfHeight = Math.abs(this.height / 2);
-
-        this.center.set(this.position.x + this.halfWidth, this.position.y + this.halfHeight);
-
-        this.world.staticTree.insert(this);
-
-        return this;
-    },
-
-    setOffset: function (x, y)
-    {
-        if (y === undefined) { y = x; }
-
-        this.world.staticTree.remove(this);
-
-        this.position.x -= this.offset.x;
-        this.position.y -= this.offset.y;
-
-        this.offset.set(x, y);
-
-        this.position.x += this.offset.x;
-        this.position.y += this.offset.y;
-
-        this.updateCenter();
-
-        this.world.staticTree.insert(this);
-
-        return this;
-    },
-
-    setSize: function (width, height, center)
-    {
-        if (center === undefined) { center = true; }
-
-        var gameObject = this.gameObject;
-
-        if (gameObject && gameObject.frame)
-        {
-            if (!width)
-            {
-                width = gameObject.frame.realWidth;
-            }
-
-            if (!height)
-            {
-                height = gameObject.frame.realHeight;
-            }
-        }
-
-        this.world.staticTree.remove(this);
-
-        this.width = width;
-        this.height = height;
-
-        this.halfWidth = Math.floor(width / 2);
-        this.halfHeight = Math.floor(height / 2);
-
-        if (center && gameObject && gameObject.getCenter)
-        {
-            var ox = gameObject.displayWidth / 2;
-            var oy = gameObject.displayHeight / 2;
-
-            this.position.x -= this.offset.x;
-            this.position.y -= this.offset.y;
-
-            this.offset.set(ox - this.halfWidth, oy - this.halfHeight);
-
-            this.position.x += this.offset.x;
-            this.position.y += this.offset.y;
-        }
-
-        this.updateCenter();
-
-        this.isCircle = false;
-        this.radius = 0;
-
-        this.world.staticTree.insert(this);
-
-        return this;
-    },
-
-    setCircle: function (radius, offsetX, offsetY)
-    {
-        if (offsetX === undefined) { offsetX = this.offset.x; }
-        if (offsetY === undefined) { offsetY = this.offset.y; }
-
-        if (radius > 0)
-        {
-            this.world.staticTree.remove(this);
-
-            this.isCircle = true;
-
-            this.radius = radius;
-
-            this.width = radius * 2;
-            this.height = radius * 2;
-
-            this.halfWidth = Math.floor(this.width / 2);
-            this.halfHeight = Math.floor(this.height / 2);
-
-            this.offset.set(offsetX, offsetY);
-
-            this.updateCenter();
-
-            this.world.staticTree.insert(this);
-        }
-        else
-        {
-            this.isCircle = false;
-        }
-
-        return this;
-    },
-
-    updateCenter: function ()
-    {
-        this.center.set(this.position.x + this.halfWidth, this.position.y + this.halfHeight);
-    },
-
-    reset: function (x, y)
-    {
-        var gameObject = this.gameObject;
-
-        if (x === undefined) { x = gameObject.x; }
-        if (y === undefined) { y = gameObject.y; }
-
-        this.world.staticTree.remove(this);
-
-        gameObject.setPosition(x, y);
-
-        gameObject.getTopLeft(this.position);
-
-        this.position.x += this.offset.x;
-        this.position.y += this.offset.y;
-
-        this.updateCenter();
-
-        this.world.staticTree.insert(this);
-    },
-
-    stop: function ()
-    {
-        return this;
-    },
-
-    getBounds: function (obj)
-    {
-        obj.x = this.x;
-        obj.y = this.y;
-        obj.right = this.right;
-        obj.bottom = this.bottom;
-
-        return obj;
-    },
-
-    hitTest: function (x, y)
-    {
-        return (this.isCircle) ? CircleContains(this, x, y) : RectangleContains(this, x, y);
-    },
-
-    postUpdate: function ()
-    {
-    },
-
-    deltaAbsX: function ()
-    {
-        return 0;
-    },
-
-    deltaAbsY: function ()
-    {
-        return 0;
-    },
-
-    deltaX: function ()
-    {
-        return 0;
-    },
-
-    deltaY: function ()
-    {
-        return 0;
-    },
-
-    deltaZ: function ()
-    {
-        return 0;
-    },
-
-    destroy: function ()
-    {
-        this.enable = false;
-
-        this.world.pendingDestroy.set(this);
-    },
-
-    drawDebug: function (graphic)
-    {
-        var pos = this.position;
-
-        var x = pos.x + this.halfWidth;
-        var y = pos.y + this.halfHeight;
-
-        if (this.debugShowBody)
-        {
-            graphic.lineStyle(graphic.defaultStrokeWidth, this.debugBodyColor, 1);
-
-            if (this.isCircle)
-            {
-                graphic.strokeCircle(x, y, this.width / 2);
-            }
-            else
-            {
-                graphic.strokeRect(pos.x, pos.y, this.width, this.height);
-            }
-
-        }
-    },
-
-    willDrawDebug: function ()
-    {
-        return this.debugShowBody;
-    },
-
-    setMass: function (value)
-    {
-        if (value <= 0)
-        {
-
-            value = 0.1;
-        }
-
-        this.mass = value;
-
-        return this;
-    },
-
-    x: {
-
-        get: function ()
-        {
-            return this.position.x;
-        },
-
-        set: function (value)
-        {
-            this.world.staticTree.remove(this);
-
-            this.position.x = value;
-
-            this.world.staticTree.insert(this);
-        }
-
-    },
-
-    y: {
-
-        get: function ()
-        {
-            return this.position.y;
-        },
-
-        set: function (value)
-        {
-            this.world.staticTree.remove(this);
-
-            this.position.y = value;
-
-            this.world.staticTree.insert(this);
-        }
-
-    },
-
-    left: {
-
-        get: function ()
-        {
-            return this.position.x;
-        }
-
-    },
-
-    right: {
-
-        get: function ()
-        {
-            return this.position.x + this.width;
-        }
-
-    },
-
-    top: {
-
-        get: function ()
-        {
-            return this.position.y;
-        }
-
-    },
-
-    bottom: {
-
-        get: function ()
-        {
-            return this.position.y + this.height;
-        }
-
-    }
-
-});
-
-module.exports = StaticBody;
+var CircleContains = require('../../geom/circle/Contains');var Class = require('../../utils/Class');var CollisionComponent = require('./components/Collision');var CONST = require('./const');var RectangleContains = require('../../geom/rectangle/Contains');var SetCollisionObject = require('./SetCollisionObject');var Vector2 = require('../../math/Vector2');var StaticBody = new Class({    Mixins: [        CollisionComponent    ],    initialize:    function StaticBody (world, gameObject)    {        var width = 64;        var height = 64;        var dummyGameObject = {            x: 0,            y: 0,            angle: 0,            rotation: 0,            scaleX: 1,            scaleY: 1,            displayOriginX: 0,            displayOriginY: 0        };        var hasGameObject = (gameObject !== undefined);        if (hasGameObject && gameObject.displayWidth)        {            width = gameObject.displayWidth;            height = gameObject.displayHeight;        }        if (!hasGameObject)        {            gameObject = dummyGameObject;        }        this.world = world;        this.gameObject = (hasGameObject) ? gameObject : undefined;        this.isBody = true;        this.debugShowBody = world.defaults.debugShowStaticBody;        this.debugBodyColor = world.defaults.staticBodyDebugColor;        this.enable = true;        this.isCircle = false;        this.radius = 0;        this.offset = new Vector2();        this.position = new Vector2(gameObject.x - (width * gameObject.originX), gameObject.y - (height * gameObject.originY));        this.width = width;        this.height = height;        this.halfWidth = Math.abs(this.width / 2);        this.halfHeight = Math.abs(this.height / 2);        this.center = new Vector2(this.position.x + this.halfWidth, this.position.y + this.halfHeight);        this.velocity = Vector2.ZERO;        this.allowGravity = false;        this.gravity = Vector2.ZERO;        this.bounce = Vector2.ZERO;        this.onWorldBounds = false;        this.onCollide = false;        this.onOverlap = false;        this.mass = 1;        this.immovable = true;        this.pushable = false;        this.customSeparateX = false;        this.customSeparateY = false;        this.overlapX = 0;        this.overlapY = 0;        this.overlapR = 0;        this.embedded = false;        this.collideWorldBounds = false;        this.checkCollision = SetCollisionObject(false);        this.touching = SetCollisionObject(true);        this.wasTouching = SetCollisionObject(true);        this.blocked = SetCollisionObject(true);        this.physicsType = CONST.STATIC_BODY;        this.collisionCategory = 0x0001;        this.collisionMask = 1;        this._dx = 0;        this._dy = 0;    },    setGameObject: function (gameObject, update, enable)    {        if (update === undefined) { update = true; }        if (enable === undefined) { enable = true; }        if (!gameObject || !gameObject.hasTransformComponent)        {            return this;        }        var world = this.world;        if (this.gameObject && this.gameObject.body)        {            world.disable(this.gameObject);            this.gameObject.body = null;        }        if (gameObject.body)        {            world.disable(gameObject);        }        this.gameObject = gameObject;        gameObject.body = this;        this.setSize();        if (update)        {            this.updateFromGameObject();        }        this.enable = enable;        return this;    },    updateFromGameObject: function ()    {        this.world.staticTree.remove(this);        var gameObject = this.gameObject;        gameObject.getTopLeft(this.position);        this.width = gameObject.displayWidth;        this.height = gameObject.displayHeight;        this.halfWidth = Math.abs(this.width / 2);        this.halfHeight = Math.abs(this.height / 2);        this.center.set(this.position.x + this.halfWidth, this.position.y + this.halfHeight);        this.world.staticTree.insert(this);        return this;    },    setOffset: function (x, y)    {        if (y === undefined) { y = x; }        this.world.staticTree.remove(this);        this.position.x -= this.offset.x;        this.position.y -= this.offset.y;        this.offset.set(x, y);        this.position.x += this.offset.x;        this.position.y += this.offset.y;        this.updateCenter();        this.world.staticTree.insert(this);        return this;    },    setSize: function (width, height, center)    {        if (center === undefined) { center = true; }        var gameObject = this.gameObject;        if (gameObject && gameObject.frame)        {            if (!width)            {                width = gameObject.frame.realWidth;            }            if (!height)            {                height = gameObject.frame.realHeight;            }        }        this.world.staticTree.remove(this);        this.width = width;        this.height = height;        this.halfWidth = Math.floor(width / 2);        this.halfHeight = Math.floor(height / 2);        if (center && gameObject && gameObject.getCenter)        {            var ox = gameObject.displayWidth / 2;            var oy = gameObject.displayHeight / 2;            this.position.x -= this.offset.x;            this.position.y -= this.offset.y;            this.offset.set(ox - this.halfWidth, oy - this.halfHeight);            this.position.x += this.offset.x;            this.position.y += this.offset.y;        }        this.updateCenter();        this.isCircle = false;        this.radius = 0;        this.world.staticTree.insert(this);        return this;    },    setCircle: function (radius, offsetX, offsetY)    {        if (offsetX === undefined) { offsetX = this.offset.x; }        if (offsetY === undefined) { offsetY = this.offset.y; }        if (radius > 0)        {            this.world.staticTree.remove(this);            this.isCircle = true;            this.radius = radius;            this.width = radius * 2;            this.height = radius * 2;            this.halfWidth = Math.floor(this.width / 2);            this.halfHeight = Math.floor(this.height / 2);            this.offset.set(offsetX, offsetY);            this.updateCenter();            this.world.staticTree.insert(this);        }        else        {            this.isCircle = false;        }        return this;    },    updateCenter: function ()    {        this.center.set(this.position.x + this.halfWidth, this.position.y + this.halfHeight);    },    reset: function (x, y)    {        var gameObject = this.gameObject;        if (x === undefined) { x = gameObject.x; }        if (y === undefined) { y = gameObject.y; }        this.world.staticTree.remove(this);        gameObject.setPosition(x, y);        gameObject.getTopLeft(this.position);        this.position.x += this.offset.x;        this.position.y += this.offset.y;        this.updateCenter();        this.world.staticTree.insert(this);    },    stop: function ()    {        return this;    },    getBounds: function (obj)    {        obj.x = this.x;        obj.y = this.y;        obj.right = this.right;        obj.bottom = this.bottom;        return obj;    },    hitTest: function (x, y)    {        return (this.isCircle) ? CircleContains(this, x, y) : RectangleContains(this, x, y);    },    postUpdate: function ()    {    },    deltaAbsX: function ()    {        return 0;    },    deltaAbsY: function ()    {        return 0;    },    deltaX: function ()    {        return 0;    },    deltaY: function ()    {        return 0;    },    deltaZ: function ()    {        return 0;    },    destroy: function ()    {        this.enable = false;        this.world.pendingDestroy.set(this);    },    drawDebug: function (graphic)    {        var pos = this.position;        var x = pos.x + this.halfWidth;        var y = pos.y + this.halfHeight;        if (this.debugShowBody)        {            graphic.lineStyle(graphic.defaultStrokeWidth, this.debugBodyColor, 1);            if (this.isCircle)            {                graphic.strokeCircle(x, y, this.width / 2);            }            else            {                graphic.strokeRect(pos.x, pos.y, this.width, this.height);            }        }    },    willDrawDebug: function ()    {        return this.debugShowBody;    },    setMass: function (value)    {        if (value <= 0)        {            value = 0.1;        }        this.mass = value;        return this;    },    x: {        get: function ()        {            return this.position.x;        },        set: function (value)        {            this.world.staticTree.remove(this);            this.position.x = value;            this.world.staticTree.insert(this);        }    },    y: {        get: function ()        {            return this.position.y;        },        set: function (value)        {            this.world.staticTree.remove(this);            this.position.y = value;            this.world.staticTree.insert(this);        }    },    left: {        get: function ()        {            return this.position.x;        }    },    right: {        get: function ()        {            return this.position.x + this.width;        }    },    top: {        get: function ()        {            return this.position.y;        }    },    bottom: {        get: function ()        {            return this.position.y + this.height;        }    }});module.exports = StaticBody;

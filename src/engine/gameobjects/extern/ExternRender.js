@@ -1,14 +1,1 @@
-var NOOP = require('../../utils/NOOP');
-var renderWebGL = NOOP;
-var renderCanvas = NOOP;
-
-if (typeof WEBGL_RENDERER)
-{
-    renderWebGL = require('./ExternWebGLRenderer');
-}
-
-module.exports = {
-
-    renderWebGL: renderWebGL,
-
-};
+var NOOP = require('../../utils/NOOP');var renderWebGL = NOOP;var renderCanvas = NOOP;if (typeof WEBGL_RENDERER){    renderWebGL = require('./ExternWebGLRenderer');}module.exports = {    renderWebGL: renderWebGL,};

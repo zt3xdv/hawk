@@ -1,136 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var FileTypesManager = require('../FileTypesManager');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-var MultiFile = require('../MultiFile');
-var ParseObj = require('../../geom/mesh/ParseObj');
-var ParseObjMaterial = require('../../geom/mesh/ParseObjMaterial');
-var TextFile = require('./TextFile');
-
-
-var OBJFile = new Class({
-
-    Extends: MultiFile,
-
-    initialize:
-
-    function OBJFile (loader, key, objURL, matURL, flipUV, xhrSettings)
-    {
-        var obj;
-        var mat;
-
-        var cache = loader.cacheManager.obj;
-
-        if (IsPlainObject(key))
-        {
-            var config = key;
-
-            key = GetFastValue(config, 'key');
-
-            obj = new TextFile(loader, {
-                key: key,
-                type: 'obj',
-                cache: cache,
-                url: GetFastValue(config, 'url'),
-                extension: GetFastValue(config, 'extension', 'obj'),
-                xhrSettings: GetFastValue(config, 'xhrSettings'),
-                config: {
-                    flipUV: GetFastValue(config, 'flipUV', flipUV)
-                }
-            });
-
-            matURL = GetFastValue(config, 'matURL');
-
-            if (matURL)
-            {
-                mat = new TextFile(loader, {
-                    key: key,
-                    type: 'mat',
-                    cache: cache,
-                    url: matURL,
-                    extension: GetFastValue(config, 'matExtension', 'mat'),
-                    xhrSettings: GetFastValue(config, 'xhrSettings')
-                });
-            }
-        }
-        else
-        {
-            obj = new TextFile(loader, {
-                key: key,
-                url: objURL,
-                type: 'obj',
-                cache: cache,
-                extension: 'obj',
-                xhrSettings: xhrSettings,
-                config: {
-                    flipUV: flipUV
-                }
-            });
-
-            if (matURL)
-            {
-                mat = new TextFile(loader, {
-                    key: key,
-                    url: matURL,
-                    type: 'mat',
-                    cache: cache,
-                    extension: 'mat',
-                    xhrSettings: xhrSettings
-                });
-            }
-        }
-
-        MultiFile.call(this, loader, 'obj', key, [ obj, mat ]);
-    },
-
-    
-    addToCache: function ()
-    {
-        if (this.isReadyToProcess())
-        {
-            var obj = this.files[0];
-            var mat = this.files[1];
-
-            var objData = ParseObj(obj.data, obj.config.flipUV);
-
-            if (mat)
-            {
-                objData.materials = ParseObjMaterial(mat.data);
-            }
-
-            obj.cache.add(obj.key, objData);
-
-            this.complete = true;
-        }
-    }
-
-});
-
-
-FileTypesManager.register('obj', function (key, objURL, matURL, flipUVs, xhrSettings)
-{
-    var multifile;
-
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            multifile = new OBJFile(this, key[i]);
-
-            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object
-            this.addFile(multifile.files);
-        }
-    }
-    else
-    {
-        multifile = new OBJFile(this, key, objURL, matURL, flipUVs, xhrSettings);
-
-        this.addFile(multifile.files);
-    }
-
-    return this;
-});
-
-module.exports = OBJFile;
+var Class = require('../../utils/Class');var FileTypesManager = require('../FileTypesManager');var GetFastValue = require('../../utils/object/GetFastValue');var IsPlainObject = require('../../utils/object/IsPlainObject');var MultiFile = require('../MultiFile');var ParseObj = require('../../geom/mesh/ParseObj');var ParseObjMaterial = require('../../geom/mesh/ParseObjMaterial');var TextFile = require('./TextFile');var OBJFile = new Class({    Extends: MultiFile,    initialize:    function OBJFile (loader, key, objURL, matURL, flipUV, xhrSettings)    {        var obj;        var mat;        var cache = loader.cacheManager.obj;        if (IsPlainObject(key))        {            var config = key;            key = GetFastValue(config, 'key');            obj = new TextFile(loader, {                key: key,                type: 'obj',                cache: cache,                url: GetFastValue(config, 'url'),                extension: GetFastValue(config, 'extension', 'obj'),                xhrSettings: GetFastValue(config, 'xhrSettings'),                config: {                    flipUV: GetFastValue(config, 'flipUV', flipUV)                }            });            matURL = GetFastValue(config, 'matURL');            if (matURL)            {                mat = new TextFile(loader, {                    key: key,                    type: 'mat',                    cache: cache,                    url: matURL,                    extension: GetFastValue(config, 'matExtension', 'mat'),                    xhrSettings: GetFastValue(config, 'xhrSettings')                });            }        }        else        {            obj = new TextFile(loader, {                key: key,                url: objURL,                type: 'obj',                cache: cache,                extension: 'obj',                xhrSettings: xhrSettings,                config: {                    flipUV: flipUV                }            });            if (matURL)            {                mat = new TextFile(loader, {                    key: key,                    url: matURL,                    type: 'mat',                    cache: cache,                    extension: 'mat',                    xhrSettings: xhrSettings                });            }        }        MultiFile.call(this, loader, 'obj', key, [ obj, mat ]);    },        addToCache: function ()    {        if (this.isReadyToProcess())        {            var obj = this.files[0];            var mat = this.files[1];            var objData = ParseObj(obj.data, obj.config.flipUV);            if (mat)            {                objData.materials = ParseObjMaterial(mat.data);            }            obj.cache.add(obj.key, objData);            this.complete = true;        }    }});FileTypesManager.register('obj', function (key, objURL, matURL, flipUVs, xhrSettings){    var multifile;    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            multifile = new OBJFile(this, key[i]);            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object            this.addFile(multifile.files);        }    }    else    {        multifile = new OBJFile(this, key, objURL, matURL, flipUVs, xhrSettings);        this.addFile(multifile.files);    }    return this;});module.exports = OBJFile;

@@ -1,11 +1,1 @@
-module.exports = {
-
-    AFTER_FLUSH: require('./AFTER_FLUSH_EVENT'),
-    BEFORE_FLUSH: require('./BEFORE_FLUSH_EVENT'),
-    BIND: require('./BIND_EVENT'),
-    BOOT: require('./BOOT_EVENT'),
-    DESTROY: require('./DESTROY_EVENT'),
-    REBIND: require('./REBIND_EVENT'),
-    RESIZE: require('./RESIZE_EVENT')
-
-};
+module.exports = {    AFTER_FLUSH: require('./AFTER_FLUSH_EVENT'),    BEFORE_FLUSH: require('./BEFORE_FLUSH_EVENT'),    BIND: require('./BIND_EVENT'),    BOOT: require('./BOOT_EVENT'),    DESTROY: require('./DESTROY_EVENT'),    REBIND: require('./REBIND_EVENT'),    RESIZE: require('./RESIZE_EVENT')};

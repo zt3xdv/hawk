@@ -1,6 +1,1 @@
-var Linear = function (v)
-{
-    return v;
-};
-
-module.exports = Linear;
+var Linear = function (v){    return v;};module.exports = Linear;

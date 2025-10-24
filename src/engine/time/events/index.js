@@ -1,5 +1,1 @@
-module.exports = {
-
-    COMPLETE: require('./COMPLETE_EVENT')
-
-};
+module.exports = {    COMPLETE: require('./COMPLETE_EVENT')};

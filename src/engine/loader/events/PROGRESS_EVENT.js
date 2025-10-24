@@ -1,4 +1,1 @@
-
-
-
-module.exports = 'progress';
+module.exports = 'progress';

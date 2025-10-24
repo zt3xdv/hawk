@@ -1,7 +1,1 @@
-var Group = require('./Group');
-var GameObjectFactory = require('../GameObjectFactory');
-
-GameObjectFactory.register('group', function (children, config)
-{
-    return this.updateList.add(new Group(this.scene, children, config));
-});
+var Group = require('./Group');var GameObjectFactory = require('../GameObjectFactory');GameObjectFactory.register('group', function (children, config){    return this.updateList.add(new Group(this.scene, children, config));});

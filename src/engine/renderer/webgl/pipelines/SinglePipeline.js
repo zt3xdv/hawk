@@ -1,35 +1,1 @@
-var Class = require('../../../utils/Class');
-var GetFastValue = require('../../../utils/object/GetFastValue');
-var MultiPipeline = require('./MultiPipeline');
-var ShaderSourceFS = require('../shaders/Single-frag');
-var ShaderSourceVS = require('../shaders/Single-vert');
-var WebGLPipeline = require('../WebGLPipeline');
-
-var SinglePipeline = new Class({
-
-    Extends: MultiPipeline,
-
-    initialize:
-
-    function SinglePipeline (config)
-    {
-        config.fragShader = GetFastValue(config, 'fragShader', ShaderSourceFS),
-        config.vertShader = GetFastValue(config, 'vertShader', ShaderSourceVS),
-        config.forceZero = true;
-
-        MultiPipeline.call(this, config);
-    },
-
-    boot: function ()
-    {
-        WebGLPipeline.prototype.boot.call(this);
-
-        var renderer = this.renderer;
-
-        this.set1i('uMainSampler', 0);
-        this.set2f('uResolution', renderer.width, renderer.height);
-    }
-
-});
-
-module.exports = SinglePipeline;
+var Class = require('../../../utils/Class');var GetFastValue = require('../../../utils/object/GetFastValue');var MultiPipeline = require('./MultiPipeline');var ShaderSourceFS = require('../shaders/Single-frag');var ShaderSourceVS = require('../shaders/Single-vert');var WebGLPipeline = require('../WebGLPipeline');var SinglePipeline = new Class({    Extends: MultiPipeline,    initialize:    function SinglePipeline (config)    {        config.fragShader = GetFastValue(config, 'fragShader', ShaderSourceFS),        config.vertShader = GetFastValue(config, 'vertShader', ShaderSourceVS),        config.forceZero = true;        MultiPipeline.call(this, config);    },    boot: function ()    {        WebGLPipeline.prototype.boot.call(this);        var renderer = this.renderer;        this.set1i('uMainSampler', 0);        this.set2f('uResolution', renderer.width, renderer.height);    }});module.exports = SinglePipeline;

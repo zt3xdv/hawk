@@ -22,10 +22,10 @@ export function renderAbout() {
   <hr>
     <p>A game written in <strong>Javascript</strong> using Hawk engine, check <a href="/help">help page</a> for controls and more.</p>
     
-    <h2>Contact</h2>
+    <h3>Contact</h3>
     <p>You can contact us on <strong>Discord</strong> <a href="${DISCORD_SERVER}">here</a>.</p>
     
-    <h2>Team</h2>
+    <h3>Team</h3>
     <p>Our team has <strong>${CONTRIBUTORS.length}</strong> contributor(s). You can be one by joining our Discord Server and contributing!</p>
     ${contributorsHTML}
     </div>

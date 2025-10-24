@@ -1,1 +1,1 @@
-module.exports = 'keyup-';
+module.exports = 'keyup-';

@@ -1,69 +1,1 @@
-var FillStyleCanvas = require('../FillStyleCanvas');
-var SetTransform = require('../../../renderer/canvas/utils/SetTransform');
-
-var IsoBoxCanvasRenderer = function (renderer, src, camera, parentMatrix)
-{
-    camera.addToRenderList(src);
-
-    var ctx = renderer.currentContext;
-
-    if (SetTransform(renderer, ctx, src, camera, parentMatrix) && src.isFilled)
-    {
-        var size = src.width;
-        var height = src.height;
-
-        var sizeA = size / 2;
-        var sizeB = size / src.projection;
-
-        if (src.showTop)
-        {
-            FillStyleCanvas(ctx, src, src.fillTop);
-
-            ctx.beginPath();
-
-            ctx.moveTo(-sizeA, -height);
-            ctx.lineTo(0, -sizeB - height);
-            ctx.lineTo(sizeA, -height);
-            ctx.lineTo(sizeA, -1);
-            ctx.lineTo(0, sizeB - 1);
-            ctx.lineTo(-sizeA, -1);
-            ctx.lineTo(-sizeA, -height);
-
-            ctx.fill();
-        }
-
-        if (src.showLeft)
-        {
-            FillStyleCanvas(ctx, src, src.fillLeft);
-
-            ctx.beginPath();
-
-            ctx.moveTo(-sizeA, 0);
-            ctx.lineTo(0, sizeB);
-            ctx.lineTo(0, sizeB - height);
-            ctx.lineTo(-sizeA, -height);
-            ctx.lineTo(-sizeA, 0);
-
-            ctx.fill();
-        }
-
-        if (src.showRight)
-        {
-            FillStyleCanvas(ctx, src, src.fillRight);
-
-            ctx.beginPath();
-
-            ctx.moveTo(sizeA, 0);
-            ctx.lineTo(0, sizeB);
-            ctx.lineTo(0, sizeB - height);
-            ctx.lineTo(sizeA, -height);
-            ctx.lineTo(sizeA, 0);
-
-            ctx.fill();
-        }
-
-        ctx.restore();
-    }
-};
-
-module.exports = IsoBoxCanvasRenderer;
+var FillStyleCanvas = require('../FillStyleCanvas');var SetTransform = require('../../../renderer/canvas/utils/SetTransform');var IsoBoxCanvasRenderer = function (renderer, src, camera, parentMatrix){    camera.addToRenderList(src);    var ctx = renderer.currentContext;    if (SetTransform(renderer, ctx, src, camera, parentMatrix) && src.isFilled)    {        var size = src.width;        var height = src.height;        var sizeA = size / 2;        var sizeB = size / src.projection;        if (src.showTop)        {            FillStyleCanvas(ctx, src, src.fillTop);            ctx.beginPath();            ctx.moveTo(-sizeA, -height);            ctx.lineTo(0, -sizeB - height);            ctx.lineTo(sizeA, -height);            ctx.lineTo(sizeA, -1);            ctx.lineTo(0, sizeB - 1);            ctx.lineTo(-sizeA, -1);            ctx.lineTo(-sizeA, -height);            ctx.fill();        }        if (src.showLeft)        {            FillStyleCanvas(ctx, src, src.fillLeft);            ctx.beginPath();            ctx.moveTo(-sizeA, 0);            ctx.lineTo(0, sizeB);            ctx.lineTo(0, sizeB - height);            ctx.lineTo(-sizeA, -height);            ctx.lineTo(-sizeA, 0);            ctx.fill();        }        if (src.showRight)        {            FillStyleCanvas(ctx, src, src.fillRight);            ctx.beginPath();            ctx.moveTo(sizeA, 0);            ctx.lineTo(0, sizeB);            ctx.lineTo(0, sizeB - height);            ctx.lineTo(sizeA, -height);            ctx.lineTo(sizeA, 0);            ctx.fill();        }        ctx.restore();    }};module.exports = IsoBoxCanvasRenderer;

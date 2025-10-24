@@ -1,13 +1,1 @@
-var PutTileAt = require('./PutTileAt');
-var Vector2 = require('../../math/Vector2');
-
-var point = new Vector2();
-
-var PutTileAtWorldXY = function (tile, worldX, worldY, recalculateFaces, camera, layer)
-{
-    layer.tilemapLayer.worldToTileXY(worldX, worldY, true, point, camera, layer);
-
-    return PutTileAt(tile, point.x, point.y, recalculateFaces, layer);
-};
-
-module.exports = PutTileAtWorldXY;
+var PutTileAt = require('./PutTileAt');var Vector2 = require('../../math/Vector2');var point = new Vector2();var PutTileAtWorldXY = function (tile, worldX, worldY, recalculateFaces, camera, layer){    layer.tilemapLayer.worldToTileXY(worldX, worldY, true, point, camera, layer);    return PutTileAt(tile, point.x, point.y, recalculateFaces, layer);};module.exports = PutTileAtWorldXY;

@@ -1,1 +1,1 @@
-module.exports = 'play';
+module.exports = 'play';

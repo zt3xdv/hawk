@@ -1,327 +1,1 @@
-var Class = require('../../utils/Class');
-var EventEmitter = require('eventemitter3');
-var Events = require('./events');
-var Gamepad = require('./Gamepad');
-var GetValue = require('../../utils/object/GetValue');
-var InputPluginCache = require('../InputPluginCache');
-var InputEvents = require('../events');
-
-var GamepadPlugin = new Class({
-
-    Extends: EventEmitter,
-
-    initialize:
-
-    function GamepadPlugin (sceneInputPlugin)
-    {
-        EventEmitter.call(this);
-
-        this.scene = sceneInputPlugin.scene;
-
-        this.settings = this.scene.sys.settings;
-
-        this.sceneInputPlugin = sceneInputPlugin;
-
-        this.enabled = true;
-
-        this.target;
-
-        this.gamepads = [];
-
-        this.queue = [];
-
-        this.onGamepadHandler;
-
-        this._pad1;
-
-        this._pad2;
-
-        this._pad3;
-
-        this._pad4;
-
-        sceneInputPlugin.pluginEvents.once(InputEvents.BOOT, this.boot, this);
-        sceneInputPlugin.pluginEvents.on(InputEvents.START, this.start, this);
-    },
-
-    boot: function ()
-    {
-        var game = this.scene.sys.game;
-        var settings = this.settings.input;
-        var config = game.config;
-
-        this.enabled = GetValue(settings, 'gamepad', config.inputGamepad) && game.device.input.gamepads;
-        this.target = GetValue(settings, 'gamepad.target', config.inputGamepadEventTarget);
-
-        this.sceneInputPlugin.pluginEvents.once(InputEvents.DESTROY, this.destroy, this);
-    },
-
-    start: function ()
-    {
-        if (this.enabled)
-        {
-            this.startListeners();
-
-            this.refreshPads();
-        }
-
-        this.sceneInputPlugin.pluginEvents.once(InputEvents.SHUTDOWN, this.shutdown, this);
-    },
-
-    isActive: function ()
-    {
-        return (this.enabled && this.scene.sys.isActive());
-    },
-
-    startListeners: function ()
-    {
-        var _this = this;
-        var target = this.target;
-
-        var handler = function (event)
-        {
-            if (event.defaultPrevented || !_this.isActive())
-            {
-
-                return;
-            }
-
-            _this.refreshPads();
-
-            _this.queue.push(event);
-        };
-
-        this.onGamepadHandler = handler;
-
-        target.addEventListener('gamepadconnected', handler, false);
-        target.addEventListener('gamepaddisconnected', handler, false);
-
-        this.sceneInputPlugin.pluginEvents.on(InputEvents.UPDATE, this.update, this);
-    },
-
-    stopListeners: function ()
-    {
-        this.target.removeEventListener('gamepadconnected', this.onGamepadHandler);
-        this.target.removeEventListener('gamepaddisconnected', this.onGamepadHandler);
-
-        this.sceneInputPlugin.pluginEvents.off(InputEvents.UPDATE, this.update);
-
-        for (var i = 0; i < this.gamepads.length; i++)
-        {
-            this.gamepads[i].removeAllListeners();
-        }
-    },
-
-    disconnectAll: function ()
-    {
-        for (var i = 0; i < this.gamepads.length; i++)
-        {
-            this.gamepads[i].pad.connected = false;
-        }
-    },
-
-    refreshPads: function ()
-    {
-        var connectedPads = navigator.getGamepads();
-
-        if (!connectedPads)
-        {
-            this.disconnectAll();
-        }
-        else
-        {
-            var currentPads = this.gamepads;
-
-            for (var i = 0; i < connectedPads.length; i++)
-            {
-                var livePad = connectedPads[i];
-
-                if (!livePad)
-                {
-                    continue;
-                }
-
-                var id = livePad.id;
-                var index = livePad.index;
-                var currentPad = currentPads[index];
-
-                if (!currentPad)
-                {
-
-                    var newPad = new Gamepad(this, livePad);
-
-                    currentPads[index] = newPad;
-
-                    if (!this._pad1)
-                    {
-                        this._pad1 = newPad;
-                    }
-                    else if (!this._pad2)
-                    {
-                        this._pad2 = newPad;
-                    }
-                    else if (!this._pad3)
-                    {
-                        this._pad3 = newPad;
-                    }
-                    else if (!this._pad4)
-                    {
-                        this._pad4 = newPad;
-                    }
-                }
-                else if (currentPad.id !== id)
-                {
-
-                    currentPad.destroy();
-
-                    currentPads[index] = new Gamepad(this, livePad);
-                }
-                else
-                {
-
-                    currentPad.update(livePad);
-                }
-            }
-        }
-    },
-
-    getAll: function ()
-    {
-        var out = [];
-        var pads = this.gamepads;
-
-        for (var i = 0; i < pads.length; i++)
-        {
-            if (pads[i])
-            {
-                out.push(pads[i]);
-            }
-        }
-
-        return out;
-    },
-
-    getPad: function (index)
-    {
-        var pads = this.gamepads;
-
-        for (var i = 0; i < pads.length; i++)
-        {
-            if (pads[i] && pads[i].index === index)
-            {
-                return pads[i];
-            }
-        }
-    },
-
-    update: function ()
-    {
-        if (!this.enabled)
-        {
-            return;
-        }
-
-        this.refreshPads();
-
-        var len = this.queue.length;
-
-        if (len === 0)
-        {
-            return;
-        }
-
-        var queue = this.queue.splice(0, len);
-
-        for (var i = 0; i < len; i++)
-        {
-            var event = queue[i];
-            var pad = this.getPad(event.gamepad.index);
-
-            if (event.type === 'gamepadconnected')
-            {
-                this.emit(Events.CONNECTED, pad, event);
-            }
-            else if (event.type === 'gamepaddisconnected')
-            {
-                this.emit(Events.DISCONNECTED, pad, event);
-            }
-        }
-    },
-
-    shutdown: function ()
-    {
-        this.stopListeners();
-
-        this.removeAllListeners();
-    },
-
-    destroy: function ()
-    {
-        this.shutdown();
-
-        for (var i = 0; i < this.gamepads.length; i++)
-        {
-            if (this.gamepads[i])
-            {
-                this.gamepads[i].destroy();
-            }
-        }
-
-        this.gamepads = [];
-
-        this.scene = null;
-        this.settings = null;
-        this.sceneInputPlugin = null;
-        this.target = null;
-    },
-
-    total: {
-
-        get: function ()
-        {
-            return this.gamepads.length;
-        }
-
-    },
-
-    pad1: {
-
-        get: function ()
-        {
-            return this._pad1;
-        }
-
-    },
-
-    pad2: {
-
-        get: function ()
-        {
-            return this._pad2;
-        }
-
-    },
-
-    pad3: {
-
-        get: function ()
-        {
-            return this._pad3;
-        }
-
-    },
-
-    pad4: {
-
-        get: function ()
-        {
-            return this._pad4;
-        }
-
-    }
-
-});
-
-InputPluginCache.register('GamepadPlugin', GamepadPlugin, 'gamepad', 'gamepad', 'inputGamepad');
-
-module.exports = GamepadPlugin;
+var Class = require('../../utils/Class');var EventEmitter = require('eventemitter3');var Events = require('./events');var Gamepad = require('./Gamepad');var GetValue = require('../../utils/object/GetValue');var InputPluginCache = require('../InputPluginCache');var InputEvents = require('../events');var GamepadPlugin = new Class({    Extends: EventEmitter,    initialize:    function GamepadPlugin (sceneInputPlugin)    {        EventEmitter.call(this);        this.scene = sceneInputPlugin.scene;        this.settings = this.scene.sys.settings;        this.sceneInputPlugin = sceneInputPlugin;        this.enabled = true;        this.target;        this.gamepads = [];        this.queue = [];        this.onGamepadHandler;        this._pad1;        this._pad2;        this._pad3;        this._pad4;        sceneInputPlugin.pluginEvents.once(InputEvents.BOOT, this.boot, this);        sceneInputPlugin.pluginEvents.on(InputEvents.START, this.start, this);    },    boot: function ()    {        var game = this.scene.sys.game;        var settings = this.settings.input;        var config = game.config;        this.enabled = GetValue(settings, 'gamepad', config.inputGamepad) && game.device.input.gamepads;        this.target = GetValue(settings, 'gamepad.target', config.inputGamepadEventTarget);        this.sceneInputPlugin.pluginEvents.once(InputEvents.DESTROY, this.destroy, this);    },    start: function ()    {        if (this.enabled)        {            this.startListeners();            this.refreshPads();        }        this.sceneInputPlugin.pluginEvents.once(InputEvents.SHUTDOWN, this.shutdown, this);    },    isActive: function ()    {        return (this.enabled && this.scene.sys.isActive());    },    startListeners: function ()    {        var _this = this;        var target = this.target;        var handler = function (event)        {            if (event.defaultPrevented || !_this.isActive())            {                return;            }            _this.refreshPads();            _this.queue.push(event);        };        this.onGamepadHandler = handler;        target.addEventListener('gamepadconnected', handler, false);        target.addEventListener('gamepaddisconnected', handler, false);        this.sceneInputPlugin.pluginEvents.on(InputEvents.UPDATE, this.update, this);    },    stopListeners: function ()    {        this.target.removeEventListener('gamepadconnected', this.onGamepadHandler);        this.target.removeEventListener('gamepaddisconnected', this.onGamepadHandler);        this.sceneInputPlugin.pluginEvents.off(InputEvents.UPDATE, this.update);        for (var i = 0; i < this.gamepads.length; i++)        {            this.gamepads[i].removeAllListeners();        }    },    disconnectAll: function ()    {        for (var i = 0; i < this.gamepads.length; i++)        {            this.gamepads[i].pad.connected = false;        }    },    refreshPads: function ()    {        var connectedPads = navigator.getGamepads();        if (!connectedPads)        {            this.disconnectAll();        }        else        {            var currentPads = this.gamepads;            for (var i = 0; i < connectedPads.length; i++)            {                var livePad = connectedPads[i];                if (!livePad)                {                    continue;                }                var id = livePad.id;                var index = livePad.index;                var currentPad = currentPads[index];                if (!currentPad)                {                    var newPad = new Gamepad(this, livePad);                    currentPads[index] = newPad;                    if (!this._pad1)                    {                        this._pad1 = newPad;                    }                    else if (!this._pad2)                    {                        this._pad2 = newPad;                    }                    else if (!this._pad3)                    {                        this._pad3 = newPad;                    }                    else if (!this._pad4)                    {                        this._pad4 = newPad;                    }                }                else if (currentPad.id !== id)                {                    currentPad.destroy();                    currentPads[index] = new Gamepad(this, livePad);                }                else                {                    currentPad.update(livePad);                }            }        }    },    getAll: function ()    {        var out = [];        var pads = this.gamepads;        for (var i = 0; i < pads.length; i++)        {            if (pads[i])            {                out.push(pads[i]);            }        }        return out;    },    getPad: function (index)    {        var pads = this.gamepads;        for (var i = 0; i < pads.length; i++)        {            if (pads[i] && pads[i].index === index)            {                return pads[i];            }        }    },    update: function ()    {        if (!this.enabled)        {            return;        }        this.refreshPads();        var len = this.queue.length;        if (len === 0)        {            return;        }        var queue = this.queue.splice(0, len);        for (var i = 0; i < len; i++)        {            var event = queue[i];            var pad = this.getPad(event.gamepad.index);            if (event.type === 'gamepadconnected')            {                this.emit(Events.CONNECTED, pad, event);            }            else if (event.type === 'gamepaddisconnected')            {                this.emit(Events.DISCONNECTED, pad, event);            }        }    },    shutdown: function ()    {        this.stopListeners();        this.removeAllListeners();    },    destroy: function ()    {        this.shutdown();        for (var i = 0; i < this.gamepads.length; i++)        {            if (this.gamepads[i])            {                this.gamepads[i].destroy();            }        }        this.gamepads = [];        this.scene = null;        this.settings = null;        this.sceneInputPlugin = null;        this.target = null;    },    total: {        get: function ()        {            return this.gamepads.length;        }    },    pad1: {        get: function ()        {            return this._pad1;        }    },    pad2: {        get: function ()        {            return this._pad2;        }    },    pad3: {        get: function ()        {            return this._pad3;        }    },    pad4: {        get: function ()        {            return this._pad4;        }    }});InputPluginCache.register('GamepadPlugin', GamepadPlugin, 'gamepad', 'gamepad', 'inputGamepad');module.exports = GamepadPlugin;

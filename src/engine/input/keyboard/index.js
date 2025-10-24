@@ -1,22 +1,1 @@
-module.exports = {
-
-    Events: require('./events'),
-
-    KeyboardManager: require('./KeyboardManager'),
-    KeyboardPlugin: require('./KeyboardPlugin'),
-
-    Key: require('./keys/Key'),
-    KeyCodes: require('./keys/KeyCodes'),
-
-    KeyCombo: require('./combo/KeyCombo'),
-
-    AdvanceKeyCombo: require('./combo/AdvanceKeyCombo'),
-    ProcessKeyCombo: require('./combo/ProcessKeyCombo'),
-    ResetKeyCombo: require('./combo/ResetKeyCombo'),
-
-    JustDown: require('./keys/JustDown'),
-    JustUp: require('./keys/JustUp'),
-    DownDuration: require('./keys/DownDuration'),
-    UpDuration: require('./keys/UpDuration')
-
-};
+module.exports = {    Events: require('./events'),    KeyboardManager: require('./KeyboardManager'),    KeyboardPlugin: require('./KeyboardPlugin'),    Key: require('./keys/Key'),    KeyCodes: require('./keys/KeyCodes'),    KeyCombo: require('./combo/KeyCombo'),    AdvanceKeyCombo: require('./combo/AdvanceKeyCombo'),    ProcessKeyCombo: require('./combo/ProcessKeyCombo'),    ResetKeyCombo: require('./combo/ResetKeyCombo'),    JustDown: require('./keys/JustDown'),    JustUp: require('./keys/JustUp'),    DownDuration: require('./keys/DownDuration'),    UpDuration: require('./keys/UpDuration')};

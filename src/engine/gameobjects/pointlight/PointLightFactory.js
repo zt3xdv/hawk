@@ -1,7 +1,1 @@
-var GameObjectFactory = require('../GameObjectFactory');
-var PointLight = require('./PointLight');
-
-GameObjectFactory.register('pointlight', function (x, y, color, radius, intensity, attenuation)
-{
-    return this.displayList.add(new PointLight(this.scene, x, y, color, radius, intensity, attenuation));
-});
+var GameObjectFactory = require('../GameObjectFactory');var PointLight = require('./PointLight');GameObjectFactory.register('pointlight', function (x, y, color, radius, intensity, attenuation){    return this.displayList.add(new PointLight(this.scene, x, y, color, radius, intensity, attenuation));});

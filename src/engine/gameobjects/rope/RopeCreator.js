@@ -1,28 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var GetValue = require('../../utils/object/GetValue');
-var Rope = require('./Rope');
-
-GameObjectCreator.register('rope', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var key = GetAdvancedValue(config, 'key', null);
-    var frame = GetAdvancedValue(config, 'frame', null);
-    var horizontal = GetAdvancedValue(config, 'horizontal', true);
-    var points = GetValue(config, 'points', undefined);
-    var colors = GetValue(config, 'colors', undefined);
-    var alphas = GetValue(config, 'alphas', undefined);
-
-    var rope = new Rope(this.scene, 0, 0, key, frame, points, horizontal, colors, alphas);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, rope, config);
-
-    return rope;
-});
+var BuildGameObject = require('../BuildGameObject');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var GetValue = require('../../utils/object/GetValue');var Rope = require('./Rope');GameObjectCreator.register('rope', function (config, addToScene){    if (config === undefined) { config = {}; }    var key = GetAdvancedValue(config, 'key', null);    var frame = GetAdvancedValue(config, 'frame', null);    var horizontal = GetAdvancedValue(config, 'horizontal', true);    var points = GetValue(config, 'points', undefined);    var colors = GetValue(config, 'colors', undefined);    var alphas = GetValue(config, 'alphas', undefined);    var rope = new Rope(this.scene, 0, 0, key, frame, points, horizontal, colors, alphas);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, rope, config);    return rope;});

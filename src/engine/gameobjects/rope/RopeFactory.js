@@ -1,10 +1,1 @@
-var Rope = require('./Rope');
-var GameObjectFactory = require('../GameObjectFactory');
-
-if (typeof WEBGL_RENDERER)
-{
-    GameObjectFactory.register('rope', function (x, y, texture, frame, points, horizontal, colors, alphas)
-    {
-        return this.displayList.add(new Rope(this.scene, x, y, texture, frame, points, horizontal, colors, alphas));
-    });
-}
+var Rope = require('./Rope');var GameObjectFactory = require('../GameObjectFactory');if (typeof WEBGL_RENDERER){    GameObjectFactory.register('rope', function (x, y, texture, frame, points, horizontal, colors, alphas)    {        return this.displayList.add(new Rope(this.scene, x, y, texture, frame, points, horizontal, colors, alphas));    });}

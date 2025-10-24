@@ -1,12 +1,1 @@
-var Between = require('../../math/Between');
-var Color = require('./Color');
-
-var RandomRGB = function (min, max)
-{
-    if (min === undefined) { min = 0; }
-    if (max === undefined) { max = 255; }
-
-    return new Color(Between(min, max), Between(min, max), Between(min, max));
-};
-
-module.exports = RandomRGB;
+var Between = require('../../math/Between');var Color = require('./Color');var RandomRGB = function (min, max){    if (min === undefined) { min = 0; }    if (max === undefined) { max = 255; }    return new Color(Between(min, max), Between(min, max), Between(min, max));};module.exports = RandomRGB;

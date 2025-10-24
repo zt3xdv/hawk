@@ -1,34 +1,1 @@
-var Vector2 = require('../../math/Vector2');
-
-var GetTileCorners = function (tileX, tileY, camera, layer)
-{
-    var tileWidth = layer.baseTileWidth;
-    var tileHeight = layer.baseTileHeight;
-    var tilemapLayer = layer.tilemapLayer;
-
-    var worldX = 0;
-    var worldY = 0;
-
-    if (tilemapLayer)
-    {
-        if (!camera) { camera = tilemapLayer.scene.cameras.main; }
-
-        worldX = tilemapLayer.x + camera.scrollX * (1 - tilemapLayer.scrollFactorX);
-        worldY = (tilemapLayer.y + camera.scrollY * (1 - tilemapLayer.scrollFactorY));
-
-        tileWidth *= tilemapLayer.scaleX;
-        tileHeight *= tilemapLayer.scaleY;
-    }
-
-    var x = worldX + tileX * tileWidth;
-    var y = worldY + tileY * tileHeight;
-
-    return [
-        new Vector2(x, y),
-        new Vector2(x + tileWidth, y),
-        new Vector2(x + tileWidth, y + tileHeight),
-        new Vector2(x, y + tileHeight)
-    ];
-};
-
-module.exports = GetTileCorners;
+var Vector2 = require('../../math/Vector2');var GetTileCorners = function (tileX, tileY, camera, layer){    var tileWidth = layer.baseTileWidth;    var tileHeight = layer.baseTileHeight;    var tilemapLayer = layer.tilemapLayer;    var worldX = 0;    var worldY = 0;    if (tilemapLayer)    {        if (!camera) { camera = tilemapLayer.scene.cameras.main; }        worldX = tilemapLayer.x + camera.scrollX * (1 - tilemapLayer.scrollFactorX);        worldY = (tilemapLayer.y + camera.scrollY * (1 - tilemapLayer.scrollFactorY));        tileWidth *= tilemapLayer.scaleX;        tileHeight *= tilemapLayer.scaleY;    }    var x = worldX + tileX * tileWidth;    var y = worldY + tileY * tileHeight;    return [        new Vector2(x, y),        new Vector2(x + tileWidth, y),        new Vector2(x + tileWidth, y + tileHeight),        new Vector2(x, y + tileHeight)    ];};module.exports = GetTileCorners;

@@ -1,1 +1,1 @@
-module.exports = 'animationupdate';
+module.exports = 'animationupdate';

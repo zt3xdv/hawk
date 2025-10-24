@@ -1,78 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var CONST = require('../const');
-var FileTypesManager = require('../FileTypesManager');
-var ImageFile = require('./ImageFile');
-
-
-var SpriteSheetFile = new Class({
-
-    Extends: ImageFile,
-
-    initialize:
-
-    function SpriteSheetFile (loader, key, url, frameConfig, xhrSettings)
-    {
-        ImageFile.call(this, loader, key, url, xhrSettings, frameConfig);
-
-        this.type = 'spritesheet';
-    },
-
-    
-    addToCache: function ()
-    {
-        //  Check if we have a linked normal map
-        var linkFile = this.linkFile;
-
-        if (linkFile)
-        {
-            //  We do, but has it loaded?
-            if (linkFile.state >= CONST.FILE_COMPLETE)
-            {
-                //  Both files have loaded
-                if (this.type === 'normalMap')
-                {
-                    //  linkFile.data = Image
-                    //  this.data = Normal Map
-                    this.cache.addSpriteSheet(this.key, linkFile.data, this.config, this.data);
-                }
-                else
-                {
-                    //  linkFile.data = Normal Map
-                    //  this.data = Image
-                    this.cache.addSpriteSheet(this.key, this.data, this.config, linkFile.data);
-                }
-            }
-
-            //  Nothing to do here, we'll use the linkFile `addToCache` call
-            //  to process this pair
-        }
-        else
-        {
-            this.cache.addSpriteSheet(this.key, this.data, this.config);
-        }
-    }
-
-});
-
-
-FileTypesManager.register('spritesheet', function (key, url, frameConfig, xhrSettings)
-{
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object
-            this.addFile(new SpriteSheetFile(this, key[i]));
-        }
-    }
-    else
-    {
-        this.addFile(new SpriteSheetFile(this, key, url, frameConfig, xhrSettings));
-    }
-
-    return this;
-});
-
-module.exports = SpriteSheetFile;
+var Class = require('../../utils/Class');var CONST = require('../const');var FileTypesManager = require('../FileTypesManager');var ImageFile = require('./ImageFile');var SpriteSheetFile = new Class({    Extends: ImageFile,    initialize:    function SpriteSheetFile (loader, key, url, frameConfig, xhrSettings)    {        ImageFile.call(this, loader, key, url, xhrSettings, frameConfig);        this.type = 'spritesheet';    },        addToCache: function ()    {        //  Check if we have a linked normal map        var linkFile = this.linkFile;        if (linkFile)        {            //  We do, but has it loaded?            if (linkFile.state >= CONST.FILE_COMPLETE)            {                //  Both files have loaded                if (this.type === 'normalMap')                {                    //  linkFile.data = Image                    //  this.data = Normal Map                    this.cache.addSpriteSheet(this.key, linkFile.data, this.config, this.data);                }                else                {                    //  linkFile.data = Normal Map                    //  this.data = Image                    this.cache.addSpriteSheet(this.key, this.data, this.config, linkFile.data);                }            }            //  Nothing to do here, we'll use the linkFile `addToCache` call            //  to process this pair        }        else        {            this.cache.addSpriteSheet(this.key, this.data, this.config);        }    }});FileTypesManager.register('spritesheet', function (key, url, frameConfig, xhrSettings){    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object            this.addFile(new SpriteSheetFile(this, key[i]));        }    }    else    {        this.addFile(new SpriteSheetFile(this, key, url, frameConfig, xhrSettings));    }    return this;});module.exports = SpriteSheetFile;

@@ -1,43 +1,1 @@
-var RotateLeft = require('../RotateLeft');
-var RotateRight = require('../RotateRight');
-
-var TranslateMatrix = function (matrix, x, y)
-{
-    if (x === undefined) { x = 0; }
-    if (y === undefined) { y = 0; }
-
-    if (y !== 0)
-    {
-        if (y < 0)
-        {
-
-            RotateLeft(matrix, Math.abs(y));
-        }
-        else
-        {
-
-            RotateRight(matrix, y);
-        }
-    }
-
-    if (x !== 0)
-    {
-        for (var i = 0; i < matrix.length; i++)
-        {
-            var row = matrix[i];
-
-            if (x < 0)
-            {
-                RotateLeft(row, Math.abs(x));
-            }
-            else
-            {
-                RotateRight(row, x);
-            }
-        }
-    }
-
-    return matrix;
-};
-
-module.exports = TranslateMatrix;
+var RotateLeft = require('../RotateLeft');var RotateRight = require('../RotateRight');var TranslateMatrix = function (matrix, x, y){    if (x === undefined) { x = 0; }    if (y === undefined) { y = 0; }    if (y !== 0)    {        if (y < 0)        {            RotateLeft(matrix, Math.abs(y));        }        else        {            RotateRight(matrix, y);        }    }    if (x !== 0)    {        for (var i = 0; i < matrix.length; i++)        {            var row = matrix[i];            if (x < 0)            {                RotateLeft(row, Math.abs(x));            }            else            {                RotateRight(row, x);            }        }    }    return matrix;};module.exports = TranslateMatrix;

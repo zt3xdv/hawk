@@ -1,44 +1,1 @@
-var Class = require('../../../../utils/Class');
-var WipeFrag = require('../../shaders/FXWipe-frag');
-var PostFXPipeline = require('../PostFXPipeline');
-
-var WipeFXPipeline = new Class({
-
-    Extends: PostFXPipeline,
-
-    initialize:
-
-    function WipeFXPipeline (game)
-    {
-        PostFXPipeline.call(this, {
-            game: game,
-            fragShader: WipeFrag
-        });
-
-        this.progress = 0;
-
-        this.wipeWidth = 0.1;
-
-        this.direction = 0;
-
-        this.axis = 0;
-
-        this.reveal = false;
-    },
-
-    onPreRender: function (controller, shader)
-    {
-        controller = this.getController(controller);
-
-        var progress = controller.progress;
-        var wipeWidth = controller.wipeWidth;
-        var direction = controller.direction;
-        var axis = controller.axis;
-
-        this.set4f('config', progress, wipeWidth, direction, axis, shader);
-        this.setBoolean('reveal', controller.reveal, shader);
-    }
-
-});
-
-module.exports = WipeFXPipeline;
+var Class = require('../../../../utils/Class');var WipeFrag = require('../../shaders/FXWipe-frag');var PostFXPipeline = require('../PostFXPipeline');var WipeFXPipeline = new Class({    Extends: PostFXPipeline,    initialize:    function WipeFXPipeline (game)    {        PostFXPipeline.call(this, {            game: game,            fragShader: WipeFrag        });        this.progress = 0;        this.wipeWidth = 0.1;        this.direction = 0;        this.axis = 0;        this.reveal = false;    },    onPreRender: function (controller, shader)    {        controller = this.getController(controller);        var progress = controller.progress;        var wipeWidth = controller.wipeWidth;        var direction = controller.direction;        var axis = controller.axis;        this.set4f('config', progress, wipeWidth, direction, axis, shader);        this.setBoolean('reveal', controller.reveal, shader);    }});module.exports = WipeFXPipeline;

@@ -1,1 +1,1 @@
-module.exports = 'detune';
+module.exports = 'detune';

@@ -1,159 +1,1 @@
-var Class = require('../../../utils/Class');
-var EventEmitter = require('eventemitter3');
-var Events = require('../events');
-
-var Key = new Class({
-
-    Extends: EventEmitter,
-
-    initialize:
-
-    function Key (plugin, keyCode)
-    {
-        EventEmitter.call(this);
-
-        this.plugin = plugin;
-
-        this.keyCode = keyCode;
-
-        this.originalEvent = undefined;
-
-        this.enabled = true;
-
-        this.isDown = false;
-
-        this.isUp = true;
-
-        this.altKey = false;
-
-        this.ctrlKey = false;
-
-        this.shiftKey = false;
-
-        this.metaKey = false;
-
-        this.location = 0;
-
-        this.timeDown = 0;
-
-        this.duration = 0;
-
-        this.timeUp = 0;
-
-        this.emitOnRepeat = false;
-
-        this.repeats = 0;
-
-        this._justDown = false;
-
-        this._justUp = false;
-
-        this._tick = -1;
-    },
-
-    setEmitOnRepeat: function (value)
-    {
-        this.emitOnRepeat = value;
-
-        return this;
-    },
-
-    onDown: function (event)
-    {
-        this.originalEvent = event;
-
-        if (!this.enabled)
-        {
-            return;
-        }
-
-        this.altKey = event.altKey;
-        this.ctrlKey = event.ctrlKey;
-        this.shiftKey = event.shiftKey;
-        this.metaKey = event.metaKey;
-        this.location = event.location;
-
-        this.repeats++;
-
-        if (!this.isDown)
-        {
-            this.isDown = true;
-            this.isUp = false;
-            this.timeDown = event.timeStamp;
-            this.duration = 0;
-            this._justDown = true;
-            this._justUp = false;
-
-            this.emit(Events.DOWN, this, event);
-        }
-        else if (this.emitOnRepeat)
-        {
-            this.emit(Events.DOWN, this, event);
-        }
-    },
-
-    onUp: function (event)
-    {
-        this.originalEvent = event;
-
-        if (!this.enabled)
-        {
-            return;
-        }
-
-        this.isDown = false;
-        this.isUp = true;
-        this.timeUp = event.timeStamp;
-        this.duration = this.timeUp - this.timeDown;
-        this.repeats = 0;
-
-        this._justDown = false;
-        this._justUp = true;
-        this._tick = -1;
-
-        this.emit(Events.UP, this, event);
-    },
-
-    reset: function ()
-    {
-        this.isDown = false;
-        this.isUp = true;
-        this.altKey = false;
-        this.ctrlKey = false;
-        this.shiftKey = false;
-        this.metaKey = false;
-        this.timeDown = 0;
-        this.duration = 0;
-        this.timeUp = 0;
-        this.repeats = 0;
-        this._justDown = false;
-        this._justUp = false;
-        this._tick = -1;
-
-        return this;
-    },
-
-    getDuration: function ()
-    {
-        if (this.isDown)
-        {
-            return (this.plugin.game.loop.time - this.timeDown);
-        }
-        else
-        {
-            return 0;
-        }
-    },
-
-    destroy: function ()
-    {
-        this.removeAllListeners();
-
-        this.originalEvent = null;
-
-        this.plugin = null;
-    }
-
-});
-
-module.exports = Key;
+var Class = require('../../../utils/Class');var EventEmitter = require('eventemitter3');var Events = require('../events');var Key = new Class({    Extends: EventEmitter,    initialize:    function Key (plugin, keyCode)    {        EventEmitter.call(this);        this.plugin = plugin;        this.keyCode = keyCode;        this.originalEvent = undefined;        this.enabled = true;        this.isDown = false;        this.isUp = true;        this.altKey = false;        this.ctrlKey = false;        this.shiftKey = false;        this.metaKey = false;        this.location = 0;        this.timeDown = 0;        this.duration = 0;        this.timeUp = 0;        this.emitOnRepeat = false;        this.repeats = 0;        this._justDown = false;        this._justUp = false;        this._tick = -1;    },    setEmitOnRepeat: function (value)    {        this.emitOnRepeat = value;        return this;    },    onDown: function (event)    {        this.originalEvent = event;        if (!this.enabled)        {            return;        }        this.altKey = event.altKey;        this.ctrlKey = event.ctrlKey;        this.shiftKey = event.shiftKey;        this.metaKey = event.metaKey;        this.location = event.location;        this.repeats++;        if (!this.isDown)        {            this.isDown = true;            this.isUp = false;            this.timeDown = event.timeStamp;            this.duration = 0;            this._justDown = true;            this._justUp = false;            this.emit(Events.DOWN, this, event);        }        else if (this.emitOnRepeat)        {            this.emit(Events.DOWN, this, event);        }    },    onUp: function (event)    {        this.originalEvent = event;        if (!this.enabled)        {            return;        }        this.isDown = false;        this.isUp = true;        this.timeUp = event.timeStamp;        this.duration = this.timeUp - this.timeDown;        this.repeats = 0;        this._justDown = false;        this._justUp = true;        this._tick = -1;        this.emit(Events.UP, this, event);    },    reset: function ()    {        this.isDown = false;        this.isUp = true;        this.altKey = false;        this.ctrlKey = false;        this.shiftKey = false;        this.metaKey = false;        this.timeDown = 0;        this.duration = 0;        this.timeUp = 0;        this.repeats = 0;        this._justDown = false;        this._justUp = false;        this._tick = -1;        return this;    },    getDuration: function ()    {        if (this.isDown)        {            return (this.plugin.game.loop.time - this.timeDown);        }        else        {            return 0;        }    },    destroy: function ()    {        this.removeAllListeners();        this.originalEvent = null;        this.plugin = null;    }});module.exports = Key;

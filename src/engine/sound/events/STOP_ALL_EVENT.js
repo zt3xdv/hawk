@@ -1,1 +1,1 @@
-module.exports = 'stopall';
+module.exports = 'stopall';

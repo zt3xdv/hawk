@@ -1,26 +1,1 @@
-var BitmapText = require('./BitmapText');
-var BuildGameObject = require('../../BuildGameObject');
-var GameObjectCreator = require('../../GameObjectCreator');
-var GetAdvancedValue = require('../../../utils/object/GetAdvancedValue');
-var GetValue = require('../../../utils/object/GetValue');
-
-GameObjectCreator.register('bitmapText', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var font = GetValue(config, 'font', '');
-    var text = GetAdvancedValue(config, 'text', '');
-    var size = GetAdvancedValue(config, 'size', false);
-    var align = GetValue(config, 'align', 0);
-
-    var bitmapText = new BitmapText(this.scene, 0, 0, font, text, size, align);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, bitmapText, config);
-
-    return bitmapText;
-});
+var BitmapText = require('./BitmapText');var BuildGameObject = require('../../BuildGameObject');var GameObjectCreator = require('../../GameObjectCreator');var GetAdvancedValue = require('../../../utils/object/GetAdvancedValue');var GetValue = require('../../../utils/object/GetValue');GameObjectCreator.register('bitmapText', function (config, addToScene){    if (config === undefined) { config = {}; }    var font = GetValue(config, 'font', '');    var text = GetAdvancedValue(config, 'text', '');    var size = GetAdvancedValue(config, 'size', false);    var align = GetValue(config, 'align', 0);    var bitmapText = new BitmapText(this.scene, 0, 0, font, text, size, align);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, bitmapText, config);    return bitmapText;});

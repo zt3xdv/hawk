@@ -1,1 +1,1 @@
-module.exports = 'transitionstart';
+module.exports = 'transitionstart';

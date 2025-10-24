@@ -1,7 +1,1 @@
-var GameObjectFactory = require('../../GameObjectFactory');
-var Curve = require('./Curve');
-
-GameObjectFactory.register('curve', function (x, y, curve, fillColor, fillAlpha)
-{
-    return this.displayList.add(new Curve(this.scene, x, y, curve, fillColor, fillAlpha));
-});
+var GameObjectFactory = require('../../GameObjectFactory');var Curve = require('./Curve');GameObjectFactory.register('curve', function (x, y, curve, fillColor, fillAlpha){    return this.displayList.add(new Curve(this.scene, x, y, curve, fillColor, fillAlpha));});

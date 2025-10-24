@@ -1,8 +1,1 @@
-var ComponentToHex = function (color)
-{
-    var hex = color.toString(16);
-
-    return (hex.length === 1) ? '0' + hex : hex;
-};
-
-module.exports = ComponentToHex;
+var ComponentToHex = function (color){    var hex = color.toString(16);    return (hex.length === 1) ? '0' + hex : hex;};module.exports = ComponentToHex;

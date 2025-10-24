@@ -1,82 +1,1 @@
-var FillStyleCanvas = require('../FillStyleCanvas');
-var SetTransform = require('../../../renderer/canvas/utils/SetTransform');
-
-var IsoTriangleCanvasRenderer = function (renderer, src, camera, parentMatrix)
-{
-    camera.addToRenderList(src);
-
-    var ctx = renderer.currentContext;
-
-    if (SetTransform(renderer, ctx, src, camera, parentMatrix) && src.isFilled)
-    {
-        var size = src.width;
-        var height = src.height;
-
-        var sizeA = size / 2;
-        var sizeB = size / src.projection;
-
-        var reversed = src.isReversed;
-
-        if (src.showTop && reversed)
-        {
-            FillStyleCanvas(ctx, src, src.fillTop);
-
-            ctx.beginPath();
-
-            ctx.moveTo(-sizeA, -height);
-            ctx.lineTo(0, -sizeB - height);
-            ctx.lineTo(sizeA, -height);
-            ctx.lineTo(0, sizeB - height);
-
-            ctx.fill();
-        }
-
-        if (src.showLeft)
-        {
-            FillStyleCanvas(ctx, src, src.fillLeft);
-
-            ctx.beginPath();
-
-            if (reversed)
-            {
-                ctx.moveTo(-sizeA, -height);
-                ctx.lineTo(0, sizeB);
-                ctx.lineTo(0, sizeB - height);
-            }
-            else
-            {
-                ctx.moveTo(-sizeA, 0);
-                ctx.lineTo(0, sizeB);
-                ctx.lineTo(0, sizeB - height);
-            }
-
-            ctx.fill();
-        }
-
-        if (src.showRight)
-        {
-            FillStyleCanvas(ctx, src, src.fillRight);
-
-            ctx.beginPath();
-
-            if (reversed)
-            {
-                ctx.moveTo(sizeA, -height);
-                ctx.lineTo(0, sizeB);
-                ctx.lineTo(0, sizeB - height);
-            }
-            else
-            {
-                ctx.moveTo(sizeA, 0);
-                ctx.lineTo(0, sizeB);
-                ctx.lineTo(0, sizeB - height);
-            }
-
-            ctx.fill();
-        }
-
-        ctx.restore();
-    }
-};
-
-module.exports = IsoTriangleCanvasRenderer;
+var FillStyleCanvas = require('../FillStyleCanvas');var SetTransform = require('../../../renderer/canvas/utils/SetTransform');var IsoTriangleCanvasRenderer = function (renderer, src, camera, parentMatrix){    camera.addToRenderList(src);    var ctx = renderer.currentContext;    if (SetTransform(renderer, ctx, src, camera, parentMatrix) && src.isFilled)    {        var size = src.width;        var height = src.height;        var sizeA = size / 2;        var sizeB = size / src.projection;        var reversed = src.isReversed;        if (src.showTop && reversed)        {            FillStyleCanvas(ctx, src, src.fillTop);            ctx.beginPath();            ctx.moveTo(-sizeA, -height);            ctx.lineTo(0, -sizeB - height);            ctx.lineTo(sizeA, -height);            ctx.lineTo(0, sizeB - height);            ctx.fill();        }        if (src.showLeft)        {            FillStyleCanvas(ctx, src, src.fillLeft);            ctx.beginPath();            if (reversed)            {                ctx.moveTo(-sizeA, -height);                ctx.lineTo(0, sizeB);                ctx.lineTo(0, sizeB - height);            }            else            {                ctx.moveTo(-sizeA, 0);                ctx.lineTo(0, sizeB);                ctx.lineTo(0, sizeB - height);            }            ctx.fill();        }        if (src.showRight)        {            FillStyleCanvas(ctx, src, src.fillRight);            ctx.beginPath();            if (reversed)            {                ctx.moveTo(sizeA, -height);                ctx.lineTo(0, sizeB);                ctx.lineTo(0, sizeB - height);            }            else            {                ctx.moveTo(sizeA, 0);                ctx.lineTo(0, sizeB);                ctx.lineTo(0, sizeB - height);            }            ctx.fill();        }        ctx.restore();    }};module.exports = IsoTriangleCanvasRenderer;

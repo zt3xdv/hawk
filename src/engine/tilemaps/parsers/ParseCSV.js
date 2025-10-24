@@ -1,17 +1,1 @@
-var Formats = require('../Formats');
-var Parse2DArray = require('./Parse2DArray');
-
-var ParseCSV = function (name, data, tileWidth, tileHeight, insertNull)
-{
-    var array2D = data
-        .trim()
-        .split('\n')
-        .map(function (row) { return row.split(','); });
-
-    var map = Parse2DArray(name, array2D, tileWidth, tileHeight, insertNull);
-    map.format = Formats.CSV;
-
-    return map;
-};
-
-module.exports = ParseCSV;
+var Formats = require('../Formats');var Parse2DArray = require('./Parse2DArray');var ParseCSV = function (name, data, tileWidth, tileHeight, insertNull){    var array2D = data        .trim()        .split('\n')        .map(function (row) { return row.split(','); });    var map = Parse2DArray(name, array2D, tileWidth, tileHeight, insertNull);    map.format = Formats.CSV;    return map;};module.exports = ParseCSV;

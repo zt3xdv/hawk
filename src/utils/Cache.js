@@ -1,4 +1,4 @@
-import { dataUrlToBlob } from './Utils.js';
+import { dataUrlToBlob } from './Blob.js';
 
 export default class Cache {
   static #instance = null;

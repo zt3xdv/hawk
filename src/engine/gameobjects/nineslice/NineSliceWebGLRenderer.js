@@ -1,72 +1,1 @@
-var GetCalcMatrix = require('../GetCalcMatrix');
-var Utils = require('../../renderer/webgl/Utils');
-
-var NineSliceWebGLRenderer = function (renderer, src, camera, parentMatrix)
-{
-    var verts = src.vertices;
-    var totalVerts = verts.length;
-
-    if (totalVerts === 0)
-    {
-        return;
-    }
-
-    camera.addToRenderList(src);
-
-    var pipeline = renderer.pipelines.set(src.pipeline, src);
-
-    var calcMatrix = GetCalcMatrix(src, camera, parentMatrix, false).calc;
-
-    renderer.pipelines.preBatch(src);
-
-    var textureUnit = pipeline.setGameObject(src);
-
-    var F32 = pipeline.vertexViewF32;
-    var U32 = pipeline.vertexViewU32;
-
-    var vertexOffset = (pipeline.vertexCount * pipeline.currentShader.vertexComponentCount) - 1;
-
-    var roundPixels = camera.roundPixels;
-
-    var tintEffect = src.tintFill;
-    var alpha = camera.alpha * src.alpha;
-    var color = Utils.getTintAppendFloatAlpha(src.tint, alpha);
-
-    var available = pipeline.vertexAvailable();
-    var flushCount = -1;
-
-    if (available < totalVerts)
-    {
-        flushCount = available;
-    }
-
-    for (var i = 0; i < totalVerts; i++)
-    {
-        var vert = verts[i];
-
-        if (i === flushCount)
-        {
-            pipeline.flush();
-
-            textureUnit = pipeline.setGameObject(src);
-
-            vertexOffset = 0;
-        }
-
-        F32[++vertexOffset] = calcMatrix.getXRound(vert.vx, vert.vy, roundPixels);
-        F32[++vertexOffset] = calcMatrix.getYRound(vert.vx, vert.vy, roundPixels);
-        F32[++vertexOffset] = vert.u;
-        F32[++vertexOffset] = vert.v;
-        F32[++vertexOffset] = textureUnit;
-        F32[++vertexOffset] = tintEffect;
-        U32[++vertexOffset] = color;
-
-        pipeline.vertexCount++;
-
-        pipeline.currentBatch.count = (pipeline.vertexCount - pipeline.currentBatch.start);
-    }
-
-    renderer.pipelines.postBatch(src);
-};
-
-module.exports = NineSliceWebGLRenderer;
+var GetCalcMatrix = require('../GetCalcMatrix');var Utils = require('../../renderer/webgl/Utils');var NineSliceWebGLRenderer = function (renderer, src, camera, parentMatrix){    var verts = src.vertices;    var totalVerts = verts.length;    if (totalVerts === 0)    {        return;    }    camera.addToRenderList(src);    var pipeline = renderer.pipelines.set(src.pipeline, src);    var calcMatrix = GetCalcMatrix(src, camera, parentMatrix, false).calc;    renderer.pipelines.preBatch(src);    var textureUnit = pipeline.setGameObject(src);    var F32 = pipeline.vertexViewF32;    var U32 = pipeline.vertexViewU32;    var vertexOffset = (pipeline.vertexCount * pipeline.currentShader.vertexComponentCount) - 1;    var roundPixels = camera.roundPixels;    var tintEffect = src.tintFill;    var alpha = camera.alpha * src.alpha;    var color = Utils.getTintAppendFloatAlpha(src.tint, alpha);    var available = pipeline.vertexAvailable();    var flushCount = -1;    if (available < totalVerts)    {        flushCount = available;    }    for (var i = 0; i < totalVerts; i++)    {        var vert = verts[i];        if (i === flushCount)        {            pipeline.flush();            textureUnit = pipeline.setGameObject(src);            vertexOffset = 0;        }        F32[++vertexOffset] = calcMatrix.getXRound(vert.vx, vert.vy, roundPixels);        F32[++vertexOffset] = calcMatrix.getYRound(vert.vx, vert.vy, roundPixels);        F32[++vertexOffset] = vert.u;        F32[++vertexOffset] = vert.v;        F32[++vertexOffset] = textureUnit;        F32[++vertexOffset] = tintEffect;        U32[++vertexOffset] = color;        pipeline.vertexCount++;        pipeline.currentBatch.count = (pipeline.vertexCount - pipeline.currentBatch.start);    }    renderer.pipelines.postBatch(src);};module.exports = NineSliceWebGLRenderer;

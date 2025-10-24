@@ -1,1 +1,1 @@
-module.exports = 'gameout';
+module.exports = 'gameout';

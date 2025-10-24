@@ -1,97 +1,1 @@
-var Class = require('../../../utils/Class');
-var Earcut = require('../../../geom/polygon/Earcut');
-var EllipseRender = require('./EllipseRender');
-var GeomEllipse = require('../../../geom/ellipse/Ellipse');
-var Shape = require('../Shape');
-
-var Ellipse = new Class({
-
-    Extends: Shape,
-
-    Mixins: [
-        EllipseRender
-    ],
-
-    initialize:
-
-    function Ellipse (scene, x, y, width, height, fillColor, fillAlpha)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (width === undefined) { width = 128; }
-        if (height === undefined) { height = 128; }
-
-        Shape.call(this, scene, 'Ellipse', new GeomEllipse(width / 2, height / 2, width, height));
-
-        this._smoothness = 64;
-
-        this.setPosition(x, y);
-
-        this.width = width;
-        this.height = height;
-
-        if (fillColor !== undefined)
-        {
-            this.setFillStyle(fillColor, fillAlpha);
-        }
-
-        this.updateDisplayOrigin();
-        this.updateData();
-    },
-
-    smoothness: {
-
-        get: function ()
-        {
-            return this._smoothness;
-        },
-
-        set: function (value)
-        {
-            this._smoothness = value;
-
-            this.updateData();
-        }
-
-    },
-
-    setSize: function (width, height)
-    {
-        this.width = width;
-        this.height = height;
-        this.geom.setPosition(width / 2, height / 2);
-        this.geom.setSize(width, height);
-
-        this.updateDisplayOrigin();
-
-        return this.updateData();
-    },
-
-    setSmoothness: function (value)
-    {
-        this._smoothness = value;
-
-        return this.updateData();
-    },
-
-    updateData: function ()
-    {
-        var path = [];
-        var points = this.geom.getPoints(this._smoothness);
-
-        for (var i = 0; i < points.length; i++)
-        {
-            path.push(points[i].x, points[i].y);
-        }
-
-        path.push(points[0].x, points[0].y);
-
-        this.pathIndexes = Earcut(path);
-        this.pathData = path;
-
-        return this;
-    }
-
-});
-
-module.exports = Ellipse;
+var Class = require('../../../utils/Class');var Earcut = require('../../../geom/polygon/Earcut');var EllipseRender = require('./EllipseRender');var GeomEllipse = require('../../../geom/ellipse/Ellipse');var Shape = require('../Shape');var Ellipse = new Class({    Extends: Shape,    Mixins: [        EllipseRender    ],    initialize:    function Ellipse (scene, x, y, width, height, fillColor, fillAlpha)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (width === undefined) { width = 128; }        if (height === undefined) { height = 128; }        Shape.call(this, scene, 'Ellipse', new GeomEllipse(width / 2, height / 2, width, height));        this._smoothness = 64;        this.setPosition(x, y);        this.width = width;        this.height = height;        if (fillColor !== undefined)        {            this.setFillStyle(fillColor, fillAlpha);        }        this.updateDisplayOrigin();        this.updateData();    },    smoothness: {        get: function ()        {            return this._smoothness;        },        set: function (value)        {            this._smoothness = value;            this.updateData();        }    },    setSize: function (width, height)    {        this.width = width;        this.height = height;        this.geom.setPosition(width / 2, height / 2);        this.geom.setSize(width, height);        this.updateDisplayOrigin();        return this.updateData();    },    setSmoothness: function (value)    {        this._smoothness = value;        return this.updateData();    },    updateData: function ()    {        var path = [];        var points = this.geom.getPoints(this._smoothness);        for (var i = 0; i < points.length; i++)        {            path.push(points[i].x, points[i].y);        }        path.push(points[0].x, points[0].y);        this.pathIndexes = Earcut(path);        this.pathData = path;        return this;    }});module.exports = Ellipse;

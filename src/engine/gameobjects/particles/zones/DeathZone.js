@@ -1,25 +1,1 @@
-var Class = require('../../../utils/Class');
-
-var DeathZone = new Class({
-
-    initialize:
-
-    function DeathZone (source, killOnEnter)
-    {
-
-        this.source = source;
-
-        this.killOnEnter = killOnEnter;
-    },
-
-    willKill: function (particle)
-    {
-        var pos = particle.worldPosition;
-        var withinZone = this.source.contains(pos.x, pos.y);
-
-        return (withinZone && this.killOnEnter || !withinZone && !this.killOnEnter);
-    }
-
-});
-
-module.exports = DeathZone;
+var Class = require('../../../utils/Class');var DeathZone = new Class({    initialize:    function DeathZone (source, killOnEnter)    {        this.source = source;        this.killOnEnter = killOnEnter;    },    willKill: function (particle)    {        var pos = particle.worldPosition;        var withinZone = this.source.contains(pos.x, pos.y);        return (withinZone && this.killOnEnter || !withinZone && !this.killOnEnter);    }});module.exports = DeathZone;

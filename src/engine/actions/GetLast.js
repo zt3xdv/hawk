@@ -1,28 +1,19 @@
-var GetLast = function (items, compare, index)
-{
-    if (index === undefined) { index = 0; }
-
-    for (var i = items.length - 1; i >= index; i--)
-    {
-        var item = items[i];
-
-        var match = true;
-
-        for (var property in compare)
-        {
-            if (item[property] !== compare[property])
-            {
-                match = false;
-            }
-        }
-
-        if (match)
-        {
-            return item;
-        }
+var GetLast = function (items, compare, index) {
+  if (index === undefined) {
+    index = 0;
+  }
+  for (var i = items.length - 1; i >= index; i--) {
+    var item = items[i];
+    var match = true;
+    for (var property in compare) {
+      if (item[property] !== compare[property]) {
+        match = false;
+      }
     }
-
-    return null;
+    if (match) {
+      return item;
+    }
+  }
+  return null;
 };
-
 module.exports = GetLast;

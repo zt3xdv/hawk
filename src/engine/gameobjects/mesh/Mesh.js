@@ -1,585 +1,1 @@
-var Class = require('../../utils/Class');
-var Components = require('../components');
-var DegToRad = require('../../math/DegToRad');
-var Face = require('../../geom/mesh/Face');
-var GameObject = require('../GameObject');
-var GenerateObjVerts = require('../../geom/mesh/GenerateObjVerts');
-var GenerateVerts = require('../../geom/mesh/GenerateVerts');
-var GetCalcMatrix = require('../GetCalcMatrix');
-var Matrix4 = require('../../math/Matrix4');
-var MeshRender = require('./MeshRender');
-var RadToDeg = require('../../math/RadToDeg');
-var StableSort = require('../../utils/array/StableSort');
-var Vector3 = require('../../math/Vector3');
-var Vertex = require('../../geom/mesh/Vertex');
-
-var Mesh = new Class({
-
-    Extends: GameObject,
-
-    Mixins: [
-        Components.AlphaSingle,
-        Components.BlendMode,
-        Components.Depth,
-        Components.Mask,
-        Components.Pipeline,
-        Components.PostPipeline,
-        Components.ScrollFactor,
-        Components.Size,
-        Components.Texture,
-        Components.Transform,
-        Components.Visible,
-        MeshRender
-    ],
-
-    initialize:
-
-    function Mesh (scene, x, y, texture, frame, vertices, uvs, indicies, containsZ, normals, colors, alphas)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (texture === undefined) { texture = '__WHITE'; }
-
-        GameObject.call(this, scene, 'Mesh');
-
-        this.faces = [];
-
-        this.vertices = [];
-
-        this.tintFill = false;
-
-        this.debugCallback = null;
-
-        this.debugGraphic = null;
-
-        this.hideCCW = true;
-
-        this.modelPosition = new Vector3();
-
-        this.modelScale = new Vector3(1, 1, 1);
-
-        this.modelRotation = new Vector3();
-
-        this.dirtyCache = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
-
-        this.transformMatrix = new Matrix4();
-
-        this.viewPosition = new Vector3();
-
-        this.viewMatrix = new Matrix4();
-
-        this.projectionMatrix = new Matrix4();
-
-        this.totalRendered = 0;
-
-        this.totalFrame = 0;
-
-        this.ignoreDirtyCache = false;
-
-        this.fov;
-
-        this.displayOriginX = 0;
-        this.displayOriginY = 0;
-
-        var renderer = scene.sys.renderer;
-
-        this.setPosition(x, y);
-        this.setTexture(texture, frame);
-        this.setSize(renderer.width, renderer.height);
-        this.initPipeline();
-        this.initPostPipeline();
-
-        this.setPerspective(renderer.width, renderer.height);
-
-        if (vertices)
-        {
-            this.addVertices(vertices, uvs, indicies, containsZ, normals, colors, alphas);
-        }
-    },
-
-    addedToScene: function ()
-    {
-        this.scene.sys.updateList.add(this);
-    },
-
-    removedFromScene: function ()
-    {
-        this.scene.sys.updateList.remove(this);
-    },
-
-    panX: function (v)
-    {
-        this.viewPosition.addScale(Vector3.LEFT, v);
-
-        this.dirtyCache[10] = 1;
-
-        return this;
-    },
-
-    panY: function (v)
-    {
-        this.viewPosition.y += Vector3.DOWN.y * v;
-
-        this.dirtyCache[10] = 1;
-
-        return this;
-    },
-
-    panZ: function (amount)
-    {
-        this.viewPosition.z += amount;
-
-        this.dirtyCache[10] = 1;
-
-        return this;
-    },
-
-    setPerspective: function (width, height, fov, near, far)
-    {
-        if (fov === undefined) { fov = 45; }
-        if (near === undefined) { near = 0.01; }
-        if (far === undefined) { far = 1000; }
-
-        this.fov = fov;
-
-        this.projectionMatrix.perspective(DegToRad(fov), width / height, near, far);
-
-        this.dirtyCache[10] = 1;
-        this.dirtyCache[11] = 0;
-
-        return this;
-    },
-
-    setOrtho: function (scaleX, scaleY, near, far)
-    {
-        if (scaleX === undefined) { scaleX = this.scene.sys.renderer.getAspectRatio(); }
-        if (scaleY === undefined) { scaleY = 1; }
-        if (near === undefined) { near = -1000; }
-        if (far === undefined) { far = 1000; }
-
-        this.fov = 0;
-
-        this.projectionMatrix.ortho(-scaleX, scaleX, -scaleY, scaleY, near, far);
-
-        this.dirtyCache[10] = 1;
-        this.dirtyCache[11] = 1;
-
-        return this;
-    },
-
-    clear: function ()
-    {
-        this.faces.forEach(function (face)
-        {
-            face.destroy();
-        });
-
-        this.faces = [];
-        this.vertices = [];
-
-        return this;
-    },
-
-    addVerticesFromObj: function (key, scale, x, y, z, rotateX, rotateY, rotateZ, zIsUp)
-    {
-        var data = this.scene.sys.cache.obj.get(key);
-        var parsedData;
-
-        if (data)
-        {
-            parsedData = GenerateObjVerts(data, this, scale, x, y, z, rotateX, rotateY, rotateZ, zIsUp);
-        }
-
-        if (!parsedData || parsedData.verts.length === 0)
-        {
-            console.warn('Mesh.addVerticesFromObj data empty:', key);
-        }
-
-        return this;
-    },
-
-    sortByDepth: function (faceA, faceB)
-    {
-        return faceA.depth - faceB.depth;
-    },
-
-    depthSort: function ()
-    {
-        StableSort(this.faces, this.sortByDepth);
-
-        return this;
-    },
-
-    addVertex: function (x, y, z, u, v, color, alpha)
-    {
-        var vert = new Vertex(x, y, z, u, v, color, alpha);
-
-        this.vertices.push(vert);
-
-        return vert;
-    },
-
-    addFace: function (vertex1, vertex2, vertex3)
-    {
-        var face = new Face(vertex1, vertex2, vertex3);
-
-        this.faces.push(face);
-
-        this.dirtyCache[9] = -1;
-
-        return face;
-    },
-
-    addVertices: function (vertices, uvs, indicies, containsZ, normals, colors, alphas)
-    {
-        var result = GenerateVerts(vertices, uvs, indicies, containsZ, normals, colors, alphas);
-
-        if (result)
-        {
-            this.faces = this.faces.concat(result.faces);
-            this.vertices = this.vertices.concat(result.vertices);
-        }
-        else
-        {
-            console.warn('Mesh.addVertices data empty or invalid');
-        }
-
-        this.dirtyCache[9] = -1;
-
-        return this;
-    },
-
-    getFaceCount: function ()
-    {
-        return this.faces.length;
-    },
-
-    getVertexCount: function ()
-    {
-        return this.vertices.length;
-    },
-
-    getFace: function (index)
-    {
-        return this.faces[index];
-    },
-
-    hasFaceAt: function (x, y, camera)
-    {
-        if (camera === undefined) { camera = this.scene.sys.cameras.main; }
-
-        var calcMatrix = GetCalcMatrix(this, camera).calc;
-
-        var faces = this.faces;
-
-        for (var i = 0; i < faces.length; i++)
-        {
-            var face = faces[i];
-
-            if (face.contains(x, y, calcMatrix))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    },
-
-    getFaceAt: function (x, y, camera)
-    {
-        if (camera === undefined) { camera = this.scene.sys.cameras.main; }
-
-        var calcMatrix = GetCalcMatrix(this, camera).calc;
-
-        var faces = this.faces;
-        var results = [];
-
-        for (var i = 0; i < faces.length; i++)
-        {
-            var face = faces[i];
-
-            if (face.contains(x, y, calcMatrix))
-            {
-                results.push(face);
-            }
-        }
-
-        return StableSort(results, this.sortByDepth);
-    },
-
-    setDebug: function (graphic, callback)
-    {
-        this.debugGraphic = graphic;
-
-        if (!graphic && !callback)
-        {
-            this.debugCallback = null;
-        }
-        else if (!callback)
-        {
-            this.debugCallback = this.renderDebug;
-        }
-        else
-        {
-            this.debugCallback = callback;
-        }
-
-        return this;
-    },
-
-    isDirty: function ()
-    {
-        var position = this.modelPosition;
-        var rotation = this.modelRotation;
-        var scale = this.modelScale;
-        var dirtyCache = this.dirtyCache;
-
-        var px = position.x;
-        var py = position.y;
-        var pz = position.z;
-
-        var rx = rotation.x;
-        var ry = rotation.y;
-        var rz = rotation.z;
-
-        var sx = scale.x;
-        var sy = scale.y;
-        var sz = scale.z;
-
-        var faces = this.getFaceCount();
-
-        var pxCached = dirtyCache[0];
-        var pyCached = dirtyCache[1];
-        var pzCached = dirtyCache[2];
-
-        var rxCached = dirtyCache[3];
-        var ryCached = dirtyCache[4];
-        var rzCached = dirtyCache[5];
-
-        var sxCached = dirtyCache[6];
-        var syCached = dirtyCache[7];
-        var szCached = dirtyCache[8];
-
-        var fCached = dirtyCache[9];
-
-        dirtyCache[0] = px;
-        dirtyCache[1] = py;
-        dirtyCache[2] = pz;
-
-        dirtyCache[3] = rx;
-        dirtyCache[4] = ry;
-        dirtyCache[5] = rz;
-
-        dirtyCache[6] = sx;
-        dirtyCache[7] = sy;
-        dirtyCache[8] = sz;
-
-        dirtyCache[9] = faces;
-
-        return (
-            pxCached !== px || pyCached !== py || pzCached !== pz ||
-            rxCached !== rx || ryCached !== ry || rzCached !== rz ||
-            sxCached !== sx || syCached !== sy || szCached !== sz ||
-            fCached !== faces
-        );
-    },
-
-    preUpdate: function ()
-    {
-        this.totalRendered = this.totalFrame;
-        this.totalFrame = 0;
-
-        var dirty = this.dirtyCache;
-
-        if (!this.ignoreDirtyCache && !dirty[10] && !this.isDirty())
-        {
-
-            return;
-        }
-
-        var width = this.width;
-        var height = this.height;
-
-        var viewMatrix = this.viewMatrix;
-        var viewPosition = this.viewPosition;
-
-        if (dirty[10])
-        {
-            viewMatrix.identity();
-            viewMatrix.translate(viewPosition);
-            viewMatrix.invert();
-
-            dirty[10] = 0;
-        }
-
-        var transformMatrix = this.transformMatrix;
-
-        transformMatrix.setWorldMatrix(
-            this.modelRotation,
-            this.modelPosition,
-            this.modelScale,
-            this.viewMatrix,
-            this.projectionMatrix
-        );
-
-        var z = viewPosition.z;
-
-        var faces = this.faces;
-
-        for (var i = 0; i < faces.length; i++)
-        {
-            faces[i].transformCoordinatesLocal(transformMatrix, width, height, z);
-        }
-
-        this.depthSort();
-    },
-
-    renderDebug: function (src, faces)
-    {
-        var graphic = src.debugGraphic;
-
-        for (var i = 0; i < faces.length; i++)
-        {
-            var face = faces[i];
-
-            var x0 = face.vertex1.tx;
-            var y0 = face.vertex1.ty;
-            var x1 = face.vertex2.tx;
-            var y1 = face.vertex2.ty;
-            var x2 = face.vertex3.tx;
-            var y2 = face.vertex3.ty;
-
-            graphic.strokeTriangle(x0, y0, x1, y1, x2, y2);
-        }
-    },
-
-    preDestroy: function ()
-    {
-        this.clear();
-
-        this.debugCallback = null;
-        this.debugGraphic = null;
-    },
-
-    clearTint: function ()
-    {
-        return this.setTint();
-    },
-
-    setInteractive: function (config)
-    {
-        if (config === undefined) { config = {}; }
-
-        var hitAreaCallback = function (area, x, y)
-        {
-            var faces = this.faces;
-
-            for (var i = 0; i < faces.length; i++)
-            {
-                var face = faces[i];
-
-                if (face.contains(x, y))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }.bind(this);
-
-        this.scene.sys.input.enable(this, config, hitAreaCallback);
-
-        return this;
-    },
-
-    setTint: function (tint)
-    {
-        if (tint === undefined) { tint = 0xffffff; }
-
-        var vertices = this.vertices;
-
-        for (var i = 0; i < vertices.length; i++)
-        {
-            vertices[i].color = tint;
-        }
-
-        return this;
-    },
-
-    uvScroll: function (x, y)
-    {
-        var faces = this.faces;
-
-        for (var i = 0; i < faces.length; i++)
-        {
-            faces[i].scrollUV(x, y);
-        }
-
-        return this;
-    },
-
-    uvScale: function (x, y)
-    {
-        var faces = this.faces;
-
-        for (var i = 0; i < faces.length; i++)
-        {
-            faces[i].scaleUV(x, y);
-        }
-
-        return this;
-    },
-
-    tint: {
-
-        set: function (value)
-        {
-            this.setTint(value);
-        }
-    },
-
-    rotateX: {
-
-        get: function ()
-        {
-            return RadToDeg(this.modelRotation.x);
-        },
-
-        set: function (value)
-        {
-            this.modelRotation.x = DegToRad(value);
-        }
-
-    },
-
-    rotateY: {
-
-        get: function ()
-        {
-            return RadToDeg(this.modelRotation.y);
-        },
-
-        set: function (value)
-        {
-            this.modelRotation.y = DegToRad(value);
-        }
-
-    },
-
-    rotateZ: {
-
-        get: function ()
-        {
-            return RadToDeg(this.modelRotation.z);
-        },
-
-        set: function (value)
-        {
-            this.modelRotation.z = DegToRad(value);
-        }
-
-    }
-
-});
-
-module.exports = Mesh;
+var Class = require('../../utils/Class');var Components = require('../components');var DegToRad = require('../../math/DegToRad');var Face = require('../../geom/mesh/Face');var GameObject = require('../GameObject');var GenerateObjVerts = require('../../geom/mesh/GenerateObjVerts');var GenerateVerts = require('../../geom/mesh/GenerateVerts');var GetCalcMatrix = require('../GetCalcMatrix');var Matrix4 = require('../../math/Matrix4');var MeshRender = require('./MeshRender');var RadToDeg = require('../../math/RadToDeg');var StableSort = require('../../utils/array/StableSort');var Vector3 = require('../../math/Vector3');var Vertex = require('../../geom/mesh/Vertex');var Mesh = new Class({    Extends: GameObject,    Mixins: [        Components.AlphaSingle,        Components.BlendMode,        Components.Depth,        Components.Mask,        Components.Pipeline,        Components.PostPipeline,        Components.ScrollFactor,        Components.Size,        Components.Texture,        Components.Transform,        Components.Visible,        MeshRender    ],    initialize:    function Mesh (scene, x, y, texture, frame, vertices, uvs, indicies, containsZ, normals, colors, alphas)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (texture === undefined) { texture = '__WHITE'; }        GameObject.call(this, scene, 'Mesh');        this.faces = [];        this.vertices = [];        this.tintFill = false;        this.debugCallback = null;        this.debugGraphic = null;        this.hideCCW = true;        this.modelPosition = new Vector3();        this.modelScale = new Vector3(1, 1, 1);        this.modelRotation = new Vector3();        this.dirtyCache = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];        this.transformMatrix = new Matrix4();        this.viewPosition = new Vector3();        this.viewMatrix = new Matrix4();        this.projectionMatrix = new Matrix4();        this.totalRendered = 0;        this.totalFrame = 0;        this.ignoreDirtyCache = false;        this.fov;        this.displayOriginX = 0;        this.displayOriginY = 0;        var renderer = scene.sys.renderer;        this.setPosition(x, y);        this.setTexture(texture, frame);        this.setSize(renderer.width, renderer.height);        this.initPipeline();        this.initPostPipeline();        this.setPerspective(renderer.width, renderer.height);        if (vertices)        {            this.addVertices(vertices, uvs, indicies, containsZ, normals, colors, alphas);        }    },    addedToScene: function ()    {        this.scene.sys.updateList.add(this);    },    removedFromScene: function ()    {        this.scene.sys.updateList.remove(this);    },    panX: function (v)    {        this.viewPosition.addScale(Vector3.LEFT, v);        this.dirtyCache[10] = 1;        return this;    },    panY: function (v)    {        this.viewPosition.y += Vector3.DOWN.y * v;        this.dirtyCache[10] = 1;        return this;    },    panZ: function (amount)    {        this.viewPosition.z += amount;        this.dirtyCache[10] = 1;        return this;    },    setPerspective: function (width, height, fov, near, far)    {        if (fov === undefined) { fov = 45; }        if (near === undefined) { near = 0.01; }        if (far === undefined) { far = 1000; }        this.fov = fov;        this.projectionMatrix.perspective(DegToRad(fov), width / height, near, far);        this.dirtyCache[10] = 1;        this.dirtyCache[11] = 0;        return this;    },    setOrtho: function (scaleX, scaleY, near, far)    {        if (scaleX === undefined) { scaleX = this.scene.sys.renderer.getAspectRatio(); }        if (scaleY === undefined) { scaleY = 1; }        if (near === undefined) { near = -1000; }        if (far === undefined) { far = 1000; }        this.fov = 0;        this.projectionMatrix.ortho(-scaleX, scaleX, -scaleY, scaleY, near, far);        this.dirtyCache[10] = 1;        this.dirtyCache[11] = 1;        return this;    },    clear: function ()    {        this.faces.forEach(function (face)        {            face.destroy();        });        this.faces = [];        this.vertices = [];        return this;    },    addVerticesFromObj: function (key, scale, x, y, z, rotateX, rotateY, rotateZ, zIsUp)    {        var data = this.scene.sys.cache.obj.get(key);        var parsedData;        if (data)        {            parsedData = GenerateObjVerts(data, this, scale, x, y, z, rotateX, rotateY, rotateZ, zIsUp);        }        if (!parsedData || parsedData.verts.length === 0)        {            console.warn('Mesh.addVerticesFromObj data empty:', key);        }        return this;    },    sortByDepth: function (faceA, faceB)    {        return faceA.depth - faceB.depth;    },    depthSort: function ()    {        StableSort(this.faces, this.sortByDepth);        return this;    },    addVertex: function (x, y, z, u, v, color, alpha)    {        var vert = new Vertex(x, y, z, u, v, color, alpha);        this.vertices.push(vert);        return vert;    },    addFace: function (vertex1, vertex2, vertex3)    {        var face = new Face(vertex1, vertex2, vertex3);        this.faces.push(face);        this.dirtyCache[9] = -1;        return face;    },    addVertices: function (vertices, uvs, indicies, containsZ, normals, colors, alphas)    {        var result = GenerateVerts(vertices, uvs, indicies, containsZ, normals, colors, alphas);        if (result)        {            this.faces = this.faces.concat(result.faces);            this.vertices = this.vertices.concat(result.vertices);        }        else        {            console.warn('Mesh.addVertices data empty or invalid');        }        this.dirtyCache[9] = -1;        return this;    },    getFaceCount: function ()    {        return this.faces.length;    },    getVertexCount: function ()    {        return this.vertices.length;    },    getFace: function (index)    {        return this.faces[index];    },    hasFaceAt: function (x, y, camera)    {        if (camera === undefined) { camera = this.scene.sys.cameras.main; }        var calcMatrix = GetCalcMatrix(this, camera).calc;        var faces = this.faces;        for (var i = 0; i < faces.length; i++)        {            var face = faces[i];            if (face.contains(x, y, calcMatrix))            {                return true;            }        }        return false;    },    getFaceAt: function (x, y, camera)    {        if (camera === undefined) { camera = this.scene.sys.cameras.main; }        var calcMatrix = GetCalcMatrix(this, camera).calc;        var faces = this.faces;        var results = [];        for (var i = 0; i < faces.length; i++)        {            var face = faces[i];            if (face.contains(x, y, calcMatrix))            {                results.push(face);            }        }        return StableSort(results, this.sortByDepth);    },    setDebug: function (graphic, callback)    {        this.debugGraphic = graphic;        if (!graphic && !callback)        {            this.debugCallback = null;        }        else if (!callback)        {            this.debugCallback = this.renderDebug;        }        else        {            this.debugCallback = callback;        }        return this;    },    isDirty: function ()    {        var position = this.modelPosition;        var rotation = this.modelRotation;        var scale = this.modelScale;        var dirtyCache = this.dirtyCache;        var px = position.x;        var py = position.y;        var pz = position.z;        var rx = rotation.x;        var ry = rotation.y;        var rz = rotation.z;        var sx = scale.x;        var sy = scale.y;        var sz = scale.z;        var faces = this.getFaceCount();        var pxCached = dirtyCache[0];        var pyCached = dirtyCache[1];        var pzCached = dirtyCache[2];        var rxCached = dirtyCache[3];        var ryCached = dirtyCache[4];        var rzCached = dirtyCache[5];        var sxCached = dirtyCache[6];        var syCached = dirtyCache[7];        var szCached = dirtyCache[8];        var fCached = dirtyCache[9];        dirtyCache[0] = px;        dirtyCache[1] = py;        dirtyCache[2] = pz;        dirtyCache[3] = rx;        dirtyCache[4] = ry;        dirtyCache[5] = rz;        dirtyCache[6] = sx;        dirtyCache[7] = sy;        dirtyCache[8] = sz;        dirtyCache[9] = faces;        return (            pxCached !== px || pyCached !== py || pzCached !== pz ||            rxCached !== rx || ryCached !== ry || rzCached !== rz ||            sxCached !== sx || syCached !== sy || szCached !== sz ||            fCached !== faces        );    },    preUpdate: function ()    {        this.totalRendered = this.totalFrame;        this.totalFrame = 0;        var dirty = this.dirtyCache;        if (!this.ignoreDirtyCache && !dirty[10] && !this.isDirty())        {            return;        }        var width = this.width;        var height = this.height;        var viewMatrix = this.viewMatrix;        var viewPosition = this.viewPosition;        if (dirty[10])        {            viewMatrix.identity();            viewMatrix.translate(viewPosition);            viewMatrix.invert();            dirty[10] = 0;        }        var transformMatrix = this.transformMatrix;        transformMatrix.setWorldMatrix(            this.modelRotation,            this.modelPosition,            this.modelScale,            this.viewMatrix,            this.projectionMatrix        );        var z = viewPosition.z;        var faces = this.faces;        for (var i = 0; i < faces.length; i++)        {            faces[i].transformCoordinatesLocal(transformMatrix, width, height, z);        }        this.depthSort();    },    renderDebug: function (src, faces)    {        var graphic = src.debugGraphic;        for (var i = 0; i < faces.length; i++)        {            var face = faces[i];            var x0 = face.vertex1.tx;            var y0 = face.vertex1.ty;            var x1 = face.vertex2.tx;            var y1 = face.vertex2.ty;            var x2 = face.vertex3.tx;            var y2 = face.vertex3.ty;            graphic.strokeTriangle(x0, y0, x1, y1, x2, y2);        }    },    preDestroy: function ()    {        this.clear();        this.debugCallback = null;        this.debugGraphic = null;    },    clearTint: function ()    {        return this.setTint();    },    setInteractive: function (config)    {        if (config === undefined) { config = {}; }        var hitAreaCallback = function (area, x, y)        {            var faces = this.faces;            for (var i = 0; i < faces.length; i++)            {                var face = faces[i];                if (face.contains(x, y))                {                    return true;                }            }            return false;        }.bind(this);        this.scene.sys.input.enable(this, config, hitAreaCallback);        return this;    },    setTint: function (tint)    {        if (tint === undefined) { tint = 0xffffff; }        var vertices = this.vertices;        for (var i = 0; i < vertices.length; i++)        {            vertices[i].color = tint;        }        return this;    },    uvScroll: function (x, y)    {        var faces = this.faces;        for (var i = 0; i < faces.length; i++)        {            faces[i].scrollUV(x, y);        }        return this;    },    uvScale: function (x, y)    {        var faces = this.faces;        for (var i = 0; i < faces.length; i++)        {            faces[i].scaleUV(x, y);        }        return this;    },    tint: {        set: function (value)        {            this.setTint(value);        }    },    rotateX: {        get: function ()        {            return RadToDeg(this.modelRotation.x);        },        set: function (value)        {            this.modelRotation.x = DegToRad(value);        }    },    rotateY: {        get: function ()        {            return RadToDeg(this.modelRotation.y);        },        set: function (value)        {            this.modelRotation.y = DegToRad(value);        }    },    rotateZ: {        get: function ()        {            return RadToDeg(this.modelRotation.z);        },        set: function (value)        {            this.modelRotation.z = DegToRad(value);        }    }});module.exports = Mesh;

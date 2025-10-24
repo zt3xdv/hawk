@@ -1,51 +1,1 @@
-var FillPathWebGL = require('../FillPathWebGL');
-var GetCalcMatrix = require('../../GetCalcMatrix');
-var StrokePathWebGL = require('../StrokePathWebGL');
-var Utils = require('../../../renderer/webgl/Utils');
-
-var RectangleWebGLRenderer = function (renderer, src, camera, parentMatrix)
-{
-    camera.addToRenderList(src);
-
-    var pipeline = renderer.pipelines.set(src.pipeline);
-    var result = GetCalcMatrix(src, camera, parentMatrix);
-
-    pipeline.calcMatrix.copyFrom(result.calc);
-
-    var dx = src._displayOriginX;
-    var dy = src._displayOriginY;
-    var alpha = camera.alpha * src.alpha;
-
-    renderer.pipelines.preBatch(src);
-
-    if (src.isRounded && src.isFilled)
-    {
-        FillPathWebGL(pipeline, result.calc, src, alpha, dx, dy);
-    }
-    else if (src.isFilled)
-    {
-        var fillTint = pipeline.fillTint;
-        var fillTintColor = Utils.getTintAppendFloatAlpha(src.fillColor, src.fillAlpha * alpha);
-
-        fillTint.TL = fillTintColor;
-        fillTint.TR = fillTintColor;
-        fillTint.BL = fillTintColor;
-        fillTint.BR = fillTintColor;
-
-        pipeline.batchFillRect(
-            -dx,
-            -dy,
-            src.width,
-            src.height
-        );
-    }
-
-    if (src.isStroked)
-    {
-        StrokePathWebGL(pipeline, src, alpha, dx, dy);
-    }
-
-    renderer.pipelines.postBatch(src);
-};
-
-module.exports = RectangleWebGLRenderer;
+var FillPathWebGL = require('../FillPathWebGL');var GetCalcMatrix = require('../../GetCalcMatrix');var StrokePathWebGL = require('../StrokePathWebGL');var Utils = require('../../../renderer/webgl/Utils');var RectangleWebGLRenderer = function (renderer, src, camera, parentMatrix){    camera.addToRenderList(src);    var pipeline = renderer.pipelines.set(src.pipeline);    var result = GetCalcMatrix(src, camera, parentMatrix);    pipeline.calcMatrix.copyFrom(result.calc);    var dx = src._displayOriginX;    var dy = src._displayOriginY;    var alpha = camera.alpha * src.alpha;    renderer.pipelines.preBatch(src);    if (src.isRounded && src.isFilled)    {        FillPathWebGL(pipeline, result.calc, src, alpha, dx, dy);    }    else if (src.isFilled)    {        var fillTint = pipeline.fillTint;        var fillTintColor = Utils.getTintAppendFloatAlpha(src.fillColor, src.fillAlpha * alpha);        fillTint.TL = fillTintColor;        fillTint.TR = fillTintColor;        fillTint.BL = fillTintColor;        fillTint.BR = fillTintColor;        pipeline.batchFillRect(            -dx,            -dy,            src.width,            src.height        );    }    if (src.isStroked)    {        StrokePathWebGL(pipeline, src, alpha, dx, dy);    }    renderer.pipelines.postBatch(src);};module.exports = RectangleWebGLRenderer;

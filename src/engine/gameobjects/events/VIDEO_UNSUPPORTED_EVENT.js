@@ -1,1 +1,1 @@
-module.exports = 'unsupported';
+module.exports = 'unsupported';

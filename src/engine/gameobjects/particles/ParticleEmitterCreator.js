@@ -1,29 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var ParticleEmitter = require('./ParticleEmitter');
-
-GameObjectCreator.register('particles', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var key = GetAdvancedValue(config, 'key', null);
-    var emitterConfig = GetFastValue(config, 'config', null);
-
-    var emitter = new ParticleEmitter(this.scene, 0, 0, key);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, emitter, config);
-
-    if (emitterConfig)
-    {
-        emitter.setConfig(emitterConfig);
-    }
-
-    return emitter;
-});
+var BuildGameObject = require('../BuildGameObject');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var GetFastValue = require('../../utils/object/GetFastValue');var ParticleEmitter = require('./ParticleEmitter');GameObjectCreator.register('particles', function (config, addToScene){    if (config === undefined) { config = {}; }    var key = GetAdvancedValue(config, 'key', null);    var emitterConfig = GetFastValue(config, 'config', null);    var emitter = new ParticleEmitter(this.scene, 0, 0, key);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, emitter, config);    if (emitterConfig)    {        emitter.setConfig(emitterConfig);    }    return emitter;});

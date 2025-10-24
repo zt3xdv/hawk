@@ -1,180 +1,114 @@
-function hasGetterOrSetter (def)
-{
-    return (!!def.get && typeof def.get === 'function') || (!!def.set && typeof def.set === 'function');
+function hasGetterOrSetter(def) {
+  return (
+    (!!def.get && typeof def.get === 'function') ||
+    (!!def.set && typeof def.set === 'function')
+  );
 }
-
-function getProperty (definition, k, isClassDescriptor)
-{
-
-    var def = (isClassDescriptor) ? definition[k] : Object.getOwnPropertyDescriptor(definition, k);
-
-    if (!isClassDescriptor && def.value && typeof def.value === 'object')
-    {
-        def = def.value;
+function getProperty(definition, k, isClassDescriptor) {
+  var def = isClassDescriptor
+    ? definition[k]
+    : Object.getOwnPropertyDescriptor(definition, k);
+  if (!isClassDescriptor && def.value && typeof def.value === 'object') {
+    def = def.value;
+  }
+  if (def && hasGetterOrSetter(def)) {
+    if (typeof def.enumerable === 'undefined') {
+      def.enumerable = true;
     }
-
-    if (def && hasGetterOrSetter(def))
-    {
-        if (typeof def.enumerable === 'undefined')
-        {
-            def.enumerable = true;
-        }
-
-        if (typeof def.configurable === 'undefined')
-        {
-            def.configurable = true;
-        }
-
-        return def;
+    if (typeof def.configurable === 'undefined') {
+      def.configurable = true;
     }
-    else
-    {
-        return false;
-    }
-}
-
-function hasNonConfigurable (obj, k)
-{
-    var prop = Object.getOwnPropertyDescriptor(obj, k);
-
-    if (!prop)
-    {
-        return false;
-    }
-
-    if (prop.value && typeof prop.value === 'object')
-    {
-        prop = prop.value;
-    }
-
-    if (prop.configurable === false)
-    {
-        return true;
-    }
-
+    return def;
+  } else {
     return false;
+  }
 }
-
-function extend (ctor, definition, isClassDescriptor, extend)
-{
-    for (var k in definition)
-    {
-        if (!definition.hasOwnProperty(k))
-        {
-            continue;
-        }
-
-        var def = getProperty(definition, k, isClassDescriptor);
-
-        if (def !== false)
-        {
-
-            var parent = extend || ctor;
-
-            if (hasNonConfigurable(parent.prototype, k))
-            {
-
-                if (Class.ignoreFinals)
-                {
-                    continue;
-                }
-
-                throw new Error('cannot override final property \'' + k + '\', set Class.ignoreFinals = true to skip');
-            }
-
-            Object.defineProperty(ctor.prototype, k, def);
-        }
-        else
-        {
-            ctor.prototype[k] = definition[k];
-        }
-    }
+function hasNonConfigurable(obj, k) {
+  var prop = Object.getOwnPropertyDescriptor(obj, k);
+  if (!prop) {
+    return false;
+  }
+  if (prop.value && typeof prop.value === 'object') {
+    prop = prop.value;
+  }
+  if (prop.configurable === false) {
+    return true;
+  }
+  return false;
 }
-
-function mixin (myClass, mixins)
-{
-    if (!mixins)
-    {
-        return;
+function extend(ctor, definition, isClassDescriptor, extend) {
+  for (var k in definition) {
+    if (!definition.hasOwnProperty(k)) {
+      continue;
     }
-
-    if (!Array.isArray(mixins))
-    {
-        mixins = [ mixins ];
-    }
-
-    for (var i = 0; i < mixins.length; i++)
-    {
-        extend(myClass, mixins[i].prototype || mixins[i]);
-    }
-}
-
-function Class (definition)
-{
-    if (!definition)
-    {
-        definition = {};
-    }
-
-    var initialize;
-    var Extends;
-
-    if (definition.initialize)
-    {
-        if (typeof definition.initialize !== 'function')
-        {
-            throw new Error('initialize must be a function');
+    var def = getProperty(definition, k, isClassDescriptor);
+    if (def !== false) {
+      var parent = extend || ctor;
+      if (hasNonConfigurable(parent.prototype, k)) {
+        if (Class.ignoreFinals) {
+          continue;
         }
-
-        initialize = definition.initialize;
-
-        delete definition.initialize;
+        throw new Error(
+          "cannot override final property '" +
+            k +
+            "', set Class.ignoreFinals = true to skip",
+        );
+      }
+      Object.defineProperty(ctor.prototype, k, def);
+    } else {
+      ctor.prototype[k] = definition[k];
     }
-    else if (definition.Extends)
-    {
-        var base = definition.Extends;
-
-        initialize = function ()
-        {
-            base.apply(this, arguments);
-        };
-    }
-    else
-    {
-        initialize = function () {};
-    }
-
-    if (definition.Extends)
-    {
-        initialize.prototype = Object.create(definition.Extends.prototype);
-        initialize.prototype.constructor = initialize;
-
-        Extends = definition.Extends;
-
-        delete definition.Extends;
-    }
-    else
-    {
-        initialize.prototype.constructor = initialize;
-    }
-
-    var mixins = null;
-
-    if (definition.Mixins)
-    {
-        mixins = definition.Mixins;
-        delete definition.Mixins;
-    }
-
-    mixin(initialize, mixins);
-
-    extend(initialize, definition, true, Extends);
-
-    return initialize;
+  }
 }
-
+function mixin(myClass, mixins) {
+  if (!mixins) {
+    return;
+  }
+  if (!Array.isArray(mixins)) {
+    mixins = [mixins];
+  }
+  for (var i = 0; i < mixins.length; i++) {
+    extend(myClass, mixins[i].prototype || mixins[i]);
+  }
+}
+function Class(definition) {
+  if (!definition) {
+    definition = {};
+  }
+  var initialize;
+  var Extends;
+  if (definition.initialize) {
+    if (typeof definition.initialize !== 'function') {
+      throw new Error('initialize must be a function');
+    }
+    initialize = definition.initialize;
+    delete definition.initialize;
+  } else if (definition.Extends) {
+    var base = definition.Extends;
+    initialize = function () {
+      base.apply(this, arguments);
+    };
+  } else {
+    initialize = function () {};
+  }
+  if (definition.Extends) {
+    initialize.prototype = Object.create(definition.Extends.prototype);
+    initialize.prototype.constructor = initialize;
+    Extends = definition.Extends;
+    delete definition.Extends;
+  } else {
+    initialize.prototype.constructor = initialize;
+  }
+  var mixins = null;
+  if (definition.Mixins) {
+    mixins = definition.Mixins;
+    delete definition.Mixins;
+  }
+  mixin(initialize, mixins);
+  extend(initialize, definition, true, Extends);
+  return initialize;
+}
 Class.extend = extend;
 Class.mixin = mixin;
 Class.ignoreFinals = false;
-
 module.exports = Class;

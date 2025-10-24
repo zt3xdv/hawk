@@ -1,1 +1,1 @@
-module.exports = 'fullscreenfailed';
+module.exports = 'fullscreenfailed';

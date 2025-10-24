@@ -1,181 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var CONST = require('../const');
-var File = require('../File');
-var FileTypesManager = require('../FileTypesManager');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-
-
-var SVGFile = new Class({
-
-    Extends: File,
-
-    initialize:
-
-    function SVGFile (loader, key, url, svgConfig, xhrSettings)
-    {
-        var extension = 'svg';
-
-        if (IsPlainObject(key))
-        {
-            var config = key;
-
-            key = GetFastValue(config, 'key');
-            url = GetFastValue(config, 'url');
-            svgConfig = GetFastValue(config, 'svgConfig', {});
-            xhrSettings = GetFastValue(config, 'xhrSettings');
-            extension = GetFastValue(config, 'extension', extension);
-        }
-
-        var fileConfig = {
-            type: 'svg',
-            cache: loader.textureManager,
-            extension: extension,
-            responseType: 'text',
-            key: key,
-            url: url,
-            xhrSettings: xhrSettings,
-            config: {
-                width: GetFastValue(svgConfig, 'width'),
-                height: GetFastValue(svgConfig, 'height'),
-                scale: GetFastValue(svgConfig, 'scale')
-            }
-        };
-
-        File.call(this, loader, fileConfig);
-    },
-
-    
-    onProcess: function ()
-    {
-        this.state = CONST.FILE_PROCESSING;
-
-        var text = this.xhrLoader.responseText;
-        var svg = [ text ];
-        var width = this.config.width;
-        var height = this.config.height;
-        var scale = this.config.scale;
-
-        resize: if (width && height || scale)
-        {
-            var xml = null;
-            var parser = new DOMParser();
-            xml = parser.parseFromString(text, 'text/xml');
-            var svgXML = xml.getElementsByTagName('svg')[0];
-
-            var hasViewBox = svgXML.hasAttribute('viewBox');
-            var svgWidth = parseFloat(svgXML.getAttribute('width'));
-            var svgHeight = parseFloat(svgXML.getAttribute('height'));
-
-            if (!hasViewBox && svgWidth && svgHeight)
-            {
-                //  If there's no viewBox attribute, set one
-                svgXML.setAttribute('viewBox', '0  0 ' + svgWidth + ' ' + svgHeight);
-            }
-            else if (hasViewBox && !svgWidth && !svgHeight)
-            {
-                //  Get the w/h from the viewbox
-                var viewBox = svgXML.getAttribute('viewBox').split(/\s+|,/);
-
-                svgWidth = viewBox[2];
-                svgHeight = viewBox[3];
-            }
-
-            if (scale)
-            {
-                if (svgWidth && svgHeight)
-                {
-                    width = svgWidth * scale;
-                    height = svgHeight * scale;
-                }
-                else
-                {
-                    break resize;
-                }
-            }
-
-            svgXML.setAttribute('width', width.toString() + 'px');
-            svgXML.setAttribute('height', height.toString() + 'px');
-
-            svg = [ (new XMLSerializer()).serializeToString(svgXML) ];
-        }
-
-        try
-        {
-            var blob = new window.Blob(svg, { type: 'image/svg+xml;charset=utf-8' });
-        }
-        catch (e)
-        {
-            this.onProcessError();
-
-            return;
-        }
-
-        this.data = new Image();
-
-        this.data.crossOrigin = this.crossOrigin;
-
-        var _this = this;
-        var retry = false;
-
-        this.data.onload = function ()
-        {
-            if (!retry)
-            {
-                File.revokeObjectURL(_this.data);
-            }
-
-            _this.onProcessComplete();
-        };
-
-        this.data.onerror = function ()
-        {
-            //  Safari 8 re-try
-            if (!retry)
-            {
-                retry = true;
-
-                File.revokeObjectURL(_this.data);
-
-                _this.data.src = 'data:image/svg+xml,' + encodeURIComponent(svg.join(''));
-            }
-            else
-            {
-                _this.onProcessError();
-            }
-        };
-
-        File.createObjectURL(this.data, blob, 'image/svg+xml');
-    },
-
-    
-    addToCache: function ()
-    {
-        this.cache.addImage(this.key, this.data);
-    }
-
-});
-
-
-FileTypesManager.register('svg', function (key, url, svgConfig, xhrSettings)
-{
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object
-            this.addFile(new SVGFile(this, key[i]));
-        }
-    }
-    else
-    {
-        this.addFile(new SVGFile(this, key, url, svgConfig, xhrSettings));
-    }
-
-    return this;
-});
-
-module.exports = SVGFile;
-
+var Class = require('../../utils/Class');var CONST = require('../const');var File = require('../File');var FileTypesManager = require('../FileTypesManager');var GetFastValue = require('../../utils/object/GetFastValue');var IsPlainObject = require('../../utils/object/IsPlainObject');var SVGFile = new Class({    Extends: File,    initialize:    function SVGFile (loader, key, url, svgConfig, xhrSettings)    {        var extension = 'svg';        if (IsPlainObject(key))        {            var config = key;            key = GetFastValue(config, 'key');            url = GetFastValue(config, 'url');            svgConfig = GetFastValue(config, 'svgConfig', {});            xhrSettings = GetFastValue(config, 'xhrSettings');            extension = GetFastValue(config, 'extension', extension);        }        var fileConfig = {            type: 'svg',            cache: loader.textureManager,            extension: extension,            responseType: 'text',            key: key,            url: url,            xhrSettings: xhrSettings,            config: {                width: GetFastValue(svgConfig, 'width'),                height: GetFastValue(svgConfig, 'height'),                scale: GetFastValue(svgConfig, 'scale')            }        };        File.call(this, loader, fileConfig);    },        onProcess: function ()    {        this.state = CONST.FILE_PROCESSING;        var text = this.xhrLoader.responseText;        var svg = [ text ];        var width = this.config.width;        var height = this.config.height;        var scale = this.config.scale;        resize: if (width && height || scale)        {            var xml = null;            var parser = new DOMParser();            xml = parser.parseFromString(text, 'text/xml');            var svgXML = xml.getElementsByTagName('svg')[0];            var hasViewBox = svgXML.hasAttribute('viewBox');            var svgWidth = parseFloat(svgXML.getAttribute('width'));            var svgHeight = parseFloat(svgXML.getAttribute('height'));            if (!hasViewBox && svgWidth && svgHeight)            {                //  If there's no viewBox attribute, set one                svgXML.setAttribute('viewBox', '0  0 ' + svgWidth + ' ' + svgHeight);            }            else if (hasViewBox && !svgWidth && !svgHeight)            {                //  Get the w/h from the viewbox                var viewBox = svgXML.getAttribute('viewBox').split(/\s+|,/);                svgWidth = viewBox[2];                svgHeight = viewBox[3];            }            if (scale)            {                if (svgWidth && svgHeight)                {                    width = svgWidth * scale;                    height = svgHeight * scale;                }                else                {                    break resize;                }            }            svgXML.setAttribute('width', width.toString() + 'px');            svgXML.setAttribute('height', height.toString() + 'px');            svg = [ (new XMLSerializer()).serializeToString(svgXML) ];        }        try        {            var blob = new window.Blob(svg, { type: 'image/svg+xml;charset=utf-8' });        }        catch (e)        {            this.onProcessError();            return;        }        this.data = new Image();        this.data.crossOrigin = this.crossOrigin;        var _this = this;        var retry = false;        this.data.onload = function ()        {            if (!retry)            {                File.revokeObjectURL(_this.data);            }            _this.onProcessComplete();        };        this.data.onerror = function ()        {            //  Safari 8 re-try            if (!retry)            {                retry = true;                File.revokeObjectURL(_this.data);                _this.data.src = 'data:image/svg+xml,' + encodeURIComponent(svg.join(''));            }            else            {                _this.onProcessError();            }        };        File.createObjectURL(this.data, blob, 'image/svg+xml');    },        addToCache: function ()    {        this.cache.addImage(this.key, this.data);    }});FileTypesManager.register('svg', function (key, url, svgConfig, xhrSettings){    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object            this.addFile(new SVGFile(this, key[i]));        }    }    else    {        this.addFile(new SVGFile(this, key, url, svgConfig, xhrSettings));    }    return this;});module.exports = SVGFile;

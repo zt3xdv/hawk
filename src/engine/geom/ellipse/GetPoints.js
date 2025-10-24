@@ -1,25 +1,1 @@
-var Circumference = require('./Circumference');
-var CircumferencePoint = require('./CircumferencePoint');
-var FromPercent = require('../../math/FromPercent');
-var MATH_CONST = require('../../math/const');
-
-var GetPoints = function (ellipse, quantity, stepRate, out)
-{
-    if (out === undefined) { out = []; }
-
-    if (!quantity && stepRate > 0)
-    {
-        quantity = Circumference(ellipse) / stepRate;
-    }
-
-    for (var i = 0; i < quantity; i++)
-    {
-        var angle = FromPercent(i / quantity, 0, MATH_CONST.PI2);
-
-        out.push(CircumferencePoint(ellipse, angle));
-    }
-
-    return out;
-};
-
-module.exports = GetPoints;
+var Circumference = require('./Circumference');var CircumferencePoint = require('./CircumferencePoint');var FromPercent = require('../../math/FromPercent');var MATH_CONST = require('../../math/const');var GetPoints = function (ellipse, quantity, stepRate, out){    if (out === undefined) { out = []; }    if (!quantity && stepRate > 0)    {        quantity = Circumference(ellipse) / stepRate;    }    for (var i = 0; i < quantity; i++)    {        var angle = FromPercent(i / quantity, 0, MATH_CONST.PI2);        out.push(CircumferencePoint(ellipse, angle));    }    return out;};module.exports = GetPoints;

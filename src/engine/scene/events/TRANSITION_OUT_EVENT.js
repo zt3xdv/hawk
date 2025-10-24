@@ -1,1 +1,1 @@
-module.exports = 'transitionout';
+module.exports = 'transitionout';

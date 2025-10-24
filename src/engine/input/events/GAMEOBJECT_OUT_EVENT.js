@@ -1,1 +1,1 @@
-module.exports = 'gameobjectout';
+module.exports = 'gameobjectout';

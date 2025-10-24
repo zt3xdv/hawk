@@ -1,61 +1,1 @@
-var GetFastValue = require('../../../utils/object/GetFastValue');
-var CreateGroupLayer = require('./CreateGroupLayer');
-
-var ParseImageLayers = function (json)
-{
-    var images = [];
-
-    var groupStack = [];
-    var curGroupState = CreateGroupLayer(json);
-
-    while (curGroupState.i < curGroupState.layers.length || groupStack.length > 0)
-    {
-        if (curGroupState.i >= curGroupState.layers.length)
-        {
-
-            if (groupStack.length < 1)
-            {
-                console.warn(
-                    'TilemapParser.parseTiledJSON - Invalid layer group hierarchy'
-                );
-                break;
-            }
-
-            curGroupState = groupStack.pop();
-            continue;
-        }
-
-        var curi = curGroupState.layers[curGroupState.i];
-        curGroupState.i++;
-
-        if (curi.type !== 'imagelayer')
-        {
-            if (curi.type === 'group')
-            {
-
-                var nextGroupState = CreateGroupLayer(json, curi, curGroupState);
-
-                groupStack.push(curGroupState);
-                curGroupState = nextGroupState;
-            }
-
-            continue;
-        }
-
-        var layerOffsetX = GetFastValue(curi, 'offsetx', 0) + GetFastValue(curi, 'startx', 0);
-        var layerOffsetY = GetFastValue(curi, 'offsety', 0) + GetFastValue(curi, 'starty', 0);
-        images.push({
-            name: (curGroupState.name + curi.name),
-            image: curi.image,
-            x: (curGroupState.x + layerOffsetX + curi.x),
-            y: (curGroupState.y + layerOffsetY + curi.y),
-            alpha: (curGroupState.opacity * curi.opacity),
-            visible: (curGroupState.visible && curi.visible),
-            properties: GetFastValue(curi, 'properties', {})
-        });
-    }
-
-    return images;
-};
-
-module.exports = ParseImageLayers;
+var GetFastValue = require('../../../utils/object/GetFastValue');var CreateGroupLayer = require('./CreateGroupLayer');var ParseImageLayers = function (json){    var images = [];    var groupStack = [];    var curGroupState = CreateGroupLayer(json);    while (curGroupState.i < curGroupState.layers.length || groupStack.length > 0)    {        if (curGroupState.i >= curGroupState.layers.length)        {            if (groupStack.length < 1)            {                console.warn(                    'TilemapParser.parseTiledJSON - Invalid layer group hierarchy'                );                break;            }            curGroupState = groupStack.pop();            continue;        }        var curi = curGroupState.layers[curGroupState.i];        curGroupState.i++;        if (curi.type !== 'imagelayer')        {            if (curi.type === 'group')            {                var nextGroupState = CreateGroupLayer(json, curi, curGroupState);                groupStack.push(curGroupState);                curGroupState = nextGroupState;            }            continue;        }        var layerOffsetX = GetFastValue(curi, 'offsetx', 0) + GetFastValue(curi, 'startx', 0);        var layerOffsetY = GetFastValue(curi, 'offsety', 0) + GetFastValue(curi, 'starty', 0);        images.push({            name: (curGroupState.name + curi.name),            image: curi.image,            x: (curGroupState.x + layerOffsetX + curi.x),            y: (curGroupState.y + layerOffsetY + curi.y),            alpha: (curGroupState.opacity * curi.opacity),            visible: (curGroupState.visible && curi.visible),            properties: GetFastValue(curi, 'properties', {})        });    }    return images;};module.exports = ParseImageLayers;

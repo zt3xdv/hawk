@@ -1,1 +1,1 @@
-module.exports = 'connected';
+module.exports = 'connected';

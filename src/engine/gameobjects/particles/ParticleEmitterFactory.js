@@ -1,12 +1,1 @@
-var GameObjectFactory = require('../GameObjectFactory');
-var ParticleEmitter = require('./ParticleEmitter');
-
-GameObjectFactory.register('particles', function (x, y, texture, config)
-{
-    if (x !== undefined && typeof x === 'string')
-    {
-        console.warn('ParticleEmitterManager was removed.');
-    }
-
-    return this.displayList.add(new ParticleEmitter(this.scene, x, y, texture, config));
-});
+var GameObjectFactory = require('../GameObjectFactory');var ParticleEmitter = require('./ParticleEmitter');GameObjectFactory.register('particles', function (x, y, texture, config){    if (x !== undefined && typeof x === 'string')    {        console.warn('ParticleEmitterManager was removed.');    }    return this.displayList.add(new ParticleEmitter(this.scene, x, y, texture, config));});

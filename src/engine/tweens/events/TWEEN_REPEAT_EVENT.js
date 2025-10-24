@@ -1,1 +1,1 @@
-module.exports = 'repeat';
+module.exports = 'repeat';

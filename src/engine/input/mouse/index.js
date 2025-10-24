@@ -1,5 +1,1 @@
-module.exports = {
-
-    MouseManager: require('./MouseManager')
-
-};
+module.exports = {    MouseManager: require('./MouseManager')};

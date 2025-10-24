@@ -1,1 +1,1 @@
-module.exports = 'keycombomatch';
+module.exports = 'keycombomatch';

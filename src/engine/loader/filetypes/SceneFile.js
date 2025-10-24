@@ -1,87 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var CONST = require('../const');
-var File = require('../File');
-var FileTypesManager = require('../FileTypesManager');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-
-
-var SceneFile = new Class({
-
-    Extends: File,
-
-    initialize:
-
-    function SceneFile (loader, key, url, xhrSettings)
-    {
-        var extension = 'js';
-
-        if (IsPlainObject(key))
-        {
-            var config = key;
-
-            key = GetFastValue(config, 'key');
-            url = GetFastValue(config, 'url');
-            xhrSettings = GetFastValue(config, 'xhrSettings');
-            extension = GetFastValue(config, 'extension', extension);
-        }
-
-        var fileConfig = {
-            type: 'text',
-            extension: extension,
-            responseType: 'text',
-            key: key,
-            url: url,
-            xhrSettings: xhrSettings
-        };
-
-        File.call(this, loader, fileConfig);
-    },
-
-    
-    onProcess: function ()
-    {
-        this.state = CONST.FILE_PROCESSING;
-
-        this.data = this.xhrLoader.responseText;
-
-        this.onProcessComplete();
-    },
-
-    
-    addToCache: function ()
-    {
-        var code = this.data.concat('(function(){\n' + 'return new ' + this.key + '();\n' + '}).call(this);');
-
-        //  Stops rollup from freaking out during build
-        var eval2 = eval;
-
-        this.loader.sceneManager.add(this.key, eval2(code));
-
-        this.complete = true;
-    }
-
-});
-
-
-FileTypesManager.register('sceneFile', function (key, url, xhrSettings)
-{
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object
-            this.addFile(new SceneFile(this, key[i]));
-        }
-    }
-    else
-    {
-        this.addFile(new SceneFile(this, key, url, xhrSettings));
-    }
-
-    return this;
-});
-
-module.exports = SceneFile;
+var Class = require('../../utils/Class');var CONST = require('../const');var File = require('../File');var FileTypesManager = require('../FileTypesManager');var GetFastValue = require('../../utils/object/GetFastValue');var IsPlainObject = require('../../utils/object/IsPlainObject');var SceneFile = new Class({    Extends: File,    initialize:    function SceneFile (loader, key, url, xhrSettings)    {        var extension = 'js';        if (IsPlainObject(key))        {            var config = key;            key = GetFastValue(config, 'key');            url = GetFastValue(config, 'url');            xhrSettings = GetFastValue(config, 'xhrSettings');            extension = GetFastValue(config, 'extension', extension);        }        var fileConfig = {            type: 'text',            extension: extension,            responseType: 'text',            key: key,            url: url,            xhrSettings: xhrSettings        };        File.call(this, loader, fileConfig);    },        onProcess: function ()    {        this.state = CONST.FILE_PROCESSING;        this.data = this.xhrLoader.responseText;        this.onProcessComplete();    },        addToCache: function ()    {        var code = this.data.concat('(function(){\n' + 'return new ' + this.key + '();\n' + '}).call(this);');        //  Stops rollup from freaking out during build        var eval2 = eval;        this.loader.sceneManager.add(this.key, eval2(code));        this.complete = true;    }});FileTypesManager.register('sceneFile', function (key, url, xhrSettings){    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object            this.addFile(new SceneFile(this, key[i]));        }    }    else    {        this.addFile(new SceneFile(this, key, url, xhrSettings));    }    return this;});module.exports = SceneFile;

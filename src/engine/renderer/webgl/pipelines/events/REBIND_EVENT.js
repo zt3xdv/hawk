@@ -1,1 +1,1 @@
-module.exports = 'pipelinerebind';
+module.exports = 'pipelinerebind';

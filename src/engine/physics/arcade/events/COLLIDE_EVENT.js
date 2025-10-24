@@ -1,1 +1,1 @@
-module.exports = 'collide';
+module.exports = 'collide';

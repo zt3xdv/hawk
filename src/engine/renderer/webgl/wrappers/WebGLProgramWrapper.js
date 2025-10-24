@@ -1,86 +1,1 @@
-var Class = require('../../../utils/Class');
-
-var WebGLProgramWrapper = new Class({
-
-    initialize:
-
-    function WebGLProgramWrapper (gl, vertexSource, fragmentSource)
-    {
-
-        this.webGLProgram = null;
-
-        this.gl = gl;
-
-        this.vertexSource = vertexSource;
-
-        this.fragmentSource = fragmentSource;
-
-        this.createResource();
-    },
-
-    createResource: function ()
-    {
-        var gl = this.gl;
-
-        if (gl.isContextLost())
-        {
-
-            return;
-        }
-
-        var program = gl.createProgram();
-
-        var vs = gl.createShader(gl.VERTEX_SHADER);
-        var fs = gl.createShader(gl.FRAGMENT_SHADER);
-
-        gl.shaderSource(vs, this.vertexSource);
-        gl.shaderSource(fs, this.fragmentSource);
-
-        gl.compileShader(vs);
-        gl.compileShader(fs);
-
-        var failed = 'Shader failed:\n';
-
-        if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS))
-        {
-            throw new Error('Vertex ' + failed + gl.getShaderInfoLog(vs));
-        }
-
-        if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS))
-        {
-            throw new Error('Fragment ' + failed + gl.getShaderInfoLog(fs));
-        }
-
-        gl.attachShader(program, vs);
-        gl.attachShader(program, fs);
-
-        gl.linkProgram(program);
-
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-        {
-            throw new Error('Link ' + failed + gl.getProgramInfoLog(program));
-        }
-
-        gl.useProgram(program);
-
-        this.webGLProgram = program;
-    },
-
-    destroy: function ()
-    {
-        if (!this.webGLProgram)
-        {
-            return;
-        }
-
-        if (!this.gl.isContextLost())
-        {
-            this.gl.deleteProgram(this.webGLProgram);
-        }
-
-        this.webGLProgram = null;
-        this.gl = null;
-    }
-});
-
-module.exports = WebGLProgramWrapper;
+var Class = require('../../../utils/Class');var WebGLProgramWrapper = new Class({    initialize:    function WebGLProgramWrapper (gl, vertexSource, fragmentSource)    {        this.webGLProgram = null;        this.gl = gl;        this.vertexSource = vertexSource;        this.fragmentSource = fragmentSource;        this.createResource();    },    createResource: function ()    {        var gl = this.gl;        if (gl.isContextLost())        {            return;        }        var program = gl.createProgram();        var vs = gl.createShader(gl.VERTEX_SHADER);        var fs = gl.createShader(gl.FRAGMENT_SHADER);        gl.shaderSource(vs, this.vertexSource);        gl.shaderSource(fs, this.fragmentSource);        gl.compileShader(vs);        gl.compileShader(fs);        var failed = 'Shader failed:\n';        if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS))        {            throw new Error('Vertex ' + failed + gl.getShaderInfoLog(vs));        }        if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS))        {            throw new Error('Fragment ' + failed + gl.getShaderInfoLog(fs));        }        gl.attachShader(program, vs);        gl.attachShader(program, fs);        gl.linkProgram(program);        if (!gl.getProgramParameter(program, gl.LINK_STATUS))        {            throw new Error('Link ' + failed + gl.getProgramInfoLog(program));        }        gl.useProgram(program);        this.webGLProgram = program;    },    destroy: function ()    {        if (!this.webGLProgram)        {            return;        }        if (!this.gl.isContextLost())        {            this.gl.deleteProgram(this.webGLProgram);        }        this.webGLProgram = null;        this.gl = null;    }});module.exports = WebGLProgramWrapper;

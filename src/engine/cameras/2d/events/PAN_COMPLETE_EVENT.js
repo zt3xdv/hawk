@@ -1,1 +1,1 @@
-module.exports = 'camerapancomplete';
+module.exports = 'camerapancomplete';

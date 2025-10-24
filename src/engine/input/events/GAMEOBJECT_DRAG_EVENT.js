@@ -1,1 +1,1 @@
-module.exports = 'drag';
+module.exports = 'drag';

@@ -1,3 +1,139 @@
+import Cache from "./Cache.js";
+
+export * from "./Blob.js";
+
+export function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function getAuth() {
+  return {
+    username: localStorage.getItem('username'),
+    password: localStorage.getItem('password')
+  };
+}
+
+export function apiPost(path, body) {
+  return fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(async r => {
+    const txt = await r.text();
+    try { return JSON.parse(txt); } catch (e) { return { error: 'Invalid JSON response', raw: txt }; }
+  });
+}
+
+export function apiGet(path) {
+  return fetch(path, {
+    method: 'GET',
+  }).then(async r => {
+    const txt = await r.text();
+    try { return JSON.parse(txt); } catch (e) { return { error: 'Invalid JSON response', raw: txt }; }
+  });
+}
+
+export function qs(selector){ return document.querySelector(selector); }
+export function qsa(selector){ return Array.from(document.querySelectorAll(selector)); }
+
+export function getAssets() {
+  return [
+    {
+      type: "image",
+      key: "lightRadial",
+      url: Cache.getBlob("assets/masks/lightMask.png").dataUrl
+    },
+    {
+      type: "image",
+      key: "wah",
+      url: Cache.getBlob("assets/wah.png").dataUrl
+    },
+    {
+      type: "image",
+      key: "props",
+      url: Cache.getBlob("assets/game/props.png").dataUrl
+    },
+    {
+      type: "image",
+      key: "plants",
+      url: Cache.getBlob("assets/game/plants.png").dataUrl
+    },
+    {
+      type: "image",
+      key: "building",
+      url: Cache.getBlob("assets/game/building.png").dataUrl
+    },
+    {
+      type: "image",
+      key: "animated",
+      url: Cache.getBlob("assets/game/animated.png").dataUrl
+    },
+    {
+      type: "image",
+      key: "tilemap",
+      url: Cache.getBlob("assets/tilemap.png").dataUrl
+    },
+    {
+      type: "spritesheet",
+      key: "grass2",
+      url: Cache.getBlob("assets/game/grass2.png").dataUrl,
+      frameConfig: {
+        frameWidth: 32,
+        frameHeight: 32
+      }
+    },
+    {
+      type: "spritesheet",
+      key: "dirt",
+      url: Cache.getBlob("assets/game/dirt.png").dataUrl,
+      frameConfig: {
+        frameWidth: 32,
+        frameHeight: 32
+      }
+    },
+    {
+      type: "spritesheet",
+      key: "flame",
+      url: Cache.getBlob("assets/masks/flame.png").dataUrl,
+      frameConfig: {
+        frameWidth: 32,
+        frameHeight: 32
+      }
+    }
+  ];
+}
+
+export function loadPack(scene, packArray) {
+  const loader = scene.load;
+
+  for (const entry of packArray) {
+    const { type, key, url } = entry;
+    if (type === 'image') {
+      loader.image(key, url);
+    } else if (type === 'spritesheet') {
+      loader.spritesheet(key, url, entry.frameConfig || {});
+    } else if (type === 'audio') {
+      loader.audio(key, url);
+    } else if (type === 'json') {
+      loader.json(key, url);
+    } else {
+      loader.file(key, { type: type || 'image', url });
+    }
+      
+    // TODO add more types
+  }
+}
+
+export function estimateReadTime(text) {
+  const characterCount = text.replace(/\s/g, '').length;
+  return Math.min(120000, Math.max(1000, characterCount * 500));
+}
+
 export function id(length) {
   let number = '';
   for (let i = 0; i < length; i++) {
@@ -33,32 +169,6 @@ export function log(type, message) {
   });
 
   console.log(`${typeColor}${now()} ${type} - ${reset}${msgColor}${coloredAll}${reset}`);
-}
-
-export function dataUrlToBlob(dataUrl) {
-  const parts = dataUrl.split(',');
-  const meta = parts[0];
-  const base64 = parts[1];
-  const isBase64 = meta.indexOf(';base64') !== -1;
-  const mimeMatch = meta.match(/data:([^;]+)/);
-  const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-
-  let arrayBuffer;
-  if (isBase64) {
-      const binary = atob(base64);
-      const len = binary.length;
-      const u8 = new Uint8Array(len);
-      for (let i = 0; i < len; i++) u8[i] = binary.charCodeAt(i);
-      arrayBuffer = u8;
-  } else {
-      const text = decodeURIComponent(parts[1]);
-      const len = text.length;
-      const u8 = new Uint8Array(len);
-      for (let i = 0; i < len; i++) u8[i] = text.charCodeAt(i);
-      arrayBuffer = u8;
-  }
-
-  return new Blob([arrayBuffer], { type: mime });
 }
 
 export function toBase64(file) {
@@ -120,13 +230,6 @@ export async function postJson(url, body) {
   return json;
 }
 
-export function escapeHtml(str) {
-  return String(str || "").replace(/[&<>"']/g, (s) => {
-    const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-    return map[s];
-  });
-}
-
 export function getRandomFromArray(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
@@ -160,4 +263,56 @@ export async function requestInstall() {
 
 export function isInstalled() {
   return window.deferredInstallPrompt;
+}
+
+export function whenTurnstileReady() {
+  return new Promise((resolve) => {
+    if (window.turnstile) return resolve();
+    const check = setInterval(() => {
+      if (window.turnstile) {
+        clearInterval(check);
+        resolve();
+      }
+    }, 50);
+  });
+}
+
+export async function setupTurnstile(callback = (token) => {}) {
+  if (window.turnstileId) window.turnstile.remove(window.turnstileId);
+  
+  const key = await apiGet("/api/game/turnstile");
+  
+  await whenTurnstileReady();
+  window.turnstileId = window.turnstile.render('#turnstile-container', {
+    sitekey: key.key,
+    callback,
+    theme: "dark",
+  });
+}
+
+export async function verifyTurnstile(token, secret) {
+  if (!token) return { ok: false, error: 'missing_token' };
+  if (!secret) return { ok: false, error: 'missing_server_secret' };
+
+  try {
+    const params = new URLSearchParams();
+    params.append('secret', secret);
+    params.append('response', token);
+
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+      timeout: 5000,
+    });
+
+    if (!res.ok) return { ok: false, error: `http_${res.status}` };
+
+    const data = await res.json();
+
+    if (data.success) return { ok: true, data };
+    return { ok: false, error: 'verification_failed', details: data };
+  } catch (err) {
+    return { ok: false, error: 'network_error', details: err.message || String(err) };
+  }
 }

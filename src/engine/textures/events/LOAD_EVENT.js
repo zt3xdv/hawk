@@ -1,1 +1,1 @@
-module.exports = 'onload';
+module.exports = 'onload';

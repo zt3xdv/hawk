@@ -1,162 +1,1 @@
-var Class = require('../../utils/Class');
-var Components = require('../components');
-var GameObject = require('../GameObject');
-var Line = require('../../geom/line/Line');
-
-var Shape = new Class({
-
-    Extends: GameObject,
-
-    Mixins: [
-        Components.AlphaSingle,
-        Components.BlendMode,
-        Components.Depth,
-        Components.GetBounds,
-        Components.Mask,
-        Components.Origin,
-        Components.Pipeline,
-        Components.PostPipeline,
-        Components.ScrollFactor,
-        Components.Transform,
-        Components.Visible
-    ],
-
-    initialize:
-
-    function Shape (scene, type, data)
-    {
-        if (type === undefined) { type = 'Shape'; }
-
-        GameObject.call(this, scene, type);
-
-        this.geom = data;
-
-        this.pathData = [];
-
-        this.pathIndexes = [];
-
-        this.fillColor = 0xffffff;
-
-        this.fillAlpha = 1;
-
-        this.strokeColor = 0xffffff;
-
-        this.strokeAlpha = 1;
-
-        this.lineWidth = 1;
-
-        this.isFilled = false;
-
-        this.isStroked = false;
-
-        this.closePath = true;
-
-        this._tempLine = new Line();
-
-        this.width = 0;
-
-        this.height = 0;
-
-        this.initPipeline();
-        this.initPostPipeline();
-    },
-
-    setFillStyle: function (color, alpha)
-    {
-        if (alpha === undefined) { alpha = 1; }
-
-        if (color === undefined)
-        {
-            this.isFilled = false;
-        }
-        else
-        {
-            this.fillColor = color;
-            this.fillAlpha = alpha;
-            this.isFilled = true;
-        }
-
-        return this;
-    },
-
-    setStrokeStyle: function (lineWidth, color, alpha)
-    {
-        if (alpha === undefined) { alpha = 1; }
-
-        if (lineWidth === undefined)
-        {
-            this.isStroked = false;
-        }
-        else
-        {
-            this.lineWidth = lineWidth;
-            this.strokeColor = color;
-            this.strokeAlpha = alpha;
-            this.isStroked = true;
-        }
-
-        return this;
-    },
-
-    setClosePath: function (value)
-    {
-        this.closePath = value;
-
-        return this;
-    },
-
-    setSize: function (width, height)
-    {
-        this.width = width;
-        this.height = height;
-
-        return this;
-    },
-
-    setDisplaySize: function (width, height)
-    {
-        this.displayWidth = width;
-        this.displayHeight = height;
-
-        return this;
-    },
-
-    preDestroy: function ()
-    {
-        this.geom = null;
-        this._tempLine = null;
-        this.pathData = [];
-        this.pathIndexes = [];
-    },
-
-    displayWidth: {
-
-        get: function ()
-        {
-            return this.scaleX * this.width;
-        },
-
-        set: function (value)
-        {
-            this.scaleX = value / this.width;
-        }
-
-    },
-
-    displayHeight: {
-
-        get: function ()
-        {
-            return this.scaleY * this.height;
-        },
-
-        set: function (value)
-        {
-            this.scaleY = value / this.height;
-        }
-
-    }
-
-});
-
-module.exports = Shape;
+var Class = require('../../utils/Class');var Components = require('../components');var GameObject = require('../GameObject');var Line = require('../../geom/line/Line');var Shape = new Class({    Extends: GameObject,    Mixins: [        Components.AlphaSingle,        Components.BlendMode,        Components.Depth,        Components.GetBounds,        Components.Mask,        Components.Origin,        Components.Pipeline,        Components.PostPipeline,        Components.ScrollFactor,        Components.Transform,        Components.Visible    ],    initialize:    function Shape (scene, type, data)    {        if (type === undefined) { type = 'Shape'; }        GameObject.call(this, scene, type);        this.geom = data;        this.pathData = [];        this.pathIndexes = [];        this.fillColor = 0xffffff;        this.fillAlpha = 1;        this.strokeColor = 0xffffff;        this.strokeAlpha = 1;        this.lineWidth = 1;        this.isFilled = false;        this.isStroked = false;        this.closePath = true;        this._tempLine = new Line();        this.width = 0;        this.height = 0;        this.initPipeline();        this.initPostPipeline();    },    setFillStyle: function (color, alpha)    {        if (alpha === undefined) { alpha = 1; }        if (color === undefined)        {            this.isFilled = false;        }        else        {            this.fillColor = color;            this.fillAlpha = alpha;            this.isFilled = true;        }        return this;    },    setStrokeStyle: function (lineWidth, color, alpha)    {        if (alpha === undefined) { alpha = 1; }        if (lineWidth === undefined)        {            this.isStroked = false;        }        else        {            this.lineWidth = lineWidth;            this.strokeColor = color;            this.strokeAlpha = alpha;            this.isStroked = true;        }        return this;    },    setClosePath: function (value)    {        this.closePath = value;        return this;    },    setSize: function (width, height)    {        this.width = width;        this.height = height;        return this;    },    setDisplaySize: function (width, height)    {        this.displayWidth = width;        this.displayHeight = height;        return this;    },    preDestroy: function ()    {        this.geom = null;        this._tempLine = null;        this.pathData = [];        this.pathIndexes = [];    },    displayWidth: {        get: function ()        {            return this.scaleX * this.width;        },        set: function (value)        {            this.scaleX = value / this.width;        }    },    displayHeight: {        get: function ()        {            return this.scaleY * this.height;        },        set: function (value)        {            this.scaleY = value / this.height;        }    }});module.exports = Shape;

@@ -1,121 +1,1 @@
-var ContainerWebGLRenderer = function (renderer, container, camera, parentMatrix)
-{
-    camera.addToRenderList(container);
-
-    var children = container.list;
-    var childCount = children.length;
-
-    if (childCount === 0)
-    {
-        return;
-    }
-
-    var transformMatrix = container.localTransform;
-
-    if (parentMatrix)
-    {
-        transformMatrix.loadIdentity();
-        transformMatrix.multiply(parentMatrix);
-        transformMatrix.translate(container.x, container.y);
-        transformMatrix.rotate(container.rotation);
-        transformMatrix.scale(container.scaleX, container.scaleY);
-    }
-    else
-    {
-        transformMatrix.applyITRS(container.x, container.y, container.rotation, container.scaleX, container.scaleY);
-    }
-
-    renderer.pipelines.preBatch(container);
-
-    var containerHasBlendMode = (container.blendMode !== -1);
-
-    if (!containerHasBlendMode)
-    {
-
-        renderer.setBlendMode(0);
-    }
-
-    var alpha = container.alpha;
-
-    var scrollFactorX = container.scrollFactorX;
-    var scrollFactorY = container.scrollFactorY;
-
-    for (var i = 0; i < childCount; i++)
-    {
-        var child = children[i];
-
-        if (!child.willRender(camera))
-        {
-            continue;
-        }
-
-        var childAlphaTopLeft;
-        var childAlphaTopRight;
-        var childAlphaBottomLeft;
-        var childAlphaBottomRight;
-
-        if (child.alphaTopLeft !== undefined)
-        {
-            childAlphaTopLeft = child.alphaTopLeft;
-            childAlphaTopRight = child.alphaTopRight;
-            childAlphaBottomLeft = child.alphaBottomLeft;
-            childAlphaBottomRight = child.alphaBottomRight;
-        }
-        else
-        {
-            var childAlpha = child.alpha;
-
-            childAlphaTopLeft = childAlpha;
-            childAlphaTopRight = childAlpha;
-            childAlphaBottomLeft = childAlpha;
-            childAlphaBottomRight = childAlpha;
-        }
-
-        var childScrollFactorX = child.scrollFactorX;
-        var childScrollFactorY = child.scrollFactorY;
-
-        if (!containerHasBlendMode && child.blendMode !== renderer.currentBlendMode)
-        {
-
-            renderer.setBlendMode(child.blendMode);
-        }
-
-        var mask = child.mask;
-
-        if (mask)
-        {
-            mask.preRenderWebGL(renderer, child, camera);
-        }
-
-        var type = child.type;
-
-        if (type !== renderer.currentType)
-        {
-            renderer.newType = true;
-            renderer.currentType = type;
-        }
-
-        renderer.nextTypeMatch = (i < childCount - 1) ? (children[i + 1].type === renderer.currentType) : false;
-
-        child.setScrollFactor(childScrollFactorX * scrollFactorX, childScrollFactorY * scrollFactorY);
-
-        child.setAlpha(childAlphaTopLeft * alpha, childAlphaTopRight * alpha, childAlphaBottomLeft * alpha, childAlphaBottomRight * alpha);
-
-        child.renderWebGL(renderer, child, camera, transformMatrix, container);
-
-        child.setAlpha(childAlphaTopLeft, childAlphaTopRight, childAlphaBottomLeft, childAlphaBottomRight);
-
-        child.setScrollFactor(childScrollFactorX, childScrollFactorY);
-
-        if (mask)
-        {
-            mask.postRenderWebGL(renderer, camera);
-        }
-
-        renderer.newType = false;
-    }
-
-    renderer.pipelines.postBatch(container);
-};
-
-module.exports = ContainerWebGLRenderer;
+var ContainerWebGLRenderer = function (renderer, container, camera, parentMatrix){    camera.addToRenderList(container);    var children = container.list;    var childCount = children.length;    if (childCount === 0)    {        return;    }    var transformMatrix = container.localTransform;    if (parentMatrix)    {        transformMatrix.loadIdentity();        transformMatrix.multiply(parentMatrix);        transformMatrix.translate(container.x, container.y);        transformMatrix.rotate(container.rotation);        transformMatrix.scale(container.scaleX, container.scaleY);    }    else    {        transformMatrix.applyITRS(container.x, container.y, container.rotation, container.scaleX, container.scaleY);    }    renderer.pipelines.preBatch(container);    var containerHasBlendMode = (container.blendMode !== -1);    if (!containerHasBlendMode)    {        renderer.setBlendMode(0);    }    var alpha = container.alpha;    var scrollFactorX = container.scrollFactorX;    var scrollFactorY = container.scrollFactorY;    for (var i = 0; i < childCount; i++)    {        var child = children[i];        if (!child.willRender(camera))        {            continue;        }        var childAlphaTopLeft;        var childAlphaTopRight;        var childAlphaBottomLeft;        var childAlphaBottomRight;        if (child.alphaTopLeft !== undefined)        {            childAlphaTopLeft = child.alphaTopLeft;            childAlphaTopRight = child.alphaTopRight;            childAlphaBottomLeft = child.alphaBottomLeft;            childAlphaBottomRight = child.alphaBottomRight;        }        else        {            var childAlpha = child.alpha;            childAlphaTopLeft = childAlpha;            childAlphaTopRight = childAlpha;            childAlphaBottomLeft = childAlpha;            childAlphaBottomRight = childAlpha;        }        var childScrollFactorX = child.scrollFactorX;        var childScrollFactorY = child.scrollFactorY;        if (!containerHasBlendMode && child.blendMode !== renderer.currentBlendMode)        {            renderer.setBlendMode(child.blendMode);        }        var mask = child.mask;        if (mask)        {            mask.preRenderWebGL(renderer, child, camera);        }        var type = child.type;        if (type !== renderer.currentType)        {            renderer.newType = true;            renderer.currentType = type;        }        renderer.nextTypeMatch = (i < childCount - 1) ? (children[i + 1].type === renderer.currentType) : false;        child.setScrollFactor(childScrollFactorX * scrollFactorX, childScrollFactorY * scrollFactorY);        child.setAlpha(childAlphaTopLeft * alpha, childAlphaTopRight * alpha, childAlphaBottomLeft * alpha, childAlphaBottomRight * alpha);        child.renderWebGL(renderer, child, camera, transformMatrix, container);        child.setAlpha(childAlphaTopLeft, childAlphaTopRight, childAlphaBottomLeft, childAlphaBottomRight);        child.setScrollFactor(childScrollFactorX, childScrollFactorY);        if (mask)        {            mask.postRenderWebGL(renderer, camera);        }        renderer.newType = false;    }    renderer.pipelines.postBatch(container);};module.exports = ContainerWebGLRenderer;

@@ -1,35 +1,1 @@
-var MATH = require('../../math');
-var GetValue = require('./GetValue');
-
-var GetAdvancedValue = function (source, key, defaultValue)
-{
-    var value = GetValue(source, key, null);
-
-    if (value === null)
-    {
-        return defaultValue;
-    }
-    else if (Array.isArray(value))
-    {
-        return MATH.RND.pick(value);
-    }
-    else if (typeof value === 'object')
-    {
-        if (value.hasOwnProperty('randInt'))
-        {
-            return MATH.RND.integerInRange(value.randInt[0], value.randInt[1]);
-        }
-        else if (value.hasOwnProperty('randFloat'))
-        {
-            return MATH.RND.realInRange(value.randFloat[0], value.randFloat[1]);
-        }
-    }
-    else if (typeof value === 'function')
-    {
-        return value(key);
-    }
-
-    return value;
-};
-
-module.exports = GetAdvancedValue;
+var MATH = require('../../math');var GetValue = require('./GetValue');var GetAdvancedValue = function (source, key, defaultValue){    var value = GetValue(source, key, null);    if (value === null)    {        return defaultValue;    }    else if (Array.isArray(value))    {        return MATH.RND.pick(value);    }    else if (typeof value === 'object')    {        if (value.hasOwnProperty('randInt'))        {            return MATH.RND.integerInRange(value.randInt[0], value.randInt[1]);        }        else if (value.hasOwnProperty('randFloat'))        {            return MATH.RND.realInRange(value.randFloat[0], value.randFloat[1]);        }    }    else if (typeof value === 'function')    {        return value(key);    }    return value;};module.exports = GetAdvancedValue;

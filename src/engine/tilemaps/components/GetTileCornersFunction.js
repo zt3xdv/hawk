@@ -1,30 +1,1 @@
-var CONST = require('../const/ORIENTATION_CONST');
-var HexagonalGetTileCorners = require('./HexagonalGetTileCorners');
-var NOOP = require('../../utils/NOOP');
-var GetTileCorners = require('./GetTileCorners');
-
-var GetTileCornersFunction = function (orientation)
-{
-    if (orientation === CONST.ORTHOGONAL)
-    {
-        return GetTileCorners;
-    }
-    else if (orientation === CONST.ISOMETRIC)
-    {
-        return NOOP;
-    }
-    else if (orientation === CONST.HEXAGONAL)
-    {
-        return HexagonalGetTileCorners;
-    }
-    else if (orientation === CONST.STAGGERED)
-    {
-        return NOOP;
-    }
-    else
-    {
-        return NOOP;
-    }
-};
-
-module.exports = GetTileCornersFunction;
+var CONST = require('../const/ORIENTATION_CONST');var HexagonalGetTileCorners = require('./HexagonalGetTileCorners');var NOOP = require('../../utils/NOOP');var GetTileCorners = require('./GetTileCorners');var GetTileCornersFunction = function (orientation){    if (orientation === CONST.ORTHOGONAL)    {        return GetTileCorners;    }    else if (orientation === CONST.ISOMETRIC)    {        return NOOP;    }    else if (orientation === CONST.HEXAGONAL)    {        return HexagonalGetTileCorners;    }    else if (orientation === CONST.STAGGERED)    {        return NOOP;    }    else    {        return NOOP;    }};module.exports = GetTileCornersFunction;

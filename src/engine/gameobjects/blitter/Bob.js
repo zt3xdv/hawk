@@ -1,175 +1,1 @@
-var Class = require('../../utils/Class');
-var Frame = require('../../textures/Frame');
-
-var Bob = new Class({
-
-    initialize:
-
-    function Bob (blitter, x, y, frame, visible)
-    {
-
-        this.parent = blitter;
-
-        this.x = x;
-
-        this.y = y;
-
-        this.frame = frame;
-
-        this.data = {};
-
-        this.tint = 0xffffff;
-
-        this._visible = visible;
-
-        this._alpha = 1;
-
-        this.flipX = false;
-
-        this.flipY = false;
-
-        this.hasTransformComponent = true;
-    },
-
-    setFrame: function (frame)
-    {
-        if (frame === undefined)
-        {
-            this.frame = this.parent.frame;
-        }
-        else if (frame instanceof Frame && frame.texture === this.parent.texture)
-        {
-            this.frame = frame;
-        }
-        else
-        {
-            this.frame = this.parent.texture.get(frame);
-        }
-
-        return this;
-    },
-
-    resetFlip: function ()
-    {
-        this.flipX = false;
-        this.flipY = false;
-
-        return this;
-    },
-
-    reset: function (x, y, frame)
-    {
-        this.x = x;
-        this.y = y;
-
-        this.flipX = false;
-        this.flipY = false;
-
-        this._alpha = 1;
-        this._visible = true;
-
-        this.parent.dirty = true;
-
-        if (frame)
-        {
-            this.setFrame(frame);
-        }
-
-        return this;
-    },
-
-    setPosition: function (x, y)
-    {
-        this.x = x;
-        this.y = y;
-
-        return this;
-    },
-
-    setFlipX: function (value)
-    {
-        this.flipX = value;
-
-        return this;
-    },
-
-    setFlipY: function (value)
-    {
-        this.flipY = value;
-
-        return this;
-    },
-
-    setFlip: function (x, y)
-    {
-        this.flipX = x;
-        this.flipY = y;
-
-        return this;
-    },
-
-    setVisible: function (value)
-    {
-        this.visible = value;
-
-        return this;
-    },
-
-    setAlpha: function (value)
-    {
-        this.alpha = value;
-
-        return this;
-    },
-
-    setTint: function (value)
-    {
-        this.tint = value;
-
-        return this;
-    },
-
-    destroy: function ()
-    {
-        this.parent.dirty = true;
-
-        this.parent.children.remove(this);
-
-        this.parent = undefined;
-        this.frame = undefined;
-        this.data = undefined;
-    },
-
-    visible: {
-
-        get: function ()
-        {
-            return this._visible;
-        },
-
-        set: function (value)
-        {
-            this.parent.dirty |= (this._visible !== value);
-            this._visible = value;
-        }
-
-    },
-
-    alpha: {
-
-        get: function ()
-        {
-            return this._alpha;
-        },
-
-        set: function (value)
-        {
-            this.parent.dirty |= ((this._alpha > 0) !== (value > 0));
-            this._alpha = value;
-        }
-
-    }
-
-});
-
-module.exports = Bob;
+var Class = require('../../utils/Class');var Frame = require('../../textures/Frame');var Bob = new Class({    initialize:    function Bob (blitter, x, y, frame, visible)    {        this.parent = blitter;        this.x = x;        this.y = y;        this.frame = frame;        this.data = {};        this.tint = 0xffffff;        this._visible = visible;        this._alpha = 1;        this.flipX = false;        this.flipY = false;        this.hasTransformComponent = true;    },    setFrame: function (frame)    {        if (frame === undefined)        {            this.frame = this.parent.frame;        }        else if (frame instanceof Frame && frame.texture === this.parent.texture)        {            this.frame = frame;        }        else        {            this.frame = this.parent.texture.get(frame);        }        return this;    },    resetFlip: function ()    {        this.flipX = false;        this.flipY = false;        return this;    },    reset: function (x, y, frame)    {        this.x = x;        this.y = y;        this.flipX = false;        this.flipY = false;        this._alpha = 1;        this._visible = true;        this.parent.dirty = true;        if (frame)        {            this.setFrame(frame);        }        return this;    },    setPosition: function (x, y)    {        this.x = x;        this.y = y;        return this;    },    setFlipX: function (value)    {        this.flipX = value;        return this;    },    setFlipY: function (value)    {        this.flipY = value;        return this;    },    setFlip: function (x, y)    {        this.flipX = x;        this.flipY = y;        return this;    },    setVisible: function (value)    {        this.visible = value;        return this;    },    setAlpha: function (value)    {        this.alpha = value;        return this;    },    setTint: function (value)    {        this.tint = value;        return this;    },    destroy: function ()    {        this.parent.dirty = true;        this.parent.children.remove(this);        this.parent = undefined;        this.frame = undefined;        this.data = undefined;    },    visible: {        get: function ()        {            return this._visible;        },        set: function (value)        {            this.parent.dirty |= (this._visible !== value);            this._visible = value;        }    },    alpha: {        get: function ()        {            return this._alpha;        },        set: function (value)        {            this.parent.dirty |= ((this._alpha > 0) !== (value > 0));            this._alpha = value;        }    }});module.exports = Bob;

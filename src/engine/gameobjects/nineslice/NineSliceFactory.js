@@ -1,10 +1,1 @@
-var NineSlice = require('./NineSlice');
-var GameObjectFactory = require('../GameObjectFactory');
-
-if (typeof WEBGL_RENDERER)
-{
-    GameObjectFactory.register('nineslice', function (x, y, texture, frame, width, height, leftWidth, rightWidth, topHeight, bottomHeight)
-    {
-        return this.displayList.add(new NineSlice(this.scene, x, y, texture, frame, width, height, leftWidth, rightWidth, topHeight, bottomHeight));
-    });
-}
+var NineSlice = require('./NineSlice');var GameObjectFactory = require('../GameObjectFactory');if (typeof WEBGL_RENDERER){    GameObjectFactory.register('nineslice', function (x, y, texture, frame, width, height, leftWidth, rightWidth, topHeight, bottomHeight)    {        return this.displayList.add(new NineSlice(this.scene, x, y, texture, frame, width, height, leftWidth, rightWidth, topHeight, bottomHeight));    });}

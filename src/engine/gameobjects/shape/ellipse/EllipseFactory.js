@@ -1,7 +1,1 @@
-var Ellipse = require('./Ellipse');
-var GameObjectFactory = require('../../GameObjectFactory');
-
-GameObjectFactory.register('ellipse', function (x, y, width, height, fillColor, fillAlpha)
-{
-    return this.displayList.add(new Ellipse(this.scene, x, y, width, height, fillColor, fillAlpha));
-});
+var Ellipse = require('./Ellipse');var GameObjectFactory = require('../../GameObjectFactory');GameObjectFactory.register('ellipse', function (x, y, width, height, fillColor, fillAlpha){    return this.displayList.add(new Ellipse(this.scene, x, y, width, height, fillColor, fillAlpha));});

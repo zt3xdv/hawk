@@ -1,6 +1,4 @@
 module.exports = {
-
-    GenerateTexture: require('./GenerateTexture'),
-    Palettes: require('./palettes')
-
+  GenerateTexture: require('./GenerateTexture'),
+  Palettes: require('./palettes'),
 };

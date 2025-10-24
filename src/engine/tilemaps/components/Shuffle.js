@@ -1,18 +1,1 @@
-var GetTilesWithin = require('./GetTilesWithin');
-var ShuffleArray = require('../../utils/array/Shuffle');
-
-var Shuffle = function (tileX, tileY, width, height, layer)
-{
-    var tiles = GetTilesWithin(tileX, tileY, width, height, null, layer);
-
-    var indexes = tiles.map(function (tile) { return tile.index; });
-
-    ShuffleArray(indexes);
-
-    for (var i = 0; i < tiles.length; i++)
-    {
-        tiles[i].index = indexes[i];
-    }
-};
-
-module.exports = Shuffle;
+var GetTilesWithin = require('./GetTilesWithin');var ShuffleArray = require('../../utils/array/Shuffle');var Shuffle = function (tileX, tileY, width, height, layer){    var tiles = GetTilesWithin(tileX, tileY, width, height, null, layer);    var indexes = tiles.map(function (tile) { return tile.index; });    ShuffleArray(indexes);    for (var i = 0; i < tiles.length; i++)    {        tiles[i].index = indexes[i];    }};module.exports = Shuffle;

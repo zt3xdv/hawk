@@ -1,4 +1,1 @@
-
-
-
-module.exports = 'filecomplete-';
+module.exports = 'filecomplete-';

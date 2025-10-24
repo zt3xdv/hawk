@@ -1,4 +1,1 @@
-
-
-
-module.exports = 'loaderror';
+module.exports = 'loaderror';

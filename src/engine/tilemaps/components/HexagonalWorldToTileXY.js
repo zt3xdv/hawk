@@ -1,89 +1,1 @@
-var Vector2 = require('../../math/Vector2');
-
-var HexagonalWorldToTileXY = function (worldX, worldY, snapToFloor, point, camera, layer)
-{
-    if (!point) { point = new Vector2(); }
-
-    var tileWidth = layer.baseTileWidth;
-    var tileHeight = layer.baseTileHeight;
-    var tilemapLayer = layer.tilemapLayer;
-
-    if (tilemapLayer)
-    {
-        if (!camera) { camera = tilemapLayer.scene.cameras.main; }
-
-        worldX = worldX - (tilemapLayer.x + camera.scrollX * (1 - tilemapLayer.scrollFactorX));
-        worldY = worldY - (tilemapLayer.y + camera.scrollY * (1 - tilemapLayer.scrollFactorY));
-
-        tileWidth *= tilemapLayer.scaleX;
-        tileHeight *= tilemapLayer.scaleY;
-    }
-
-    var b0 = 0.5773502691896257; 
-    var b1 = -0.3333333333333333; 
-    var b2 = 0;
-    var b3 = 0.6666666666666666; 
-
-    var tileWidthHalf = tileWidth / 2;
-    var tileHeightHalf = tileHeight / 2;
-
-    var px;
-    var py;
-    var q;
-    var r;
-    var s;
-
-    if (layer.staggerAxis === 'y')
-    {
-
-        px = (worldX - tileWidthHalf) / (b0 * tileWidth);
-        py = (worldY - tileHeightHalf) / tileHeightHalf;
-
-        q = b0 * px + b1 * py;
-        r = b2 * px + b3 * py;
-    }
-    else
-    {
-
-        px = (worldX - tileWidthHalf) / tileWidthHalf;
-        py = (worldY - tileHeightHalf) / (b0 * tileHeight);
-
-        q = b1 * px + b0 * py;
-        r = b3 * px + b2 * py;
-    }
-
-    s = -q - r;
-
-    var qi = Math.round(q);
-    var ri = Math.round(r);
-    var si = Math.round(s);
-
-    var qDiff = Math.abs(qi - q);
-    var rDiff = Math.abs(ri - r);
-    var sDiff = Math.abs(si - s);
-
-    if (qDiff > rDiff && qDiff > sDiff)
-    {
-        qi = -ri - si;
-    }
-    else if (rDiff > sDiff)
-    {
-        ri = -qi - si;
-    }
-
-    var x;
-    var y = ri;
-
-    if (layer.staggerIndex === 'odd')
-    {
-        x = (y % 2 === 0) ? (ri / 2) + qi : (ri / 2) + qi - 0.5;
-    }
-    else
-    {
-        x = (y % 2 === 0) ? (ri / 2) + qi : (ri / 2) + qi + 0.5;
-    }
-
-    return point.set(x, y);
-};
-
-module.exports = HexagonalWorldToTileXY;
+var Vector2 = require('../../math/Vector2');var HexagonalWorldToTileXY = function (worldX, worldY, snapToFloor, point, camera, layer){    if (!point) { point = new Vector2(); }    var tileWidth = layer.baseTileWidth;    var tileHeight = layer.baseTileHeight;    var tilemapLayer = layer.tilemapLayer;    if (tilemapLayer)    {        if (!camera) { camera = tilemapLayer.scene.cameras.main; }        worldX = worldX - (tilemapLayer.x + camera.scrollX * (1 - tilemapLayer.scrollFactorX));        worldY = worldY - (tilemapLayer.y + camera.scrollY * (1 - tilemapLayer.scrollFactorY));        tileWidth *= tilemapLayer.scaleX;        tileHeight *= tilemapLayer.scaleY;    }    var b0 = 0.5773502691896257;     var b1 = -0.3333333333333333;     var b2 = 0;    var b3 = 0.6666666666666666;     var tileWidthHalf = tileWidth / 2;    var tileHeightHalf = tileHeight / 2;    var px;    var py;    var q;    var r;    var s;    if (layer.staggerAxis === 'y')    {        px = (worldX - tileWidthHalf) / (b0 * tileWidth);        py = (worldY - tileHeightHalf) / tileHeightHalf;        q = b0 * px + b1 * py;        r = b2 * px + b3 * py;    }    else    {        px = (worldX - tileWidthHalf) / tileWidthHalf;        py = (worldY - tileHeightHalf) / (b0 * tileHeight);        q = b1 * px + b0 * py;        r = b3 * px + b2 * py;    }    s = -q - r;    var qi = Math.round(q);    var ri = Math.round(r);    var si = Math.round(s);    var qDiff = Math.abs(qi - q);    var rDiff = Math.abs(ri - r);    var sDiff = Math.abs(si - s);    if (qDiff > rDiff && qDiff > sDiff)    {        qi = -ri - si;    }    else if (rDiff > sDiff)    {        ri = -qi - si;    }    var x;    var y = ri;    if (layer.staggerIndex === 'odd')    {        x = (y % 2 === 0) ? (ri / 2) + qi : (ri / 2) + qi - 0.5;    }    else    {        x = (y % 2 === 0) ? (ri / 2) + qi : (ri / 2) + qi + 0.5;    }    return point.set(x, y);};module.exports = HexagonalWorldToTileXY;

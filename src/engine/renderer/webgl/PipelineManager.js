@@ -1,714 +1,1 @@
-var Class = require('../../utils/Class');
-var CONST = require('./pipelines/const');
-var CustomMap = require('../../structs/Map');
-var Device = require('../../device/');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var RenderTarget = require('./RenderTarget');
-var SnapCeil = require('../../math/snap/SnapCeil');
-
-var BitmapMaskPipeline = require('./pipelines/BitmapMaskPipeline');
-var FX = require('./pipelines/fx');
-var FX_CONST = require('../../fx/const');
-var FXPipeline = require('./pipelines/FXPipeline');
-var LightPipeline = require('./pipelines/LightPipeline');
-var MobilePipeline = require('./pipelines/MobilePipeline');
-var MultiPipeline = require('./pipelines/MultiPipeline');
-var PointLightPipeline = require('./pipelines/PointLightPipeline');
-var RopePipeline = require('./pipelines/RopePipeline');
-var SinglePipeline = require('./pipelines/SinglePipeline');
-var UtilityPipeline = require('./pipelines/UtilityPipeline');
-var ArrayEach = require('../../utils/array/Each');
-var ArrayRemove = require('../../utils/array/Remove');
-
-var PipelineManager = new Class({
-
-    initialize:
-
-    function PipelineManager (renderer)
-    {
-
-        this.game = renderer.game;
-
-        this.renderer = renderer;
-
-        this.classes = new CustomMap([
-            [ CONST.UTILITY_PIPELINE, UtilityPipeline ],
-            [ CONST.MULTI_PIPELINE, MultiPipeline ],
-            [ CONST.BITMAPMASK_PIPELINE, BitmapMaskPipeline ],
-            [ CONST.SINGLE_PIPELINE, SinglePipeline ],
-            [ CONST.ROPE_PIPELINE, RopePipeline ],
-            [ CONST.LIGHT_PIPELINE, LightPipeline ],
-            [ CONST.POINTLIGHT_PIPELINE, PointLightPipeline ],
-            [ CONST.MOBILE_PIPELINE, MobilePipeline ]
-        ]);
-
-        this.postPipelineClasses = new CustomMap();
-
-        this.pipelines = new CustomMap();
-
-        this.postPipelineInstances = [];
-
-        this.default = null;
-
-        this.current = null;
-
-        this.previous = null;
-
-        this.MULTI_PIPELINE = null;
-
-        this.BITMAPMASK_PIPELINE = null;
-
-        this.UTILITY_PIPELINE = null;
-
-        this.MOBILE_PIPELINE = null;
-
-        this.FX_PIPELINE = null;
-
-        this.fullFrame1;
-
-        this.fullFrame2;
-
-        this.halfFrame1;
-
-        this.halfFrame2;
-
-        this.renderTargets = [];
-
-        this.maxDimension = 0;
-
-        this.frameInc = 32;
-
-        this.targetIndex = 0;
-    },
-
-    boot: function (pipelineConfig, defaultPipeline, autoMobilePipeline)
-    {
-
-        var renderer = this.renderer;
-        var targets = this.renderTargets;
-
-        this.frameInc = Math.floor(GetFastValue(pipelineConfig, 'frameInc', 32));
-
-        var renderWidth = renderer.width;
-        var renderHeight = renderer.height;
-
-        var disablePreFX = this.game.config.disablePreFX;
-        var disablePostFX = this.game.config.disablePostFX;
-
-        if (!disablePostFX)
-        {
-            this.postPipelineClasses.setAll([
-                [ String(FX_CONST.BARREL), FX.Barrel ],
-                [ String(FX_CONST.BLOOM), FX.Bloom ],
-                [ String(FX_CONST.BLUR), FX.Blur ],
-                [ String(FX_CONST.BOKEH), FX.Bokeh ],
-                [ String(FX_CONST.CIRCLE), FX.Circle ],
-                [ String(FX_CONST.COLOR_MATRIX), FX.ColorMatrix ],
-                [ String(FX_CONST.DISPLACEMENT), FX.Displacement ],
-                [ String(FX_CONST.GLOW), FX.Glow ],
-                [ String(FX_CONST.GRADIENT), FX.Gradient ],
-                [ String(FX_CONST.PIXELATE), FX.Pixelate ],
-                [ String(FX_CONST.SHADOW), FX.Shadow ],
-                [ String(FX_CONST.SHINE), FX.Shine ],
-                [ String(FX_CONST.VIGNETTE), FX.Vignette ],
-                [ String(FX_CONST.WIPE), FX.Wipe ]
-            ]);
-        }
-
-        if (!disablePreFX)
-        {
-            this.classes.set(CONST.FX_PIPELINE, FXPipeline);
-
-            var minDimension = Math.min(renderWidth, renderHeight);
-
-            var qty = Math.ceil(minDimension / this.frameInc);
-
-            for (var i = 1; i < qty; i++)
-            {
-                var targetWidth = i * this.frameInc;
-
-                targets.push(new RenderTarget(renderer, targetWidth, targetWidth));
-
-                targets.push(new RenderTarget(renderer, targetWidth, targetWidth));
-
-                targets.push(new RenderTarget(renderer, targetWidth, targetWidth));
-
-                this.maxDimension = targetWidth;
-            }
-
-            targets.push(new RenderTarget(renderer, renderWidth, renderHeight, 1, 0, true, true));
-            targets.push(new RenderTarget(renderer, renderWidth, renderHeight, 1, 0, true, true));
-            targets.push(new RenderTarget(renderer, renderWidth, renderHeight, 1, 0, true, true));
-        }
-
-        var instance;
-        var pipelineName;
-
-        var _this = this;
-        var game = this.game;
-
-        this.classes.each(function (pipelineName, pipeline)
-        {
-            instance = _this.add(pipelineName, new pipeline({ game: game }));
-
-            if (pipelineName === CONST.UTILITY_PIPELINE)
-            {
-                _this.UTILITY_PIPELINE = instance;
-
-                _this.fullFrame1 = instance.fullFrame1;
-                _this.fullFrame2 = instance.fullFrame2;
-                _this.halfFrame1 = instance.halfFrame1;
-                _this.halfFrame2 = instance.halfFrame2;
-            }
-        });
-
-        this.MULTI_PIPELINE = this.get(CONST.MULTI_PIPELINE);
-        this.BITMAPMASK_PIPELINE = this.get(CONST.BITMAPMASK_PIPELINE);
-        this.MOBILE_PIPELINE = this.get(CONST.MOBILE_PIPELINE);
-
-        if (!disablePreFX)
-        {
-            this.FX_PIPELINE = this.get(CONST.FX_PIPELINE);
-        }
-
-        if (pipelineConfig)
-        {
-            for (pipelineName in pipelineConfig)
-            {
-                var pipelineClass = pipelineConfig[pipelineName];
-
-                instance = new pipelineClass(game);
-
-                instance.name = pipelineName;
-
-                if (instance.isPostFX)
-                {
-                    this.postPipelineClasses.set(pipelineName, pipelineClass);
-                }
-                else if (!this.has(pipelineName))
-                {
-                    this.classes.set(pipelineName, pipelineClass);
-
-                    this.add(pipelineName, instance);
-                }
-            }
-        }
-
-        this.default = this.get(defaultPipeline);
-
-        if (autoMobilePipeline && !Device.os.desktop)
-        {
-            this.default = this.MOBILE_PIPELINE;
-        }
-    },
-
-    setDefaultPipeline: function (pipeline)
-    {
-        var instance = this.get(pipeline);
-
-        if (instance)
-        {
-            this.default = instance;
-        }
-
-        return instance;
-    },
-
-    add: function (name, pipeline)
-    {
-        if (pipeline.isPostFX)
-        {
-            console.warn(name + ' is a Post Pipeline. Use `addPostPipeline` instead');
-
-            return;
-        }
-
-        var pipelines = this.pipelines;
-        var renderer = this.renderer;
-
-        if (!pipelines.has(name))
-        {
-            pipeline.name = name;
-            pipeline.manager = this;
-
-            pipelines.set(name, pipeline);
-        }
-        else
-        {
-            console.warn('Pipeline exists: ' + name);
-        }
-
-        if (!pipeline.hasBooted)
-        {
-            pipeline.boot();
-        }
-
-        if (renderer.width !== 0 && renderer.height !== 0 && !pipeline.isPreFX)
-        {
-            pipeline.resize(renderer.width, renderer.height);
-        }
-
-        return pipeline;
-    },
-
-    addPostPipeline: function (name, pipeline)
-    {
-        if (!this.postPipelineClasses.has(name))
-        {
-            this.postPipelineClasses.set(name, pipeline);
-        }
-    },
-
-    flush: function ()
-    {
-        if (this.current)
-        {
-            this.current.flush();
-        }
-    },
-
-    has: function (pipeline)
-    {
-        var pipelines = this.pipelines;
-
-        if (typeof pipeline === 'string')
-        {
-            return pipelines.has(pipeline);
-        }
-        else if (pipelines.contains(pipeline))
-        {
-            return true;
-        }
-
-        return false;
-    },
-
-    get: function (pipeline)
-    {
-        var pipelines = this.pipelines;
-
-        if (typeof pipeline === 'string')
-        {
-            return pipelines.get(pipeline);
-        }
-        else if (pipelines.contains(pipeline))
-        {
-            return pipeline;
-        }
-    },
-
-    getPostPipeline: function (pipeline, gameObject, config)
-    {
-        var pipelineClasses = this.postPipelineClasses;
-
-        var instance;
-        var pipelineName = '';
-        var pipetype = typeof pipeline;
-
-        if (pipetype === 'string' || pipetype === 'number')
-        {
-            instance = pipelineClasses.get(pipeline);
-            pipelineName = pipeline;
-        }
-        else if (pipetype === 'function')
-        {
-
-            if (pipelineClasses.contains(pipeline))
-            {
-                instance = pipeline;
-            }
-
-            pipelineName = pipeline.name;
-        }
-        else if (pipetype === 'object')
-        {
-
-            instance = pipelineClasses.get(pipeline.name);
-
-            pipelineName = pipeline.name;
-        }
-
-        if (instance)
-        {
-            var newPipeline = new instance(this.game, config);
-
-            newPipeline.name = pipelineName;
-
-            if (gameObject)
-            {
-                newPipeline.gameObject = gameObject;
-            }
-
-            this.postPipelineInstances.push(newPipeline);
-
-            return newPipeline;
-        }
-    },
-
-    removePostPipeline: function (pipeline)
-    {
-        ArrayRemove(this.postPipelineInstances, pipeline);
-    },
-
-    remove: function (name, removeClass, removePostPipelineClass)
-    {
-        if (removeClass === undefined) { removeClass = true; }
-        if (removePostPipelineClass === undefined) { removePostPipelineClass = true; }
-
-        this.pipelines.delete(name);
-
-        if (removeClass)
-        {
-            this.classes.delete(name);
-        }
-
-        if (removePostPipelineClass)
-        {
-            this.postPipelineClasses.delete(name);
-        }
-    },
-
-    set: function (pipeline, gameObject, currentShader)
-    {
-        if (pipeline.isPostFX)
-        {
-            return;
-        }
-
-        if (!this.isCurrent(pipeline, currentShader))
-        {
-            this.flush();
-
-            if (this.current)
-            {
-                this.current.unbind();
-            }
-
-            this.current = pipeline;
-
-            pipeline.bind(currentShader);
-        }
-
-        pipeline.updateProjectionMatrix();
-
-        pipeline.onBind(gameObject);
-
-        return pipeline;
-    },
-
-    preBatch: function (gameObject)
-    {
-        if (gameObject.hasPostPipeline)
-        {
-            this.flush();
-
-            var pipelines = gameObject.postPipelines;
-
-            for (var i = pipelines.length - 1; i >= 0; i--)
-            {
-                var pipeline = pipelines[i];
-
-                if (pipeline.active)
-                {
-                    pipeline.preBatch(gameObject);
-                }
-            }
-        }
-    },
-
-    postBatch: function (gameObject)
-    {
-        if (gameObject.hasPostPipeline)
-        {
-            this.flush();
-
-            var pipelines = gameObject.postPipelines;
-
-            for (var i = 0; i < pipelines.length; i++)
-            {
-                var pipeline = pipelines[i];
-
-                if (pipeline.active)
-                {
-                    pipeline.postBatch(gameObject);
-                }
-            }
-        }
-    },
-
-    preBatchCamera: function (camera)
-    {
-        if (camera.hasPostPipeline)
-        {
-            this.flush();
-
-            var pipelines = camera.postPipelines;
-
-            for (var i = pipelines.length - 1; i >= 0; i--)
-            {
-                var pipeline = pipelines[i];
-
-                if (pipeline.active)
-                {
-                    pipeline.preBatch(camera);
-                }
-            }
-        }
-    },
-
-    postBatchCamera: function (camera)
-    {
-        if (camera.hasPostPipeline)
-        {
-            this.flush();
-
-            var pipelines = camera.postPipelines;
-
-            for (var i = 0; i < pipelines.length; i++)
-            {
-                var pipeline = pipelines[i];
-
-                if (pipeline.active)
-                {
-                    pipeline.postBatch(camera);
-                }
-            }
-        }
-    },
-
-    isCurrent: function (pipeline, currentShader)
-    {
-        var renderer = this.renderer;
-        var current = this.current;
-
-        if (current && !currentShader)
-        {
-            currentShader = current.currentShader;
-        }
-
-        return !(current !== pipeline || currentShader.program !== renderer.currentProgram);
-    },
-
-    copyFrame: function (source, target, brightness, clear, clearAlpha)
-    {
-        this.setUtility(this.UTILITY_PIPELINE.copyShader).copyFrame(source, target, brightness, clear, clearAlpha);
-
-        return this;
-    },
-
-    copyToGame: function (source)
-    {
-        this.setUtility(this.UTILITY_PIPELINE.copyShader).copyToGame(source);
-
-        return this;
-    },
-
-    drawFrame: function (source, target, clearAlpha, colorMatrix)
-    {
-        this.setUtility(this.UTILITY_PIPELINE.colorMatrixShader).drawFrame(source, target, clearAlpha, colorMatrix);
-
-        return this;
-    },
-
-    blendFrames: function (source1, source2, target, strength, clearAlpha)
-    {
-        this.setUtility(this.UTILITY_PIPELINE.linearShader).blendFrames(source1, source2, target, strength, clearAlpha);
-
-        return this;
-    },
-
-    blendFramesAdditive: function (source1, source2, target, strength, clearAlpha)
-    {
-        this.setUtility(this.UTILITY_PIPELINE.addShader).blendFramesAdditive(source1, source2, target, strength, clearAlpha);
-
-        return this;
-    },
-
-    clearFrame: function (target, clearAlpha)
-    {
-        this.UTILITY_PIPELINE.clearFrame(target, clearAlpha);
-
-        return this;
-    },
-
-    blitFrame: function (source, target, brightness, clear, clearAlpha, eraseMode)
-    {
-        this.setUtility(this.UTILITY_PIPELINE.copyShader).blitFrame(source, target, brightness, clear, clearAlpha, eraseMode);
-
-        return this;
-    },
-
-    copyFrameRect: function (source, target, x, y, width, height, clear, clearAlpha)
-    {
-        this.UTILITY_PIPELINE.copyFrameRect(source, target, x, y, width, height, clear, clearAlpha);
-
-        return this;
-    },
-
-    forceZero: function ()
-    {
-        return (this.current && this.current.forceZero);
-    },
-
-    setMulti: function ()
-    {
-        return this.set(this.MULTI_PIPELINE);
-    },
-
-    setUtility: function (currentShader)
-    {
-        return this.UTILITY_PIPELINE.bind(currentShader);
-    },
-
-    setFX: function ()
-    {
-        return this.set(this.FX_PIPELINE);
-    },
-
-    restoreContext: function ()
-    {
-        this.rebind();
-        this.pipelines.each(function (_, pipeline)
-        {
-            pipeline.restoreContext();
-        });
-        ArrayEach(this.postPipelineInstances, function (pipeline)
-        {
-            pipeline.restoreContext();
-        });
-    },
-
-    rebind: function (pipeline)
-    {
-        if (pipeline === undefined && this.previous)
-        {
-            pipeline = this.previous;
-        }
-
-        var renderer = this.renderer;
-        var gl = renderer.gl;
-
-        gl.disable(gl.DEPTH_TEST);
-        gl.disable(gl.CULL_FACE);
-
-        if (renderer.hasActiveStencilMask())
-        {
-            gl.clear(gl.DEPTH_BUFFER_BIT);
-        }
-        else
-        {
-
-            gl.disable(gl.STENCIL_TEST);
-            gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-        }
-
-        gl.viewport(0, 0, renderer.width, renderer.height);
-
-        renderer.currentProgram = null;
-
-        renderer.setBlendMode(0, true);
-
-        var vao = renderer.vaoExtension;
-
-        if (vao)
-        {
-            vao.bindVertexArrayOES(null);
-        }
-
-        var entries = this.pipelines.entries;
-
-        for (var key in entries)
-        {
-            entries[key].glReset = true;
-        }
-
-        if (pipeline)
-        {
-            this.current = pipeline;
-
-            pipeline.rebind();
-        }
-    },
-
-    clear: function ()
-    {
-        var renderer = this.renderer;
-
-        this.flush();
-
-        if (this.current)
-        {
-            this.current.unbind();
-            this.previous = this.current;
-            this.current = null;
-        }
-        else
-        {
-            this.previous = null;
-        }
-
-        renderer.currentProgram = null;
-
-        renderer.setBlendMode(0, true);
-
-        var vao = renderer.vaoExtension;
-
-        if (vao)
-        {
-            vao.bindVertexArrayOES(null);
-        }
-    },
-
-    getRenderTarget: function (size)
-    {
-        var targets = this.renderTargets;
-
-        var offset = 3;
-
-        if (size > this.maxDimension)
-        {
-            this.targetIndex = targets.length - offset;
-
-            return targets[this.targetIndex];
-        }
-        else
-        {
-            var index = (SnapCeil(size, this.frameInc, 0, true) - 1) * offset;
-
-            this.targetIndex = index;
-
-            return targets[index];
-        }
-    },
-
-    getSwapRenderTarget: function ()
-    {
-        return this.renderTargets[this.targetIndex + 1];
-    },
-
-    getAltSwapRenderTarget: function ()
-    {
-        return this.renderTargets[this.targetIndex + 2];
-    },
-
-    destroy: function ()
-    {
-        this.flush();
-
-        this.classes.clear();
-        this.postPipelineClasses.clear();
-        this.pipelines.clear();
-
-        this.renderer = null;
-        this.game = null;
-        this.classes = null;
-        this.postPipelineClasses = null;
-        this.pipelines = null;
-        this.default = null;
-        this.current = null;
-        this.previous = null;
-    }
-
-});
-
-module.exports = PipelineManager;
+var Class = require('../../utils/Class');var CONST = require('./pipelines/const');var CustomMap = require('../../structs/Map');var Device = require('../../device/');var GetFastValue = require('../../utils/object/GetFastValue');var RenderTarget = require('./RenderTarget');var SnapCeil = require('../../math/snap/SnapCeil');var BitmapMaskPipeline = require('./pipelines/BitmapMaskPipeline');var FX = require('./pipelines/fx');var FX_CONST = require('../../fx/const');var FXPipeline = require('./pipelines/FXPipeline');var LightPipeline = require('./pipelines/LightPipeline');var MobilePipeline = require('./pipelines/MobilePipeline');var MultiPipeline = require('./pipelines/MultiPipeline');var PointLightPipeline = require('./pipelines/PointLightPipeline');var RopePipeline = require('./pipelines/RopePipeline');var SinglePipeline = require('./pipelines/SinglePipeline');var UtilityPipeline = require('./pipelines/UtilityPipeline');var ArrayEach = require('../../utils/array/Each');var ArrayRemove = require('../../utils/array/Remove');var PipelineManager = new Class({    initialize:    function PipelineManager (renderer)    {        this.game = renderer.game;        this.renderer = renderer;        this.classes = new CustomMap([            [ CONST.UTILITY_PIPELINE, UtilityPipeline ],            [ CONST.MULTI_PIPELINE, MultiPipeline ],            [ CONST.BITMAPMASK_PIPELINE, BitmapMaskPipeline ],            [ CONST.SINGLE_PIPELINE, SinglePipeline ],            [ CONST.ROPE_PIPELINE, RopePipeline ],            [ CONST.LIGHT_PIPELINE, LightPipeline ],            [ CONST.POINTLIGHT_PIPELINE, PointLightPipeline ],            [ CONST.MOBILE_PIPELINE, MobilePipeline ]        ]);        this.postPipelineClasses = new CustomMap();        this.pipelines = new CustomMap();        this.postPipelineInstances = [];        this.default = null;        this.current = null;        this.previous = null;        this.MULTI_PIPELINE = null;        this.BITMAPMASK_PIPELINE = null;        this.UTILITY_PIPELINE = null;        this.MOBILE_PIPELINE = null;        this.FX_PIPELINE = null;        this.fullFrame1;        this.fullFrame2;        this.halfFrame1;        this.halfFrame2;        this.renderTargets = [];        this.maxDimension = 0;        this.frameInc = 32;        this.targetIndex = 0;    },    boot: function (pipelineConfig, defaultPipeline, autoMobilePipeline)    {        var renderer = this.renderer;        var targets = this.renderTargets;        this.frameInc = Math.floor(GetFastValue(pipelineConfig, 'frameInc', 32));        var renderWidth = renderer.width;        var renderHeight = renderer.height;        var disablePreFX = this.game.config.disablePreFX;        var disablePostFX = this.game.config.disablePostFX;        if (!disablePostFX)        {            this.postPipelineClasses.setAll([                [ String(FX_CONST.BARREL), FX.Barrel ],                [ String(FX_CONST.BLOOM), FX.Bloom ],                [ String(FX_CONST.BLUR), FX.Blur ],                [ String(FX_CONST.BOKEH), FX.Bokeh ],                [ String(FX_CONST.CIRCLE), FX.Circle ],                [ String(FX_CONST.COLOR_MATRIX), FX.ColorMatrix ],                [ String(FX_CONST.DISPLACEMENT), FX.Displacement ],                [ String(FX_CONST.GLOW), FX.Glow ],                [ String(FX_CONST.GRADIENT), FX.Gradient ],                [ String(FX_CONST.PIXELATE), FX.Pixelate ],                [ String(FX_CONST.SHADOW), FX.Shadow ],                [ String(FX_CONST.SHINE), FX.Shine ],                [ String(FX_CONST.VIGNETTE), FX.Vignette ],                [ String(FX_CONST.WIPE), FX.Wipe ]            ]);        }        if (!disablePreFX)        {            this.classes.set(CONST.FX_PIPELINE, FXPipeline);            var minDimension = Math.min(renderWidth, renderHeight);            var qty = Math.ceil(minDimension / this.frameInc);            for (var i = 1; i < qty; i++)            {                var targetWidth = i * this.frameInc;                targets.push(new RenderTarget(renderer, targetWidth, targetWidth));                targets.push(new RenderTarget(renderer, targetWidth, targetWidth));                targets.push(new RenderTarget(renderer, targetWidth, targetWidth));                this.maxDimension = targetWidth;            }            targets.push(new RenderTarget(renderer, renderWidth, renderHeight, 1, 0, true, true));            targets.push(new RenderTarget(renderer, renderWidth, renderHeight, 1, 0, true, true));            targets.push(new RenderTarget(renderer, renderWidth, renderHeight, 1, 0, true, true));        }        var instance;        var pipelineName;        var _this = this;        var game = this.game;        this.classes.each(function (pipelineName, pipeline)        {            instance = _this.add(pipelineName, new pipeline({ game: game }));            if (pipelineName === CONST.UTILITY_PIPELINE)            {                _this.UTILITY_PIPELINE = instance;                _this.fullFrame1 = instance.fullFrame1;                _this.fullFrame2 = instance.fullFrame2;                _this.halfFrame1 = instance.halfFrame1;                _this.halfFrame2 = instance.halfFrame2;            }        });        this.MULTI_PIPELINE = this.get(CONST.MULTI_PIPELINE);        this.BITMAPMASK_PIPELINE = this.get(CONST.BITMAPMASK_PIPELINE);        this.MOBILE_PIPELINE = this.get(CONST.MOBILE_PIPELINE);        if (!disablePreFX)        {            this.FX_PIPELINE = this.get(CONST.FX_PIPELINE);        }        if (pipelineConfig)        {            for (pipelineName in pipelineConfig)            {                var pipelineClass = pipelineConfig[pipelineName];                instance = new pipelineClass(game);                instance.name = pipelineName;                if (instance.isPostFX)                {                    this.postPipelineClasses.set(pipelineName, pipelineClass);                }                else if (!this.has(pipelineName))                {                    this.classes.set(pipelineName, pipelineClass);                    this.add(pipelineName, instance);                }            }        }        this.default = this.get(defaultPipeline);        if (autoMobilePipeline && !Device.os.desktop)        {            this.default = this.MOBILE_PIPELINE;        }    },    setDefaultPipeline: function (pipeline)    {        var instance = this.get(pipeline);        if (instance)        {            this.default = instance;        }        return instance;    },    add: function (name, pipeline)    {        if (pipeline.isPostFX)        {            console.warn(name + ' is a Post Pipeline. Use `addPostPipeline` instead');            return;        }        var pipelines = this.pipelines;        var renderer = this.renderer;        if (!pipelines.has(name))        {            pipeline.name = name;            pipeline.manager = this;            pipelines.set(name, pipeline);        }        else        {            console.warn('Pipeline exists: ' + name);        }        if (!pipeline.hasBooted)        {            pipeline.boot();        }        if (renderer.width !== 0 && renderer.height !== 0 && !pipeline.isPreFX)        {            pipeline.resize(renderer.width, renderer.height);        }        return pipeline;    },    addPostPipeline: function (name, pipeline)    {        if (!this.postPipelineClasses.has(name))        {            this.postPipelineClasses.set(name, pipeline);        }    },    flush: function ()    {        if (this.current)        {            this.current.flush();        }    },    has: function (pipeline)    {        var pipelines = this.pipelines;        if (typeof pipeline === 'string')        {            return pipelines.has(pipeline);        }        else if (pipelines.contains(pipeline))        {            return true;        }        return false;    },    get: function (pipeline)    {        var pipelines = this.pipelines;        if (typeof pipeline === 'string')        {            return pipelines.get(pipeline);        }        else if (pipelines.contains(pipeline))        {            return pipeline;        }    },    getPostPipeline: function (pipeline, gameObject, config)    {        var pipelineClasses = this.postPipelineClasses;        var instance;        var pipelineName = '';        var pipetype = typeof pipeline;        if (pipetype === 'string' || pipetype === 'number')        {            instance = pipelineClasses.get(pipeline);            pipelineName = pipeline;        }        else if (pipetype === 'function')        {            if (pipelineClasses.contains(pipeline))            {                instance = pipeline;            }            pipelineName = pipeline.name;        }        else if (pipetype === 'object')        {            instance = pipelineClasses.get(pipeline.name);            pipelineName = pipeline.name;        }        if (instance)        {            var newPipeline = new instance(this.game, config);            newPipeline.name = pipelineName;            if (gameObject)            {                newPipeline.gameObject = gameObject;            }            this.postPipelineInstances.push(newPipeline);            return newPipeline;        }    },    removePostPipeline: function (pipeline)    {        ArrayRemove(this.postPipelineInstances, pipeline);    },    remove: function (name, removeClass, removePostPipelineClass)    {        if (removeClass === undefined) { removeClass = true; }        if (removePostPipelineClass === undefined) { removePostPipelineClass = true; }        this.pipelines.delete(name);        if (removeClass)        {            this.classes.delete(name);        }        if (removePostPipelineClass)        {            this.postPipelineClasses.delete(name);        }    },    set: function (pipeline, gameObject, currentShader)    {        if (pipeline.isPostFX)        {            return;        }        if (!this.isCurrent(pipeline, currentShader))        {            this.flush();            if (this.current)            {                this.current.unbind();            }            this.current = pipeline;            pipeline.bind(currentShader);        }        pipeline.updateProjectionMatrix();        pipeline.onBind(gameObject);        return pipeline;    },    preBatch: function (gameObject)    {        if (gameObject.hasPostPipeline)        {            this.flush();            var pipelines = gameObject.postPipelines;            for (var i = pipelines.length - 1; i >= 0; i--)            {                var pipeline = pipelines[i];                if (pipeline.active)                {                    pipeline.preBatch(gameObject);                }            }        }    },    postBatch: function (gameObject)    {        if (gameObject.hasPostPipeline)        {            this.flush();            var pipelines = gameObject.postPipelines;            for (var i = 0; i < pipelines.length; i++)            {                var pipeline = pipelines[i];                if (pipeline.active)                {                    pipeline.postBatch(gameObject);                }            }        }    },    preBatchCamera: function (camera)    {        if (camera.hasPostPipeline)        {            this.flush();            var pipelines = camera.postPipelines;            for (var i = pipelines.length - 1; i >= 0; i--)            {                var pipeline = pipelines[i];                if (pipeline.active)                {                    pipeline.preBatch(camera);                }            }        }    },    postBatchCamera: function (camera)    {        if (camera.hasPostPipeline)        {            this.flush();            var pipelines = camera.postPipelines;            for (var i = 0; i < pipelines.length; i++)            {                var pipeline = pipelines[i];                if (pipeline.active)                {                    pipeline.postBatch(camera);                }            }        }    },    isCurrent: function (pipeline, currentShader)    {        var renderer = this.renderer;        var current = this.current;        if (current && !currentShader)        {            currentShader = current.currentShader;        }        return !(current !== pipeline || currentShader.program !== renderer.currentProgram);    },    copyFrame: function (source, target, brightness, clear, clearAlpha)    {        this.setUtility(this.UTILITY_PIPELINE.copyShader).copyFrame(source, target, brightness, clear, clearAlpha);        return this;    },    copyToGame: function (source)    {        this.setUtility(this.UTILITY_PIPELINE.copyShader).copyToGame(source);        return this;    },    drawFrame: function (source, target, clearAlpha, colorMatrix)    {        this.setUtility(this.UTILITY_PIPELINE.colorMatrixShader).drawFrame(source, target, clearAlpha, colorMatrix);        return this;    },    blendFrames: function (source1, source2, target, strength, clearAlpha)    {        this.setUtility(this.UTILITY_PIPELINE.linearShader).blendFrames(source1, source2, target, strength, clearAlpha);        return this;    },    blendFramesAdditive: function (source1, source2, target, strength, clearAlpha)    {        this.setUtility(this.UTILITY_PIPELINE.addShader).blendFramesAdditive(source1, source2, target, strength, clearAlpha);        return this;    },    clearFrame: function (target, clearAlpha)    {        this.UTILITY_PIPELINE.clearFrame(target, clearAlpha);        return this;    },    blitFrame: function (source, target, brightness, clear, clearAlpha, eraseMode)    {        this.setUtility(this.UTILITY_PIPELINE.copyShader).blitFrame(source, target, brightness, clear, clearAlpha, eraseMode);        return this;    },    copyFrameRect: function (source, target, x, y, width, height, clear, clearAlpha)    {        this.UTILITY_PIPELINE.copyFrameRect(source, target, x, y, width, height, clear, clearAlpha);        return this;    },    forceZero: function ()    {        return (this.current && this.current.forceZero);    },    setMulti: function ()    {        return this.set(this.MULTI_PIPELINE);    },    setUtility: function (currentShader)    {        return this.UTILITY_PIPELINE.bind(currentShader);    },    setFX: function ()    {        return this.set(this.FX_PIPELINE);    },    restoreContext: function ()    {        this.rebind();        this.pipelines.each(function (_, pipeline)        {            pipeline.restoreContext();        });        ArrayEach(this.postPipelineInstances, function (pipeline)        {            pipeline.restoreContext();        });    },    rebind: function (pipeline)    {        if (pipeline === undefined && this.previous)        {            pipeline = this.previous;        }        var renderer = this.renderer;        var gl = renderer.gl;        gl.disable(gl.DEPTH_TEST);        gl.disable(gl.CULL_FACE);        if (renderer.hasActiveStencilMask())        {            gl.clear(gl.DEPTH_BUFFER_BIT);        }        else        {            gl.disable(gl.STENCIL_TEST);            gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);        }        gl.viewport(0, 0, renderer.width, renderer.height);        renderer.currentProgram = null;        renderer.setBlendMode(0, true);        var vao = renderer.vaoExtension;        if (vao)        {            vao.bindVertexArrayOES(null);        }        var entries = this.pipelines.entries;        for (var key in entries)        {            entries[key].glReset = true;        }        if (pipeline)        {            this.current = pipeline;            pipeline.rebind();        }    },    clear: function ()    {        var renderer = this.renderer;        this.flush();        if (this.current)        {            this.current.unbind();            this.previous = this.current;            this.current = null;        }        else        {            this.previous = null;        }        renderer.currentProgram = null;        renderer.setBlendMode(0, true);        var vao = renderer.vaoExtension;        if (vao)        {            vao.bindVertexArrayOES(null);        }    },    getRenderTarget: function (size)    {        var targets = this.renderTargets;        var offset = 3;        if (size > this.maxDimension)        {            this.targetIndex = targets.length - offset;            return targets[this.targetIndex];        }        else        {            var index = (SnapCeil(size, this.frameInc, 0, true) - 1) * offset;            this.targetIndex = index;            return targets[index];        }    },    getSwapRenderTarget: function ()    {        return this.renderTargets[this.targetIndex + 1];    },    getAltSwapRenderTarget: function ()    {        return this.renderTargets[this.targetIndex + 2];    },    destroy: function ()    {        this.flush();        this.classes.clear();        this.postPipelineClasses.clear();        this.pipelines.clear();        this.renderer = null;        this.game = null;        this.classes = null;        this.postPipelineClasses = null;        this.pipelines = null;        this.default = null;        this.current = null;        this.previous = null;    }});module.exports = PipelineManager;

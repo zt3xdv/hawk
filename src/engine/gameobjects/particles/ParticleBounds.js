@@ -1,62 +1,1 @@
-var Class = require('../../utils/Class');
-var ParticleProcessor = require('./ParticleProcessor');
-var Rectangle = require('../../geom/rectangle/Rectangle');
-
-var ParticleBounds = new Class({
-
-    Extends: ParticleProcessor,
-
-    initialize:
-
-    function ParticleBounds (x, y, width, height, collideLeft, collideRight, collideTop, collideBottom)
-    {
-        if (collideLeft === undefined) { collideLeft = true; }
-        if (collideRight === undefined) { collideRight = true; }
-        if (collideTop === undefined) { collideTop = true; }
-        if (collideBottom === undefined) { collideBottom = true; }
-
-        ParticleProcessor.call(this, x, y, true);
-
-        this.bounds = new Rectangle(x, y, width, height);
-
-        this.collideLeft = collideLeft;
-
-        this.collideRight = collideRight;
-
-        this.collideTop = collideTop;
-
-        this.collideBottom = collideBottom;
-    },
-
-    update: function (particle)
-    {
-        var bounds = this.bounds;
-        var bounce = -particle.bounce;
-        var pos = particle.worldPosition;
-
-        if (pos.x < bounds.x && this.collideLeft)
-        {
-            particle.x += bounds.x - pos.x;
-            particle.velocityX *= bounce;
-        }
-        else if (pos.x > bounds.right && this.collideRight)
-        {
-            particle.x -= pos.x - bounds.right;
-            particle.velocityX *= bounce;
-        }
-
-        if (pos.y < bounds.y && this.collideTop)
-        {
-            particle.y += bounds.y - pos.y;
-            particle.velocityY *= bounce;
-        }
-        else if (pos.y > bounds.bottom && this.collideBottom)
-        {
-            particle.y -= pos.y - bounds.bottom;
-            particle.velocityY *= bounce;
-        }
-    }
-
-});
-
-module.exports = ParticleBounds;
+var Class = require('../../utils/Class');var ParticleProcessor = require('./ParticleProcessor');var Rectangle = require('../../geom/rectangle/Rectangle');var ParticleBounds = new Class({    Extends: ParticleProcessor,    initialize:    function ParticleBounds (x, y, width, height, collideLeft, collideRight, collideTop, collideBottom)    {        if (collideLeft === undefined) { collideLeft = true; }        if (collideRight === undefined) { collideRight = true; }        if (collideTop === undefined) { collideTop = true; }        if (collideBottom === undefined) { collideBottom = true; }        ParticleProcessor.call(this, x, y, true);        this.bounds = new Rectangle(x, y, width, height);        this.collideLeft = collideLeft;        this.collideRight = collideRight;        this.collideTop = collideTop;        this.collideBottom = collideBottom;    },    update: function (particle)    {        var bounds = this.bounds;        var bounce = -particle.bounce;        var pos = particle.worldPosition;        if (pos.x < bounds.x && this.collideLeft)        {            particle.x += bounds.x - pos.x;            particle.velocityX *= bounce;        }        else if (pos.x > bounds.right && this.collideRight)        {            particle.x -= pos.x - bounds.right;            particle.velocityX *= bounce;        }        if (pos.y < bounds.y && this.collideTop)        {            particle.y += bounds.y - pos.y;            particle.velocityY *= bounce;        }        else if (pos.y > bounds.bottom && this.collideBottom)        {            particle.y -= pos.y - bounds.bottom;            particle.velocityY *= bounce;        }    }});module.exports = ParticleBounds;

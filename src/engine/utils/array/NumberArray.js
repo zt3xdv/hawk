@@ -1,55 +1,1 @@
-var NumberArray = function (start, end, prefix, suffix)
-{
-    var result = [];
-
-    var i;
-    var asString = false;
-
-    if (prefix || suffix)
-    {
-        asString = true;
-
-        if (!prefix)
-        {
-            prefix = '';
-        }
-
-        if (!suffix)
-        {
-            suffix = '';
-        }
-    }
-
-    if (end < start)
-    {
-        for (i = start; i >= end; i--)
-        {
-            if (asString)
-            {
-                result.push(prefix + i.toString() + suffix);
-            }
-            else
-            {
-                result.push(i);
-            }
-        }
-    }
-    else
-    {
-        for (i = start; i <= end; i++)
-        {
-            if (asString)
-            {
-                result.push(prefix + i.toString() + suffix);
-            }
-            else
-            {
-                result.push(i);
-            }
-        }
-    }
-
-    return result;
-};
-
-module.exports = NumberArray;
+var NumberArray = function (start, end, prefix, suffix){    var result = [];    var i;    var asString = false;    if (prefix || suffix)    {        asString = true;        if (!prefix)        {            prefix = '';        }        if (!suffix)        {            suffix = '';        }    }    if (end < start)    {        for (i = start; i >= end; i--)        {            if (asString)            {                result.push(prefix + i.toString() + suffix);            }            else            {                result.push(i);            }        }    }    else    {        for (i = start; i <= end; i++)        {            if (asString)            {                result.push(prefix + i.toString() + suffix);            }            else            {                result.push(i);            }        }    }    return result;};module.exports = NumberArray;

@@ -1,82 +1,1 @@
-var Tint = {
-
-    tintTopLeft: 0xffffff,
-
-    tintTopRight: 0xffffff,
-
-    tintBottomLeft: 0xffffff,
-
-    tintBottomRight: 0xffffff,
-
-    tintFill: false,
-
-    clearTint: function ()
-    {
-        this.setTint(0xffffff);
-
-        return this;
-    },
-
-    setTint: function (topLeft, topRight, bottomLeft, bottomRight)
-    {
-        if (topLeft === undefined) { topLeft = 0xffffff; }
-
-        if (topRight === undefined)
-        {
-            topRight = topLeft;
-            bottomLeft = topLeft;
-            bottomRight = topLeft;
-        }
-
-        this.tintTopLeft = topLeft;
-        this.tintTopRight = topRight;
-        this.tintBottomLeft = bottomLeft;
-        this.tintBottomRight = bottomRight;
-
-        this.tintFill = false;
-
-        return this;
-    },
-
-    setTintFill: function (topLeft, topRight, bottomLeft, bottomRight)
-    {
-        this.setTint(topLeft, topRight, bottomLeft, bottomRight);
-
-        this.tintFill = true;
-
-        return this;
-    },
-
-    tint: {
-
-        get: function ()
-        {
-            return this.tintTopLeft;
-        },
-
-        set: function (value)
-        {
-            this.setTint(value, value, value, value);
-        }
-    },
-
-    isTinted: {
-
-        get: function ()
-        {
-            var white = 0xffffff;
-
-            return (
-                this.tintFill ||
-                this.tintTopLeft !== white ||
-                this.tintTopRight !== white ||
-                this.tintBottomLeft !== white ||
-                this.tintBottomRight !== white
-            );
-        }
-
-    }
-
-};
-
-module.exports = Tint;
+var Tint = {    tintTopLeft: 0xffffff,    tintTopRight: 0xffffff,    tintBottomLeft: 0xffffff,    tintBottomRight: 0xffffff,    tintFill: false,    clearTint: function ()    {        this.setTint(0xffffff);        return this;    },    setTint: function (topLeft, topRight, bottomLeft, bottomRight)    {        if (topLeft === undefined) { topLeft = 0xffffff; }        if (topRight === undefined)        {            topRight = topLeft;            bottomLeft = topLeft;            bottomRight = topLeft;        }        this.tintTopLeft = topLeft;        this.tintTopRight = topRight;        this.tintBottomLeft = bottomLeft;        this.tintBottomRight = bottomRight;        this.tintFill = false;        return this;    },    setTintFill: function (topLeft, topRight, bottomLeft, bottomRight)    {        this.setTint(topLeft, topRight, bottomLeft, bottomRight);        this.tintFill = true;        return this;    },    tint: {        get: function ()        {            return this.tintTopLeft;        },        set: function (value)        {            this.setTint(value, value, value, value);        }    },    isTinted: {        get: function ()        {            var white = 0xffffff;            return (                this.tintFill ||                this.tintTopLeft !== white ||                this.tintTopRight !== white ||                this.tintBottomLeft !== white ||                this.tintBottomRight !== white            );        }    }};module.exports = Tint;

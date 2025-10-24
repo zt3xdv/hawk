@@ -1,1 +1,1 @@
-module.exports = 'onerror';
+module.exports = 'onerror';

@@ -1,7 +1,1 @@
-var Star = require('./Star');
-var GameObjectFactory = require('../../GameObjectFactory');
-
-GameObjectFactory.register('star', function (x, y, points, innerRadius, outerRadius, fillColor, fillAlpha)
-{
-    return this.displayList.add(new Star(this.scene, x, y, points, innerRadius, outerRadius, fillColor, fillAlpha));
-});
+var Star = require('./Star');var GameObjectFactory = require('../../GameObjectFactory');GameObjectFactory.register('star', function (x, y, points, innerRadius, outerRadius, fillColor, fillAlpha){    return this.displayList.add(new Star(this.scene, x, y, points, innerRadius, outerRadius, fillColor, fillAlpha));});

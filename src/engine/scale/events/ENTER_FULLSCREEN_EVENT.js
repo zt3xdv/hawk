@@ -1,1 +1,1 @@
-module.exports = 'enterfullscreen';
+module.exports = 'enterfullscreen';

@@ -1,1 +1,1 @@
-module.exports = 'remove';
+module.exports = 'remove';

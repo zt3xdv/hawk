@@ -1,1 +1,1 @@
-module.exports = 'pipelinebeforeflush';
+module.exports = 'pipelinebeforeflush';

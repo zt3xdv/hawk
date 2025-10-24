@@ -1,1533 +1,1 @@
-var AngleBetweenPoints = require('../../math/angle/BetweenPoints');
-var Body = require('./Body');
-var Clamp = require('../../math/Clamp');
-var Class = require('../../utils/Class');
-var Collider = require('./Collider');
-var CONST = require('./const');
-var DistanceBetween = require('../../math/distance/DistanceBetween');
-var DistanceBetweenPoints = require('../../math/distance/DistanceBetweenPoints');
-var EventEmitter = require('eventemitter3');
-var Events = require('./events');
-var FuzzyEqual = require('../../math/fuzzy/Equal');
-var FuzzyGreaterThan = require('../../math/fuzzy/GreaterThan');
-var FuzzyLessThan = require('../../math/fuzzy/LessThan');
-var GetOverlapX = require('./GetOverlapX');
-var GetOverlapY = require('./GetOverlapY');
-var GetTilesWithinWorldXY = require('../../tilemaps/components/GetTilesWithinWorldXY');
-var GetValue = require('../../utils/object/GetValue');
-var MATH_CONST = require('../../math/const');
-var ProcessQueue = require('../../structs/ProcessQueue');
-var ProcessTileCallbacks = require('./tilemap/ProcessTileCallbacks');
-var Rectangle = require('../../geom/rectangle/Rectangle');
-var RTree = require('../../structs/RTree');
-var SeparateTile = require('./tilemap/SeparateTile');
-var SeparateX = require('./SeparateX');
-var SeparateY = require('./SeparateY');
-var Set = require('../../structs/Set');
-var StaticBody = require('./StaticBody');
-var TileIntersectsBody = require('./tilemap/TileIntersectsBody');
-var TransformMatrix = require('../../gameobjects/components/TransformMatrix');
-var Vector2 = require('../../math/Vector2');
-var Wrap = require('../../math/Wrap');
-
-var World = new Class({
-
-    Extends: EventEmitter,
-
-    initialize:
-
-    function World (scene, config)
-    {
-        EventEmitter.call(this);
-
-        this.scene = scene;
-
-        this.bodies = new Set();
-
-        this.staticBodies = new Set();
-
-        this.pendingDestroy = new Set();
-
-        this.colliders = new ProcessQueue();
-
-        this.gravity = new Vector2(GetValue(config, 'gravity.x', 0), GetValue(config, 'gravity.y', 0));
-
-        this.bounds = new Rectangle(
-            GetValue(config, 'x', 0),
-            GetValue(config, 'y', 0),
-            GetValue(config, 'width', scene.sys.scale.width),
-            GetValue(config, 'height', scene.sys.scale.height)
-        );
-
-        this.checkCollision = {
-            up: GetValue(config, 'checkCollision.up', true),
-            down: GetValue(config, 'checkCollision.down', true),
-            left: GetValue(config, 'checkCollision.left', true),
-            right: GetValue(config, 'checkCollision.right', true)
-        };
-
-        this.fps = GetValue(config, 'fps', 60);
-
-        this.fixedStep = GetValue(config, 'fixedStep', true);
-
-        this._elapsed = 0;
-
-        this._frameTime = 1 / this.fps;
-
-        this._frameTimeMS = 1000 * this._frameTime;
-
-        this.stepsLastFrame = 0;
-
-        this.timeScale = GetValue(config, 'timeScale', 1);
-
-        this.OVERLAP_BIAS = GetValue(config, 'overlapBias', 4);
-
-        this.TILE_BIAS = GetValue(config, 'tileBias', 16);
-
-        this.forceX = GetValue(config, 'forceX', false);
-
-        this.isPaused = GetValue(config, 'isPaused', false);
-
-        this._total = 0;
-
-        this.drawDebug = GetValue(config, 'debug', false);
-
-        this.debugGraphic;
-
-        this.defaults = {
-            debugShowBody: GetValue(config, 'debugShowBody', true),
-            debugShowStaticBody: GetValue(config, 'debugShowStaticBody', true),
-            debugShowVelocity: GetValue(config, 'debugShowVelocity', true),
-            bodyDebugColor: GetValue(config, 'debugBodyColor', 0xff00ff),
-            staticBodyDebugColor: GetValue(config, 'debugStaticBodyColor', 0x0000ff),
-            velocityDebugColor: GetValue(config, 'debugVelocityColor', 0x00ff00)
-        };
-
-        this.maxEntries = GetValue(config, 'maxEntries', 16);
-
-        this.useTree = GetValue(config, 'useTree', true);
-
-        this.tree = new RTree(this.maxEntries);
-
-        this.staticTree = new RTree(this.maxEntries);
-
-        this.treeMinMax = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-
-        this._tempMatrix = new TransformMatrix();
-
-        this._tempMatrix2 = new TransformMatrix();
-
-        this.tileFilterOptions = { isColliding: true, isNotEmpty: true, hasInterestingFace: true };
-
-        if (this.drawDebug)
-        {
-            this.createDebugGraphic();
-        }
-    },
-
-    enable: function (object, bodyType)
-    {
-        if (bodyType === undefined) { bodyType = CONST.DYNAMIC_BODY; }
-
-        if (!Array.isArray(object))
-        {
-            object = [ object ];
-        }
-
-        for (var i = 0; i < object.length; i++)
-        {
-            var entry = object[i];
-
-            if (entry.isParent)
-            {
-                var children = entry.getChildren();
-
-                for (var c = 0; c < children.length; c++)
-                {
-                    var child = children[c];
-
-                    if (child.isParent)
-                    {
-
-                        this.enable(child, bodyType);
-                    }
-                    else
-                    {
-                        this.enableBody(child, bodyType);
-                    }
-                }
-            }
-            else
-            {
-                this.enableBody(entry, bodyType);
-            }
-        }
-    },
-
-    enableBody: function (object, bodyType)
-    {
-        if (bodyType === undefined) { bodyType = CONST.DYNAMIC_BODY; }
-
-        if (object.hasTransformComponent)
-        {
-            if (!object.body)
-            {
-                if (bodyType === CONST.DYNAMIC_BODY)
-                {
-                    object.body = new Body(this, object);
-                }
-                else if (bodyType === CONST.STATIC_BODY)
-                {
-                    object.body = new StaticBody(this, object);
-                }
-            }
-
-            this.add(object.body);
-        }
-
-        return object;
-    },
-
-    add: function (body)
-    {
-        if (body.physicsType === CONST.DYNAMIC_BODY)
-        {
-            this.bodies.set(body);
-        }
-        else if (body.physicsType === CONST.STATIC_BODY)
-        {
-            this.staticBodies.set(body);
-
-            this.staticTree.insert(body);
-        }
-
-        body.enable = true;
-
-        return body;
-    },
-
-    disable: function (object)
-    {
-        if (!Array.isArray(object))
-        {
-            object = [ object ];
-        }
-
-        for (var i = 0; i < object.length; i++)
-        {
-            var entry = object[i];
-
-            if (entry.isParent)
-            {
-                var children = entry.getChildren();
-
-                for (var c = 0; c < children.length; c++)
-                {
-                    var child = children[c];
-
-                    if (child.isParent)
-                    {
-
-                        this.disable(child);
-                    }
-                    else
-                    {
-                        this.disableBody(child.body);
-                    }
-                }
-            }
-            else
-            {
-                this.disableBody(entry.body);
-            }
-        }
-    },
-
-    disableBody: function (body)
-    {
-        this.remove(body);
-
-        body.enable = false;
-    },
-
-    remove: function (body)
-    {
-        if (body.physicsType === CONST.DYNAMIC_BODY)
-        {
-            this.tree.remove(body);
-            this.bodies.delete(body);
-        }
-        else if (body.physicsType === CONST.STATIC_BODY)
-        {
-            this.staticBodies.delete(body);
-            this.staticTree.remove(body);
-        }
-    },
-
-    createDebugGraphic: function ()
-    {
-        var graphic = this.scene.sys.add.graphics({ x: 0, y: 0 });
-
-        graphic.setDepth(Number.MAX_VALUE);
-
-        this.debugGraphic = graphic;
-
-        this.drawDebug = true;
-
-        return graphic;
-    },
-
-    setBounds: function (x, y, width, height, checkLeft, checkRight, checkUp, checkDown)
-    {
-        this.bounds.setTo(x, y, width, height);
-
-        if (checkLeft !== undefined)
-        {
-            this.setBoundsCollision(checkLeft, checkRight, checkUp, checkDown);
-        }
-
-        return this;
-    },
-
-    setBoundsCollision: function (left, right, up, down)
-    {
-        if (left === undefined) { left = true; }
-        if (right === undefined) { right = true; }
-        if (up === undefined) { up = true; }
-        if (down === undefined) { down = true; }
-
-        this.checkCollision.left = left;
-        this.checkCollision.right = right;
-        this.checkCollision.up = up;
-        this.checkCollision.down = down;
-
-        return this;
-    },
-
-    pause: function ()
-    {
-        this.isPaused = true;
-
-        this.emit(Events.PAUSE);
-
-        return this;
-    },
-
-    resume: function ()
-    {
-        this.isPaused = false;
-
-        this.emit(Events.RESUME);
-
-        return this;
-    },
-
-    addCollider: function (object1, object2, collideCallback, processCallback, callbackContext)
-    {
-        if (collideCallback === undefined) { collideCallback = null; }
-        if (processCallback === undefined) { processCallback = null; }
-        if (callbackContext === undefined) { callbackContext = collideCallback; }
-
-        var collider = new Collider(this, false, object1, object2, collideCallback, processCallback, callbackContext);
-
-        this.colliders.add(collider);
-
-        return collider;
-    },
-
-    addOverlap: function (object1, object2, collideCallback, processCallback, callbackContext)
-    {
-        if (collideCallback === undefined) { collideCallback = null; }
-        if (processCallback === undefined) { processCallback = null; }
-        if (callbackContext === undefined) { callbackContext = collideCallback; }
-
-        var collider = new Collider(this, true, object1, object2, collideCallback, processCallback, callbackContext);
-
-        this.colliders.add(collider);
-
-        return collider;
-    },
-
-    removeCollider: function (collider)
-    {
-        this.colliders.remove(collider);
-
-        return this;
-    },
-
-    setFPS: function (framerate)
-    {
-        this.fps = framerate;
-        this._frameTime = 1 / this.fps;
-        this._frameTimeMS = 1000 * this._frameTime;
-
-        return this;
-    },
-
-    update: function (time, delta)
-    {
-        if (this.isPaused || this.bodies.size === 0)
-        {
-            return;
-        }
-
-        var i;
-        var fixedDelta = this._frameTime;
-        var msPerFrame = this._frameTimeMS * this.timeScale;
-
-        this._elapsed += delta;
-
-        var body;
-        var bodies = this.bodies.entries;
-
-        var willStep = (this._elapsed >= msPerFrame);
-
-        if (!this.fixedStep)
-        {
-            fixedDelta = delta * 0.001;
-            willStep = true;
-            this._elapsed = 0;
-        }
-
-        for (i = 0; i < bodies.length; i++)
-        {
-            body = bodies[i];
-
-            if (body.enable)
-            {
-                body.preUpdate(willStep, fixedDelta);
-            }
-        }
-
-        if (willStep)
-        {
-            this._elapsed -= msPerFrame;
-            this.stepsLastFrame = 1;
-
-            if (this.useTree)
-            {
-                this.tree.clear();
-                this.tree.load(bodies);
-            }
-
-            var colliders = this.colliders.update();
-
-            for (i = 0; i < colliders.length; i++)
-            {
-                var collider = colliders[i];
-
-                if (collider.active)
-                {
-                    collider.update();
-                }
-            }
-
-            this.emit(Events.WORLD_STEP, fixedDelta);
-        }
-
-        while (this._elapsed >= msPerFrame)
-        {
-            this._elapsed -= msPerFrame;
-
-            this.step(fixedDelta);
-        }
-    },
-
-    step: function (delta)
-    {
-
-        var i;
-        var body;
-        var bodies = this.bodies.entries;
-        var len = bodies.length;
-
-        for (i = 0; i < len; i++)
-        {
-            body = bodies[i];
-
-            if (body.enable)
-            {
-                body.update(delta);
-            }
-        }
-
-        if (this.useTree)
-        {
-            this.tree.clear();
-            this.tree.load(bodies);
-        }
-
-        var colliders = this.colliders.update();
-
-        for (i = 0; i < colliders.length; i++)
-        {
-            var collider = colliders[i];
-
-            if (collider.active)
-            {
-                collider.update();
-            }
-        }
-
-        this.emit(Events.WORLD_STEP, delta);
-
-        this.stepsLastFrame++;
-    },
-
-    singleStep: function ()
-    {
-        this.update(0, this._frameTimeMS);
-
-        this.postUpdate();
-    },
-
-    postUpdate: function ()
-    {
-        var i;
-        var body;
-        var bodies = this.bodies.entries;
-        var len = bodies.length;
-
-        var dynamic = this.bodies;
-        var staticBodies = this.staticBodies;
-
-        if (this.stepsLastFrame)
-        {
-            this.stepsLastFrame = 0;
-
-            for (i = 0; i < len; i++)
-            {
-                body = bodies[i];
-
-                if (body.enable)
-                {
-                    body.postUpdate();
-                }
-            }
-        }
-
-        if (this.drawDebug)
-        {
-            var graphics = this.debugGraphic;
-
-            graphics.clear();
-
-            for (i = 0; i < len; i++)
-            {
-                body = bodies[i];
-
-                if (body.willDrawDebug())
-                {
-                    body.drawDebug(graphics);
-                }
-            }
-
-            bodies = staticBodies.entries;
-            len = bodies.length;
-
-            for (i = 0; i < len; i++)
-            {
-                body = bodies[i];
-
-                if (body.willDrawDebug())
-                {
-                    body.drawDebug(graphics);
-                }
-            }
-        }
-
-        var pending = this.pendingDestroy;
-
-        if (pending.size > 0)
-        {
-            var dynamicTree = this.tree;
-            var staticTree = this.staticTree;
-
-            bodies = pending.entries;
-            len = bodies.length;
-
-            for (i = 0; i < len; i++)
-            {
-                body = bodies[i];
-
-                if (body.physicsType === CONST.DYNAMIC_BODY)
-                {
-                    dynamicTree.remove(body);
-                    dynamic.delete(body);
-                }
-                else if (body.physicsType === CONST.STATIC_BODY)
-                {
-                    staticTree.remove(body);
-                    staticBodies.delete(body);
-                }
-
-                body.world = undefined;
-                body.gameObject = undefined;
-            }
-
-            pending.clear();
-        }
-    },
-
-    updateMotion: function (body, delta)
-    {
-        if (body.allowRotation)
-        {
-            this.computeAngularVelocity(body, delta);
-        }
-
-        this.computeVelocity(body, delta);
-    },
-
-    computeAngularVelocity: function (body, delta)
-    {
-        var velocity = body.angularVelocity;
-        var acceleration = body.angularAcceleration;
-        var drag = body.angularDrag;
-        var max = body.maxAngular;
-
-        if (acceleration)
-        {
-            velocity += acceleration * delta;
-        }
-        else if (body.allowDrag && drag)
-        {
-            drag *= delta;
-
-            if (FuzzyGreaterThan(velocity - drag, 0, 0.1))
-            {
-                velocity -= drag;
-            }
-            else if (FuzzyLessThan(velocity + drag, 0, 0.1))
-            {
-                velocity += drag;
-            }
-            else
-            {
-                velocity = 0;
-            }
-        }
-
-        velocity = Clamp(velocity, -max, max);
-
-        var velocityDelta = velocity - body.angularVelocity;
-
-        body.angularVelocity += velocityDelta;
-        body.rotation += (body.angularVelocity * delta);
-    },
-
-    computeVelocity: function (body, delta)
-    {
-        var velocityX = body.velocity.x;
-        var accelerationX = body.acceleration.x;
-        var dragX = body.drag.x;
-        var maxX = body.maxVelocity.x;
-
-        var velocityY = body.velocity.y;
-        var accelerationY = body.acceleration.y;
-        var dragY = body.drag.y;
-        var maxY = body.maxVelocity.y;
-
-        var speed = body.speed;
-        var maxSpeed = body.maxSpeed;
-        var allowDrag = body.allowDrag;
-        var useDamping = body.useDamping;
-
-        if (body.allowGravity)
-        {
-            velocityX += (this.gravity.x + body.gravity.x) * delta;
-            velocityY += (this.gravity.y + body.gravity.y) * delta;
-        }
-
-        if (accelerationX)
-        {
-            velocityX += accelerationX * delta;
-        }
-        else if (allowDrag && dragX)
-        {
-            if (useDamping)
-            {
-
-                dragX = Math.pow(dragX, delta);
-
-                velocityX *= dragX;
-
-                speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-
-                if (FuzzyEqual(speed, 0, 0.001))
-                {
-                    velocityX = 0;
-                }
-            }
-            else
-            {
-
-                dragX *= delta;
-
-                if (FuzzyGreaterThan(velocityX - dragX, 0, 0.01))
-                {
-                    velocityX -= dragX;
-                }
-                else if (FuzzyLessThan(velocityX + dragX, 0, 0.01))
-                {
-                    velocityX += dragX;
-                }
-                else
-                {
-                    velocityX = 0;
-                }
-            }
-        }
-
-        if (accelerationY)
-        {
-            velocityY += accelerationY * delta;
-        }
-        else if (allowDrag && dragY)
-        {
-            if (useDamping)
-            {
-
-                dragY = Math.pow(dragY, delta);
-
-                velocityY *= dragY;
-
-                speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-
-                if (FuzzyEqual(speed, 0, 0.001))
-                {
-                    velocityY = 0;
-                }
-            }
-            else
-            {
-
-                dragY *= delta;
-
-                if (FuzzyGreaterThan(velocityY - dragY, 0, 0.01))
-                {
-                    velocityY -= dragY;
-                }
-                else if (FuzzyLessThan(velocityY + dragY, 0, 0.01))
-                {
-                    velocityY += dragY;
-                }
-                else
-                {
-                    velocityY = 0;
-                }
-            }
-        }
-
-        velocityX = Clamp(velocityX, -maxX, maxX);
-        velocityY = Clamp(velocityY, -maxY, maxY);
-
-        body.velocity.set(velocityX, velocityY);
-
-        if (maxSpeed > -1 && body.velocity.length() > maxSpeed)
-        {
-            body.velocity.normalize().scale(maxSpeed);
-            speed = maxSpeed;
-        }
-
-        body.speed = speed;
-    },
-
-    separate: function (body1, body2, processCallback, callbackContext, overlapOnly)
-    {
-        var overlapX;
-        var overlapY;
-
-        var result = false;
-        var runSeparation = true;
-
-        if (
-            !body1.enable ||
-            !body2.enable ||
-            body1.checkCollision.none ||
-            body2.checkCollision.none ||
-            !this.intersects(body1, body2) ||
-            (body1.collisionMask & body2.collisionCategory) === 0 ||
-            (body2.collisionMask & body1.collisionCategory) === 0)
-        {
-            return result;
-        }
-
-        if (processCallback && processCallback.call(callbackContext, (body1.gameObject || body1), (body2.gameObject || body2)) === false)
-        {
-            return result;
-        }
-
-        if (body1.isCircle || body2.isCircle)
-        {
-            var circleResults = this.separateCircle(body1, body2, overlapOnly);
-
-            if (circleResults.result)
-            {
-
-                result = true;
-                runSeparation = false;
-            }
-            else
-            {
-
-                overlapX = circleResults.x;
-                overlapY = circleResults.y;
-                runSeparation = true;
-            }
-        }
-
-        if (runSeparation)
-        {
-            var resultX = false;
-            var resultY = false;
-            var bias = this.OVERLAP_BIAS;
-
-            if (overlapOnly)
-            {
-
-                resultX = SeparateX(body1, body2, overlapOnly, bias, overlapX);
-                resultY = SeparateY(body1, body2, overlapOnly, bias, overlapY);
-            }
-            else if (this.forceX || Math.abs(this.gravity.y + body1.gravity.y) < Math.abs(this.gravity.x + body1.gravity.x))
-            {
-                resultX = SeparateX(body1, body2, overlapOnly, bias, overlapX);
-
-                if (this.intersects(body1, body2))
-                {
-                    resultY = SeparateY(body1, body2, overlapOnly, bias, overlapY);
-                }
-            }
-            else
-            {
-                resultY = SeparateY(body1, body2, overlapOnly, bias, overlapY);
-
-                if (this.intersects(body1, body2))
-                {
-                    resultX = SeparateX(body1, body2, overlapOnly, bias, overlapX);
-                }
-            }
-
-            result = (resultX || resultY);
-        }
-
-        if (result)
-        {
-            if (overlapOnly)
-            {
-                if (body1.onOverlap || body2.onOverlap)
-                {
-                    this.emit(Events.OVERLAP, body1.gameObject, body2.gameObject, body1, body2);
-                }
-            }
-            else if (body1.onCollide || body2.onCollide)
-            {
-                this.emit(Events.COLLIDE, body1.gameObject, body2.gameObject, body1, body2);
-            }
-        }
-
-        return result;
-    },
-
-    separateCircle: function (body1, body2, overlapOnly)
-    {
-
-        GetOverlapX(body1, body2, false, 0);
-        GetOverlapY(body1, body2, false, 0);
-
-        var body1IsCircle = body1.isCircle;
-        var body2IsCircle = body2.isCircle;
-        var body1Center = body1.center;
-        var body2Center = body2.center;
-        var body1Immovable = body1.immovable;
-        var body2Immovable = body2.immovable;
-        var body1Velocity = body1.velocity;
-        var body2Velocity = body2.velocity;
-
-        var overlap = 0;
-        var twoCircles = true;
-
-        if (body1IsCircle !== body2IsCircle)
-        {
-            twoCircles = false;
-
-            var circleX = body1Center.x;
-            var circleY = body1Center.y;
-            var circleRadius = body1.halfWidth;
-
-            var rectX = body2.position.x;
-            var rectY = body2.position.y;
-            var rectRight = body2.right;
-            var rectBottom = body2.bottom;
-
-            if (body2IsCircle)
-            {
-                circleX = body2Center.x;
-                circleY = body2Center.y;
-                circleRadius = body2.halfWidth;
-
-                rectX = body1.position.x;
-                rectY = body1.position.y;
-                rectRight = body1.right;
-                rectBottom = body1.bottom;
-            }
-
-            if (circleY < rectY)
-            {
-                if (circleX < rectX)
-                {
-                    overlap = DistanceBetween(circleX, circleY, rectX, rectY) - circleRadius;
-                }
-                else if (circleX > rectRight)
-                {
-                    overlap = DistanceBetween(circleX, circleY, rectRight, rectY) - circleRadius;
-                }
-            }
-            else if (circleY > rectBottom)
-            {
-                if (circleX < rectX)
-                {
-                    overlap = DistanceBetween(circleX, circleY, rectX, rectBottom) - circleRadius;
-                }
-                else if (circleX > rectRight)
-                {
-                    overlap = DistanceBetween(circleX, circleY, rectRight, rectBottom) - circleRadius;
-                }
-            }
-
-            overlap *= -1;
-        }
-        else
-        {
-            overlap = (body1.halfWidth + body2.halfWidth) - DistanceBetweenPoints(body1Center, body2Center);
-        }
-
-        body1.overlapR = overlap;
-        body2.overlapR = overlap;
-
-        var angle = AngleBetweenPoints(body1Center, body2Center);
-        var overlapX = (overlap + MATH_CONST.EPSILON) * Math.cos(angle);
-        var overlapY = (overlap + MATH_CONST.EPSILON) * Math.sin(angle);
-
-        var results = { overlap: overlap, result: false, x: overlapX, y: overlapY };
-
-        if (overlapOnly && (!twoCircles || (twoCircles && overlap !== 0)))
-        {
-
-            results.result = true;
-
-            return results;
-        }
-
-        if ((!twoCircles && overlap === 0) || (body1Immovable && body2Immovable) || body1.customSeparateX || body2.customSeparateX)
-        {
-
-            results.x = undefined;
-            results.y = undefined;
-
-            return results;
-        }
-
-        var deadlock = (!body1.pushable && !body2.pushable);
-
-        if (twoCircles)
-        {
-            var dx = body1Center.x - body2Center.x;
-            var dy = body1Center.y - body2Center.y;
-            var d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-            var nx = ((body2Center.x - body1Center.x) / d) || 0;
-            var ny = ((body2Center.y - body1Center.y) / d) || 0;
-            var p = 2 * (body1Velocity.x * nx + body1Velocity.y * ny - body2Velocity.x * nx - body2Velocity.y * ny) / (body1.mass + body2.mass);
-
-            if (body1Immovable || body2Immovable || !body1.pushable || !body2.pushable)
-            {
-                p *= 2;
-            }
-
-            if (!body1Immovable && body1.pushable)
-            {
-                body1Velocity.x = (body1Velocity.x - p / body1.mass * nx);
-                body1Velocity.y = (body1Velocity.y - p / body1.mass * ny);
-                body1Velocity.multiply(body1.bounce);
-            }
-
-            if (!body2Immovable && body2.pushable)
-            {
-                body2Velocity.x = (body2Velocity.x + p / body2.mass * nx);
-                body2Velocity.y = (body2Velocity.y + p / body2.mass * ny);
-                body2Velocity.multiply(body2.bounce);
-            }
-
-            if (!body1Immovable && !body2Immovable)
-            {
-                overlapX *= 0.5;
-                overlapY *= 0.5;
-            }
-
-            if (!body1Immovable || body1.pushable || deadlock)
-            {
-                body1.x -= overlapX;
-                body1.y -= overlapY;
-
-                body1.updateCenter();
-            }
-
-            if (!body2Immovable || body2.pushable || deadlock)
-            {
-                body2.x += overlapX;
-                body2.y += overlapY;
-
-                body2.updateCenter();
-            }
-
-            results.result = true;
-        }
-        else
-        {
-
-            if (!body1Immovable && (body1.pushable || deadlock))
-            {
-                body1.x -= overlapX;
-                body1.y -= overlapY;
-
-                body1.updateCenter();
-            }
-
-            if (!body2Immovable && (body2.pushable || deadlock))
-            {
-                body2.x += overlapX;
-                body2.y += overlapY;
-
-                body2.updateCenter();
-            }
-
-            results.x = undefined;
-            results.y = undefined;
-        }
-
-        return results;
-    },
-
-    intersects: function (body1, body2)
-    {
-        if (body1 === body2)
-        {
-            return false;
-        }
-
-        if (!body1.isCircle && !body2.isCircle)
-        {
-
-            return !(
-                body1.right <= body2.left ||
-                body1.bottom <= body2.top ||
-                body1.left >= body2.right ||
-                body1.top >= body2.bottom
-            );
-        }
-        else if (body1.isCircle)
-        {
-            if (body2.isCircle)
-            {
-
-                return DistanceBetweenPoints(body1.center, body2.center) <= (body1.halfWidth + body2.halfWidth);
-            }
-            else
-            {
-
-                return this.circleBodyIntersects(body1, body2);
-            }
-        }
-        else
-        {
-
-            return this.circleBodyIntersects(body2, body1);
-        }
-    },
-
-    circleBodyIntersects: function (circle, body)
-    {
-        var x = Clamp(circle.center.x, body.left, body.right);
-        var y = Clamp(circle.center.y, body.top, body.bottom);
-
-        var dx = (circle.center.x - x) * (circle.center.x - x);
-        var dy = (circle.center.y - y) * (circle.center.y - y);
-
-        return (dx + dy) <= (circle.halfWidth * circle.halfWidth);
-    },
-
-    overlap: function (object1, object2, overlapCallback, processCallback, callbackContext)
-    {
-        if (overlapCallback === undefined) { overlapCallback = null; }
-        if (processCallback === undefined) { processCallback = null; }
-        if (callbackContext === undefined) { callbackContext = overlapCallback; }
-
-        return this.collideObjects(object1, object2, overlapCallback, processCallback, callbackContext, true);
-    },
-
-    collide: function (object1, object2, collideCallback, processCallback, callbackContext)
-    {
-        if (collideCallback === undefined) { collideCallback = null; }
-        if (processCallback === undefined) { processCallback = null; }
-        if (callbackContext === undefined) { callbackContext = collideCallback; }
-
-        return this.collideObjects(object1, object2, collideCallback, processCallback, callbackContext, false);
-    },
-
-    collideObjects: function (object1, object2, collideCallback, processCallback, callbackContext, overlapOnly)
-    {
-        var i;
-        var j;
-
-        if (object1.isParent && (object1.physicsType === undefined || object2 === undefined || object1 === object2))
-        {
-            object1 = object1.children.entries;
-        }
-
-        if (object2 && object2.isParent && object2.physicsType === undefined)
-        {
-            object2 = object2.children.entries;
-        }
-
-        var object1isArray = Array.isArray(object1);
-        var object2isArray = Array.isArray(object2);
-
-        this._total = 0;
-
-        if (!object1isArray && !object2isArray)
-        {
-
-            this.collideHandler(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);
-        }
-        else if (!object1isArray && object2isArray)
-        {
-
-            for (i = 0; i < object2.length; i++)
-            {
-                this.collideHandler(object1, object2[i], collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-        }
-        else if (object1isArray && !object2isArray)
-        {
-
-            if (!object2)
-            {
-
-                for (i = 0; i < object1.length; i++)
-                {
-                    var child = object1[i];
-
-                    for (j = i + 1; j < object1.length; j++)
-                    {
-                        if (i === j)
-                        {
-                            continue;
-                        }
-
-                        this.collideHandler(child, object1[j], collideCallback, processCallback, callbackContext, overlapOnly);
-                    }
-                }
-            }
-            else
-            {
-                for (i = 0; i < object1.length; i++)
-                {
-                    this.collideHandler(object1[i], object2, collideCallback, processCallback, callbackContext, overlapOnly);
-                }
-            }
-        }
-        else
-        {
-
-            for (i = 0; i < object1.length; i++)
-            {
-                for (j = 0; j < object2.length; j++)
-                {
-                    this.collideHandler(object1[i], object2[j], collideCallback, processCallback, callbackContext, overlapOnly);
-                }
-            }
-        }
-
-        return (this._total > 0);
-    },
-
-    collideHandler: function (object1, object2, collideCallback, processCallback, callbackContext, overlapOnly)
-    {
-
-        if (object2 === undefined && object1.isParent)
-        {
-            return this.collideGroupVsGroup(object1, object1, collideCallback, processCallback, callbackContext, overlapOnly);
-        }
-
-        if (!object1 || !object2)
-        {
-            return false;
-        }
-
-        if (object1.body || object1.isBody)
-        {
-            if (object2.body || object2.isBody)
-            {
-                return this.collideSpriteVsSprite(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-            else if (object2.isParent)
-            {
-                return this.collideSpriteVsGroup(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-            else if (object2.isTilemap)
-            {
-                return this.collideSpriteVsTilemapLayer(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-        }
-
-        else if (object1.isParent)
-        {
-            if (object2.body || object2.isBody)
-            {
-                return this.collideSpriteVsGroup(object2, object1, collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-            else if (object2.isParent)
-            {
-                return this.collideGroupVsGroup(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-            else if (object2.isTilemap)
-            {
-                return this.collideGroupVsTilemapLayer(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-        }
-
-        else if (object1.isTilemap)
-        {
-            if (object2.body || object2.isBody)
-            {
-                return this.collideSpriteVsTilemapLayer(object2, object1, collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-            else if (object2.isParent)
-            {
-                return this.collideGroupVsTilemapLayer(object2, object1, collideCallback, processCallback, callbackContext, overlapOnly);
-            }
-        }
-    },
-
-    canCollide: function (body1, body2)
-    {
-        return (
-            (body1 && body2) &&
-            (body1.collisionMask & body2.collisionCategory) !== 0 &&
-            (body2.collisionMask & body1.collisionCategory) !== 0
-        );
-    },
-
-    collideSpriteVsSprite: function (sprite1, sprite2, collideCallback, processCallback, callbackContext, overlapOnly)
-    {
-        var body1 = (sprite1.isBody) ? sprite1 : sprite1.body;
-        var body2 = (sprite2.isBody) ? sprite2 : sprite2.body;
-
-        if (!this.canCollide(body1, body2))
-        {
-            return false;
-        }
-
-        if (this.separate(body1, body2, processCallback, callbackContext, overlapOnly))
-        {
-            if (collideCallback)
-            {
-                collideCallback.call(callbackContext, sprite1, sprite2);
-            }
-
-            this._total++;
-        }
-
-        return true;
-    },
-
-    collideSpriteVsGroup: function (sprite, group, collideCallback, processCallback, callbackContext, overlapOnly)
-    {
-        var bodyA = (sprite.isBody) ? sprite : sprite.body;
-
-        if (group.getLength() === 0 || !bodyA || !bodyA.enable || bodyA.checkCollision.none || !this.canCollide(bodyA, group))
-        {
-            return;
-        }
-
-        var i;
-        var len;
-        var bodyB;
-
-        if (this.useTree || group.physicsType === CONST.STATIC_BODY)
-        {
-            var minMax = this.treeMinMax;
-
-            minMax.minX = bodyA.left;
-            minMax.minY = bodyA.top;
-            minMax.maxX = bodyA.right;
-            minMax.maxY = bodyA.bottom;
-
-            var results = (group.physicsType === CONST.DYNAMIC_BODY) ? this.tree.search(minMax) : this.staticTree.search(minMax);
-
-            len = results.length;
-
-            for (i = 0; i < len; i++)
-            {
-                bodyB = results[i];
-
-                if (bodyA === bodyB || !bodyB.enable || bodyB.checkCollision.none || !group.contains(bodyB.gameObject))
-                {
-
-                    continue;
-                }
-
-                if (this.separate(bodyA, bodyB, processCallback, callbackContext, overlapOnly))
-                {
-                    if (collideCallback)
-                    {
-                        collideCallback.call(callbackContext, bodyA.gameObject, bodyB.gameObject);
-                    }
-
-                    this._total++;
-                }
-            }
-        }
-        else
-        {
-            var children = group.getChildren();
-            var skipIndex = group.children.entries.indexOf(sprite);
-
-            len = children.length;
-
-            for (i = 0; i < len; i++)
-            {
-                bodyB = children[i].body;
-
-                if (!bodyB || i === skipIndex || !bodyB.enable)
-                {
-                    continue;
-                }
-
-                if (this.separate(bodyA, bodyB, processCallback, callbackContext, overlapOnly))
-                {
-                    if (collideCallback)
-                    {
-                        collideCallback.call(callbackContext, bodyA.gameObject, bodyB.gameObject);
-                    }
-
-                    this._total++;
-                }
-            }
-        }
-    },
-
-    collideGroupVsTilemapLayer: function (group, tilemapLayer, collideCallback, processCallback, callbackContext, overlapOnly)
-    {
-        if (!this.canCollide(group, tilemapLayer))
-        {
-            return false;
-        }
-
-        var children = group.getChildren();
-
-        if (children.length === 0)
-        {
-            return false;
-        }
-
-        var didCollide = false;
-
-        for (var i = 0; i < children.length; i++)
-        {
-            if (children[i].body || children[i].isBody)
-            {
-                if (this.collideSpriteVsTilemapLayer(children[i], tilemapLayer, collideCallback, processCallback, callbackContext, overlapOnly))
-                {
-                    didCollide = true;
-                }
-            }
-        }
-
-        return didCollide;
-    },
-
-    collideTiles: function (sprite, tiles, collideCallback, processCallback, callbackContext)
-    {
-        if (tiles.length === 0 || (sprite.body && !sprite.body.enable) || (sprite.isBody && !sprite.enable))
-        {
-            return false;
-        }
-        else
-        {
-            return this.collideSpriteVsTilesHandler(sprite, tiles, collideCallback, processCallback, callbackContext, false, false);
-        }
-    },
-
-    overlapTiles: function (sprite, tiles, overlapCallback, processCallback, callbackContext)
-    {
-        if (tiles.length === 0 || (sprite.body && !sprite.body.enable) || (sprite.isBody && !sprite.enable))
-        {
-            return false;
-        }
-        else
-        {
-            return this.collideSpriteVsTilesHandler(sprite, tiles, overlapCallback, processCallback, callbackContext, true, false);
-        }
-    },
-
-    collideSpriteVsTilemapLayer: function (sprite, tilemapLayer, collideCallback, processCallback, callbackContext, overlapOnly)
-    {
-        var body = (sprite.isBody) ? sprite : sprite.body;
-
-        if (!body.enable || body.checkCollision.none || !this.canCollide(body, tilemapLayer))
-        {
-            return false;
-        }
-
-        var layerData = tilemapLayer.layer;
-
-        var x = body.x - (layerData.tileWidth * tilemapLayer.scaleX);
-        var y = body.y - (layerData.tileHeight * tilemapLayer.scaleY);
-        var w = body.width + (layerData.tileWidth * tilemapLayer.scaleX);
-        var h = body.height + layerData.tileHeight * tilemapLayer.scaleY;
-
-        var options = (overlapOnly) ? null : this.tileFilterOptions;
-
-        var mapData = GetTilesWithinWorldXY(x, y, w, h, options, tilemapLayer.scene.cameras.main, tilemapLayer.layer);
-
-        if (mapData.length === 0)
-        {
-            return false;
-        }
-        else
-        {
-            return this.collideSpriteVsTilesHandler(sprite, mapData, collideCallback, processCallback, callbackContext, overlapOnly, true);
-        }
-    },
-
-    collideSpriteVsTilesHandler: function (sprite, tiles, collideCallback, processCallback, callbackContext, overlapOnly, isLayer)
-    {
-        var body = (sprite.isBody) ? sprite : sprite.body;
-
-        var tile;
-        var tileWorldRect = { left: 0, right: 0, top: 0, bottom: 0 };
-        var tilemapLayer;
-        var collision = false;
-
-        for (var i = 0; i < tiles.length; i++)
-        {
-            tile = tiles[i];
-
-            tilemapLayer = tile.tilemapLayer;
-
-            var point = tilemapLayer.tileToWorldXY(tile.x, tile.y);
-
-            tileWorldRect.left = point.x;
-            tileWorldRect.top = point.y;
-
-            tileWorldRect.right = tileWorldRect.left + tile.width * tilemapLayer.scaleX;
-            tileWorldRect.bottom = tileWorldRect.top + tile.height * tilemapLayer.scaleY;
-
-            if (
-                TileIntersectsBody(tileWorldRect, body) &&
-                (!processCallback || processCallback.call(callbackContext, sprite, tile)) &&
-                ProcessTileCallbacks(tile, sprite) &&
-                (overlapOnly || SeparateTile(i, body, tile, tileWorldRect, tilemapLayer, this.TILE_BIAS, isLayer)))
-            {
-                this._total++;
-
-                collision = true;
-
-                if (collideCallback)
-                {
-                    collideCallback.call(callbackContext, sprite, tile);
-                }
-
-                if (overlapOnly && body.onOverlap)
-                {
-                    this.emit(Events.TILE_OVERLAP, sprite, tile, body);
-                }
-                else if (body.onCollide)
-                {
-                    this.emit(Events.TILE_COLLIDE, sprite, tile, body);
-                }
-            }
-        }
-
-        return collision;
-    },
-
-    collideGroupVsGroup: function (group1, group2, collideCallback, processCallback, callbackContext, overlapOnly)
-    {
-        if (group1.getLength() === 0 || group2.getLength() === 0 || !this.canCollide(group1, group2))
-        {
-            return;
-        }
-
-        var children = group1.getChildren();
-
-        for (var i = 0; i < children.length; i++)
-        {
-            this.collideSpriteVsGroup(children[i], group2, collideCallback, processCallback, callbackContext, overlapOnly);
-        }
-    },
-
-    wrap: function (object, padding)
-    {
-        if (object.body)
-        {
-            this.wrapObject(object, padding);
-        }
-        else if (object.getChildren)
-        {
-            this.wrapArray(object.getChildren(), padding);
-        }
-        else if (Array.isArray(object))
-        {
-            this.wrapArray(object, padding);
-        }
-        else
-        {
-            this.wrapObject(object, padding);
-        }
-    },
-
-    wrapArray: function (objects, padding)
-    {
-        for (var i = 0; i < objects.length; i++)
-        {
-            this.wrapObject(objects[i], padding);
-        }
-    },
-
-    wrapObject: function (object, padding)
-    {
-        if (padding === undefined) { padding = 0; }
-
-        object.x = Wrap(object.x, this.bounds.left - padding, this.bounds.right + padding);
-        object.y = Wrap(object.y, this.bounds.top - padding, this.bounds.bottom + padding);
-    },
-
-    shutdown: function ()
-    {
-        this.tree.clear();
-        this.staticTree.clear();
-        this.bodies.clear();
-        this.staticBodies.clear();
-        this.colliders.destroy();
-
-        this.removeAllListeners();
-    },
-
-    destroy: function ()
-    {
-        this.shutdown();
-
-        this.scene = null;
-
-        if (this.debugGraphic)
-        {
-            this.debugGraphic.destroy();
-            this.debugGraphic = null;
-        }
-    }
-
-});
-
-module.exports = World;
+var AngleBetweenPoints = require('../../math/angle/BetweenPoints');var Body = require('./Body');var Clamp = require('../../math/Clamp');var Class = require('../../utils/Class');var Collider = require('./Collider');var CONST = require('./const');var DistanceBetween = require('../../math/distance/DistanceBetween');var DistanceBetweenPoints = require('../../math/distance/DistanceBetweenPoints');var EventEmitter = require('eventemitter3');var Events = require('./events');var FuzzyEqual = require('../../math/fuzzy/Equal');var FuzzyGreaterThan = require('../../math/fuzzy/GreaterThan');var FuzzyLessThan = require('../../math/fuzzy/LessThan');var GetOverlapX = require('./GetOverlapX');var GetOverlapY = require('./GetOverlapY');var GetTilesWithinWorldXY = require('../../tilemaps/components/GetTilesWithinWorldXY');var GetValue = require('../../utils/object/GetValue');var MATH_CONST = require('../../math/const');var ProcessQueue = require('../../structs/ProcessQueue');var ProcessTileCallbacks = require('./tilemap/ProcessTileCallbacks');var Rectangle = require('../../geom/rectangle/Rectangle');var RTree = require('../../structs/RTree');var SeparateTile = require('./tilemap/SeparateTile');var SeparateX = require('./SeparateX');var SeparateY = require('./SeparateY');var Set = require('../../structs/Set');var StaticBody = require('./StaticBody');var TileIntersectsBody = require('./tilemap/TileIntersectsBody');var TransformMatrix = require('../../gameobjects/components/TransformMatrix');var Vector2 = require('../../math/Vector2');var Wrap = require('../../math/Wrap');var World = new Class({    Extends: EventEmitter,    initialize:    function World (scene, config)    {        EventEmitter.call(this);        this.scene = scene;        this.bodies = new Set();        this.staticBodies = new Set();        this.pendingDestroy = new Set();        this.colliders = new ProcessQueue();        this.gravity = new Vector2(GetValue(config, 'gravity.x', 0), GetValue(config, 'gravity.y', 0));        this.bounds = new Rectangle(            GetValue(config, 'x', 0),            GetValue(config, 'y', 0),            GetValue(config, 'width', scene.sys.scale.width),            GetValue(config, 'height', scene.sys.scale.height)        );        this.checkCollision = {            up: GetValue(config, 'checkCollision.up', true),            down: GetValue(config, 'checkCollision.down', true),            left: GetValue(config, 'checkCollision.left', true),            right: GetValue(config, 'checkCollision.right', true)        };        this.fps = GetValue(config, 'fps', 60);        this.fixedStep = GetValue(config, 'fixedStep', true);        this._elapsed = 0;        this._frameTime = 1 / this.fps;        this._frameTimeMS = 1000 * this._frameTime;        this.stepsLastFrame = 0;        this.timeScale = GetValue(config, 'timeScale', 1);        this.OVERLAP_BIAS = GetValue(config, 'overlapBias', 4);        this.TILE_BIAS = GetValue(config, 'tileBias', 16);        this.forceX = GetValue(config, 'forceX', false);        this.isPaused = GetValue(config, 'isPaused', false);        this._total = 0;        this.drawDebug = GetValue(config, 'debug', false);        this.debugGraphic;        this.defaults = {            debugShowBody: GetValue(config, 'debugShowBody', true),            debugShowStaticBody: GetValue(config, 'debugShowStaticBody', true),            debugShowVelocity: GetValue(config, 'debugShowVelocity', true),            bodyDebugColor: GetValue(config, 'debugBodyColor', 0xff00ff),            staticBodyDebugColor: GetValue(config, 'debugStaticBodyColor', 0x0000ff),            velocityDebugColor: GetValue(config, 'debugVelocityColor', 0x00ff00)        };        this.maxEntries = GetValue(config, 'maxEntries', 16);        this.useTree = GetValue(config, 'useTree', true);        this.tree = new RTree(this.maxEntries);        this.staticTree = new RTree(this.maxEntries);        this.treeMinMax = { minX: 0, minY: 0, maxX: 0, maxY: 0 };        this._tempMatrix = new TransformMatrix();        this._tempMatrix2 = new TransformMatrix();        this.tileFilterOptions = { isColliding: true, isNotEmpty: true, hasInterestingFace: true };        if (this.drawDebug)        {            this.createDebugGraphic();        }    },    enable: function (object, bodyType)    {        if (bodyType === undefined) { bodyType = CONST.DYNAMIC_BODY; }        if (!Array.isArray(object))        {            object = [ object ];        }        for (var i = 0; i < object.length; i++)        {            var entry = object[i];            if (entry.isParent)            {                var children = entry.getChildren();                for (var c = 0; c < children.length; c++)                {                    var child = children[c];                    if (child.isParent)                    {                        this.enable(child, bodyType);                    }                    else                    {                        this.enableBody(child, bodyType);                    }                }            }            else            {                this.enableBody(entry, bodyType);            }        }    },    enableBody: function (object, bodyType)    {        if (bodyType === undefined) { bodyType = CONST.DYNAMIC_BODY; }        if (object.hasTransformComponent)        {            if (!object.body)            {                if (bodyType === CONST.DYNAMIC_BODY)                {                    object.body = new Body(this, object);                }                else if (bodyType === CONST.STATIC_BODY)                {                    object.body = new StaticBody(this, object);                }            }            this.add(object.body);        }        return object;    },    add: function (body)    {        if (body.physicsType === CONST.DYNAMIC_BODY)        {            this.bodies.set(body);        }        else if (body.physicsType === CONST.STATIC_BODY)        {            this.staticBodies.set(body);            this.staticTree.insert(body);        }        body.enable = true;        return body;    },    disable: function (object)    {        if (!Array.isArray(object))        {            object = [ object ];        }        for (var i = 0; i < object.length; i++)        {            var entry = object[i];            if (entry.isParent)            {                var children = entry.getChildren();                for (var c = 0; c < children.length; c++)                {                    var child = children[c];                    if (child.isParent)                    {                        this.disable(child);                    }                    else                    {                        this.disableBody(child.body);                    }                }            }            else            {                this.disableBody(entry.body);            }        }    },    disableBody: function (body)    {        this.remove(body);        body.enable = false;    },    remove: function (body)    {        if (body.physicsType === CONST.DYNAMIC_BODY)        {            this.tree.remove(body);            this.bodies.delete(body);        }        else if (body.physicsType === CONST.STATIC_BODY)        {            this.staticBodies.delete(body);            this.staticTree.remove(body);        }    },    createDebugGraphic: function ()    {        var graphic = this.scene.sys.add.graphics({ x: 0, y: 0 });        graphic.setDepth(Number.MAX_VALUE);        this.debugGraphic = graphic;        this.drawDebug = true;        return graphic;    },    setBounds: function (x, y, width, height, checkLeft, checkRight, checkUp, checkDown)    {        this.bounds.setTo(x, y, width, height);        if (checkLeft !== undefined)        {            this.setBoundsCollision(checkLeft, checkRight, checkUp, checkDown);        }        return this;    },    setBoundsCollision: function (left, right, up, down)    {        if (left === undefined) { left = true; }        if (right === undefined) { right = true; }        if (up === undefined) { up = true; }        if (down === undefined) { down = true; }        this.checkCollision.left = left;        this.checkCollision.right = right;        this.checkCollision.up = up;        this.checkCollision.down = down;        return this;    },    pause: function ()    {        this.isPaused = true;        this.emit(Events.PAUSE);        return this;    },    resume: function ()    {        this.isPaused = false;        this.emit(Events.RESUME);        return this;    },    addCollider: function (object1, object2, collideCallback, processCallback, callbackContext)    {        if (collideCallback === undefined) { collideCallback = null; }        if (processCallback === undefined) { processCallback = null; }        if (callbackContext === undefined) { callbackContext = collideCallback; }        var collider = new Collider(this, false, object1, object2, collideCallback, processCallback, callbackContext);        this.colliders.add(collider);        return collider;    },    addOverlap: function (object1, object2, collideCallback, processCallback, callbackContext)    {        if (collideCallback === undefined) { collideCallback = null; }        if (processCallback === undefined) { processCallback = null; }        if (callbackContext === undefined) { callbackContext = collideCallback; }        var collider = new Collider(this, true, object1, object2, collideCallback, processCallback, callbackContext);        this.colliders.add(collider);        return collider;    },    removeCollider: function (collider)    {        this.colliders.remove(collider);        return this;    },    setFPS: function (framerate)    {        this.fps = framerate;        this._frameTime = 1 / this.fps;        this._frameTimeMS = 1000 * this._frameTime;        return this;    },    update: function (time, delta)    {        if (this.isPaused || this.bodies.size === 0)        {            return;        }        var i;        var fixedDelta = this._frameTime;        var msPerFrame = this._frameTimeMS * this.timeScale;        this._elapsed += delta;        var body;        var bodies = this.bodies.entries;        var willStep = (this._elapsed >= msPerFrame);        if (!this.fixedStep)        {            fixedDelta = delta * 0.001;            willStep = true;            this._elapsed = 0;        }        for (i = 0; i < bodies.length; i++)        {            body = bodies[i];            if (body.enable)            {                body.preUpdate(willStep, fixedDelta);            }        }        if (willStep)        {            this._elapsed -= msPerFrame;            this.stepsLastFrame = 1;            if (this.useTree)            {                this.tree.clear();                this.tree.load(bodies);            }            var colliders = this.colliders.update();            for (i = 0; i < colliders.length; i++)            {                var collider = colliders[i];                if (collider.active)                {                    collider.update();                }            }            this.emit(Events.WORLD_STEP, fixedDelta);        }        while (this._elapsed >= msPerFrame)        {            this._elapsed -= msPerFrame;            this.step(fixedDelta);        }    },    step: function (delta)    {        var i;        var body;        var bodies = this.bodies.entries;        var len = bodies.length;        for (i = 0; i < len; i++)        {            body = bodies[i];            if (body.enable)            {                body.update(delta);            }        }        if (this.useTree)        {            this.tree.clear();            this.tree.load(bodies);        }        var colliders = this.colliders.update();        for (i = 0; i < colliders.length; i++)        {            var collider = colliders[i];            if (collider.active)            {                collider.update();            }        }        this.emit(Events.WORLD_STEP, delta);        this.stepsLastFrame++;    },    singleStep: function ()    {        this.update(0, this._frameTimeMS);        this.postUpdate();    },    postUpdate: function ()    {        var i;        var body;        var bodies = this.bodies.entries;        var len = bodies.length;        var dynamic = this.bodies;        var staticBodies = this.staticBodies;        if (this.stepsLastFrame)        {            this.stepsLastFrame = 0;            for (i = 0; i < len; i++)            {                body = bodies[i];                if (body.enable)                {                    body.postUpdate();                }            }        }        if (this.drawDebug)        {            var graphics = this.debugGraphic;            graphics.clear();            for (i = 0; i < len; i++)            {                body = bodies[i];                if (body.willDrawDebug())                {                    body.drawDebug(graphics);                }            }            bodies = staticBodies.entries;            len = bodies.length;            for (i = 0; i < len; i++)            {                body = bodies[i];                if (body.willDrawDebug())                {                    body.drawDebug(graphics);                }            }        }        var pending = this.pendingDestroy;        if (pending.size > 0)        {            var dynamicTree = this.tree;            var staticTree = this.staticTree;            bodies = pending.entries;            len = bodies.length;            for (i = 0; i < len; i++)            {                body = bodies[i];                if (body.physicsType === CONST.DYNAMIC_BODY)                {                    dynamicTree.remove(body);                    dynamic.delete(body);                }                else if (body.physicsType === CONST.STATIC_BODY)                {                    staticTree.remove(body);                    staticBodies.delete(body);                }                body.world = undefined;                body.gameObject = undefined;            }            pending.clear();        }    },    updateMotion: function (body, delta)    {        if (body.allowRotation)        {            this.computeAngularVelocity(body, delta);        }        this.computeVelocity(body, delta);    },    computeAngularVelocity: function (body, delta)    {        var velocity = body.angularVelocity;        var acceleration = body.angularAcceleration;        var drag = body.angularDrag;        var max = body.maxAngular;        if (acceleration)        {            velocity += acceleration * delta;        }        else if (body.allowDrag && drag)        {            drag *= delta;            if (FuzzyGreaterThan(velocity - drag, 0, 0.1))            {                velocity -= drag;            }            else if (FuzzyLessThan(velocity + drag, 0, 0.1))            {                velocity += drag;            }            else            {                velocity = 0;            }        }        velocity = Clamp(velocity, -max, max);        var velocityDelta = velocity - body.angularVelocity;        body.angularVelocity += velocityDelta;        body.rotation += (body.angularVelocity * delta);    },    computeVelocity: function (body, delta)    {        var velocityX = body.velocity.x;        var accelerationX = body.acceleration.x;        var dragX = body.drag.x;        var maxX = body.maxVelocity.x;        var velocityY = body.velocity.y;        var accelerationY = body.acceleration.y;        var dragY = body.drag.y;        var maxY = body.maxVelocity.y;        var speed = body.speed;        var maxSpeed = body.maxSpeed;        var allowDrag = body.allowDrag;        var useDamping = body.useDamping;        if (body.allowGravity)        {            velocityX += (this.gravity.x + body.gravity.x) * delta;            velocityY += (this.gravity.y + body.gravity.y) * delta;        }        if (accelerationX)        {            velocityX += accelerationX * delta;        }        else if (allowDrag && dragX)        {            if (useDamping)            {                dragX = Math.pow(dragX, delta);                velocityX *= dragX;                speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);                if (FuzzyEqual(speed, 0, 0.001))                {                    velocityX = 0;                }            }            else            {                dragX *= delta;                if (FuzzyGreaterThan(velocityX - dragX, 0, 0.01))                {                    velocityX -= dragX;                }                else if (FuzzyLessThan(velocityX + dragX, 0, 0.01))                {                    velocityX += dragX;                }                else                {                    velocityX = 0;                }            }        }        if (accelerationY)        {            velocityY += accelerationY * delta;        }        else if (allowDrag && dragY)        {            if (useDamping)            {                dragY = Math.pow(dragY, delta);                velocityY *= dragY;                speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);                if (FuzzyEqual(speed, 0, 0.001))                {                    velocityY = 0;                }            }            else            {                dragY *= delta;                if (FuzzyGreaterThan(velocityY - dragY, 0, 0.01))                {                    velocityY -= dragY;                }                else if (FuzzyLessThan(velocityY + dragY, 0, 0.01))                {                    velocityY += dragY;                }                else                {                    velocityY = 0;                }            }        }        velocityX = Clamp(velocityX, -maxX, maxX);        velocityY = Clamp(velocityY, -maxY, maxY);        body.velocity.set(velocityX, velocityY);        if (maxSpeed > -1 && body.velocity.length() > maxSpeed)        {            body.velocity.normalize().scale(maxSpeed);            speed = maxSpeed;        }        body.speed = speed;    },    separate: function (body1, body2, processCallback, callbackContext, overlapOnly)    {        var overlapX;        var overlapY;        var result = false;        var runSeparation = true;        if (            !body1.enable ||            !body2.enable ||            body1.checkCollision.none ||            body2.checkCollision.none ||            !this.intersects(body1, body2) ||            (body1.collisionMask & body2.collisionCategory) === 0 ||            (body2.collisionMask & body1.collisionCategory) === 0)        {            return result;        }        if (processCallback && processCallback.call(callbackContext, (body1.gameObject || body1), (body2.gameObject || body2)) === false)        {            return result;        }        if (body1.isCircle || body2.isCircle)        {            var circleResults = this.separateCircle(body1, body2, overlapOnly);            if (circleResults.result)            {                result = true;                runSeparation = false;            }            else            {                overlapX = circleResults.x;                overlapY = circleResults.y;                runSeparation = true;            }        }        if (runSeparation)        {            var resultX = false;            var resultY = false;            var bias = this.OVERLAP_BIAS;            if (overlapOnly)            {                resultX = SeparateX(body1, body2, overlapOnly, bias, overlapX);                resultY = SeparateY(body1, body2, overlapOnly, bias, overlapY);            }            else if (this.forceX || Math.abs(this.gravity.y + body1.gravity.y) < Math.abs(this.gravity.x + body1.gravity.x))            {                resultX = SeparateX(body1, body2, overlapOnly, bias, overlapX);                if (this.intersects(body1, body2))                {                    resultY = SeparateY(body1, body2, overlapOnly, bias, overlapY);                }            }            else            {                resultY = SeparateY(body1, body2, overlapOnly, bias, overlapY);                if (this.intersects(body1, body2))                {                    resultX = SeparateX(body1, body2, overlapOnly, bias, overlapX);                }            }            result = (resultX || resultY);        }        if (result)        {            if (overlapOnly)            {                if (body1.onOverlap || body2.onOverlap)                {                    this.emit(Events.OVERLAP, body1.gameObject, body2.gameObject, body1, body2);                }            }            else if (body1.onCollide || body2.onCollide)            {                this.emit(Events.COLLIDE, body1.gameObject, body2.gameObject, body1, body2);            }        }        return result;    },    separateCircle: function (body1, body2, overlapOnly)    {        GetOverlapX(body1, body2, false, 0);        GetOverlapY(body1, body2, false, 0);        var body1IsCircle = body1.isCircle;        var body2IsCircle = body2.isCircle;        var body1Center = body1.center;        var body2Center = body2.center;        var body1Immovable = body1.immovable;        var body2Immovable = body2.immovable;        var body1Velocity = body1.velocity;        var body2Velocity = body2.velocity;        var overlap = 0;        var twoCircles = true;        if (body1IsCircle !== body2IsCircle)        {            twoCircles = false;            var circleX = body1Center.x;            var circleY = body1Center.y;            var circleRadius = body1.halfWidth;            var rectX = body2.position.x;            var rectY = body2.position.y;            var rectRight = body2.right;            var rectBottom = body2.bottom;            if (body2IsCircle)            {                circleX = body2Center.x;                circleY = body2Center.y;                circleRadius = body2.halfWidth;                rectX = body1.position.x;                rectY = body1.position.y;                rectRight = body1.right;                rectBottom = body1.bottom;            }            if (circleY < rectY)            {                if (circleX < rectX)                {                    overlap = DistanceBetween(circleX, circleY, rectX, rectY) - circleRadius;                }                else if (circleX > rectRight)                {                    overlap = DistanceBetween(circleX, circleY, rectRight, rectY) - circleRadius;                }            }            else if (circleY > rectBottom)            {                if (circleX < rectX)                {                    overlap = DistanceBetween(circleX, circleY, rectX, rectBottom) - circleRadius;                }                else if (circleX > rectRight)                {                    overlap = DistanceBetween(circleX, circleY, rectRight, rectBottom) - circleRadius;                }            }            overlap *= -1;        }        else        {            overlap = (body1.halfWidth + body2.halfWidth) - DistanceBetweenPoints(body1Center, body2Center);        }        body1.overlapR = overlap;        body2.overlapR = overlap;        var angle = AngleBetweenPoints(body1Center, body2Center);        var overlapX = (overlap + MATH_CONST.EPSILON) * Math.cos(angle);        var overlapY = (overlap + MATH_CONST.EPSILON) * Math.sin(angle);        var results = { overlap: overlap, result: false, x: overlapX, y: overlapY };        if (overlapOnly && (!twoCircles || (twoCircles && overlap !== 0)))        {            results.result = true;            return results;        }        if ((!twoCircles && overlap === 0) || (body1Immovable && body2Immovable) || body1.customSeparateX || body2.customSeparateX)        {            results.x = undefined;            results.y = undefined;            return results;        }        var deadlock = (!body1.pushable && !body2.pushable);        if (twoCircles)        {            var dx = body1Center.x - body2Center.x;            var dy = body1Center.y - body2Center.y;            var d = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));            var nx = ((body2Center.x - body1Center.x) / d) || 0;            var ny = ((body2Center.y - body1Center.y) / d) || 0;            var p = 2 * (body1Velocity.x * nx + body1Velocity.y * ny - body2Velocity.x * nx - body2Velocity.y * ny) / (body1.mass + body2.mass);            if (body1Immovable || body2Immovable || !body1.pushable || !body2.pushable)            {                p *= 2;            }            if (!body1Immovable && body1.pushable)            {                body1Velocity.x = (body1Velocity.x - p / body1.mass * nx);                body1Velocity.y = (body1Velocity.y - p / body1.mass * ny);                body1Velocity.multiply(body1.bounce);            }            if (!body2Immovable && body2.pushable)            {                body2Velocity.x = (body2Velocity.x + p / body2.mass * nx);                body2Velocity.y = (body2Velocity.y + p / body2.mass * ny);                body2Velocity.multiply(body2.bounce);            }            if (!body1Immovable && !body2Immovable)            {                overlapX *= 0.5;                overlapY *= 0.5;            }            if (!body1Immovable || body1.pushable || deadlock)            {                body1.x -= overlapX;                body1.y -= overlapY;                body1.updateCenter();            }            if (!body2Immovable || body2.pushable || deadlock)            {                body2.x += overlapX;                body2.y += overlapY;                body2.updateCenter();            }            results.result = true;        }        else        {            if (!body1Immovable && (body1.pushable || deadlock))            {                body1.x -= overlapX;                body1.y -= overlapY;                body1.updateCenter();            }            if (!body2Immovable && (body2.pushable || deadlock))            {                body2.x += overlapX;                body2.y += overlapY;                body2.updateCenter();            }            results.x = undefined;            results.y = undefined;        }        return results;    },    intersects: function (body1, body2)    {        if (body1 === body2)        {            return false;        }        if (!body1.isCircle && !body2.isCircle)        {            return !(                body1.right <= body2.left ||                body1.bottom <= body2.top ||                body1.left >= body2.right ||                body1.top >= body2.bottom            );        }        else if (body1.isCircle)        {            if (body2.isCircle)            {                return DistanceBetweenPoints(body1.center, body2.center) <= (body1.halfWidth + body2.halfWidth);            }            else            {                return this.circleBodyIntersects(body1, body2);            }        }        else        {            return this.circleBodyIntersects(body2, body1);        }    },    circleBodyIntersects: function (circle, body)    {        var x = Clamp(circle.center.x, body.left, body.right);        var y = Clamp(circle.center.y, body.top, body.bottom);        var dx = (circle.center.x - x) * (circle.center.x - x);        var dy = (circle.center.y - y) * (circle.center.y - y);        return (dx + dy) <= (circle.halfWidth * circle.halfWidth);    },    overlap: function (object1, object2, overlapCallback, processCallback, callbackContext)    {        if (overlapCallback === undefined) { overlapCallback = null; }        if (processCallback === undefined) { processCallback = null; }        if (callbackContext === undefined) { callbackContext = overlapCallback; }        return this.collideObjects(object1, object2, overlapCallback, processCallback, callbackContext, true);    },    collide: function (object1, object2, collideCallback, processCallback, callbackContext)    {        if (collideCallback === undefined) { collideCallback = null; }        if (processCallback === undefined) { processCallback = null; }        if (callbackContext === undefined) { callbackContext = collideCallback; }        return this.collideObjects(object1, object2, collideCallback, processCallback, callbackContext, false);    },    collideObjects: function (object1, object2, collideCallback, processCallback, callbackContext, overlapOnly)    {        var i;        var j;        if (object1.isParent && (object1.physicsType === undefined || object2 === undefined || object1 === object2))        {            object1 = object1.children.entries;        }        if (object2 && object2.isParent && object2.physicsType === undefined)        {            object2 = object2.children.entries;        }        var object1isArray = Array.isArray(object1);        var object2isArray = Array.isArray(object2);        this._total = 0;        if (!object1isArray && !object2isArray)        {            this.collideHandler(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);        }        else if (!object1isArray && object2isArray)        {            for (i = 0; i < object2.length; i++)            {                this.collideHandler(object1, object2[i], collideCallback, processCallback, callbackContext, overlapOnly);            }        }        else if (object1isArray && !object2isArray)        {            if (!object2)            {                for (i = 0; i < object1.length; i++)                {                    var child = object1[i];                    for (j = i + 1; j < object1.length; j++)                    {                        if (i === j)                        {                            continue;                        }                        this.collideHandler(child, object1[j], collideCallback, processCallback, callbackContext, overlapOnly);                    }                }            }            else            {                for (i = 0; i < object1.length; i++)                {                    this.collideHandler(object1[i], object2, collideCallback, processCallback, callbackContext, overlapOnly);                }            }        }        else        {            for (i = 0; i < object1.length; i++)            {                for (j = 0; j < object2.length; j++)                {                    this.collideHandler(object1[i], object2[j], collideCallback, processCallback, callbackContext, overlapOnly);                }            }        }        return (this._total > 0);    },    collideHandler: function (object1, object2, collideCallback, processCallback, callbackContext, overlapOnly)    {        if (object2 === undefined && object1.isParent)        {            return this.collideGroupVsGroup(object1, object1, collideCallback, processCallback, callbackContext, overlapOnly);        }        if (!object1 || !object2)        {            return false;        }        if (object1.body || object1.isBody)        {            if (object2.body || object2.isBody)            {                return this.collideSpriteVsSprite(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);            }            else if (object2.isParent)            {                return this.collideSpriteVsGroup(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);            }            else if (object2.isTilemap)            {                return this.collideSpriteVsTilemapLayer(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);            }        }        else if (object1.isParent)        {            if (object2.body || object2.isBody)            {                return this.collideSpriteVsGroup(object2, object1, collideCallback, processCallback, callbackContext, overlapOnly);            }            else if (object2.isParent)            {                return this.collideGroupVsGroup(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);            }            else if (object2.isTilemap)            {                return this.collideGroupVsTilemapLayer(object1, object2, collideCallback, processCallback, callbackContext, overlapOnly);            }        }        else if (object1.isTilemap)        {            if (object2.body || object2.isBody)            {                return this.collideSpriteVsTilemapLayer(object2, object1, collideCallback, processCallback, callbackContext, overlapOnly);            }            else if (object2.isParent)            {                return this.collideGroupVsTilemapLayer(object2, object1, collideCallback, processCallback, callbackContext, overlapOnly);            }        }    },    canCollide: function (body1, body2)    {        return (            (body1 && body2) &&            (body1.collisionMask & body2.collisionCategory) !== 0 &&            (body2.collisionMask & body1.collisionCategory) !== 0        );    },    collideSpriteVsSprite: function (sprite1, sprite2, collideCallback, processCallback, callbackContext, overlapOnly)    {        var body1 = (sprite1.isBody) ? sprite1 : sprite1.body;        var body2 = (sprite2.isBody) ? sprite2 : sprite2.body;        if (!this.canCollide(body1, body2))        {            return false;        }        if (this.separate(body1, body2, processCallback, callbackContext, overlapOnly))        {            if (collideCallback)            {                collideCallback.call(callbackContext, sprite1, sprite2);            }            this._total++;        }        return true;    },    collideSpriteVsGroup: function (sprite, group, collideCallback, processCallback, callbackContext, overlapOnly)    {        var bodyA = (sprite.isBody) ? sprite : sprite.body;        if (group.getLength() === 0 || !bodyA || !bodyA.enable || bodyA.checkCollision.none || !this.canCollide(bodyA, group))        {            return;        }        var i;        var len;        var bodyB;        if (this.useTree || group.physicsType === CONST.STATIC_BODY)        {            var minMax = this.treeMinMax;            minMax.minX = bodyA.left;            minMax.minY = bodyA.top;            minMax.maxX = bodyA.right;            minMax.maxY = bodyA.bottom;            var results = (group.physicsType === CONST.DYNAMIC_BODY) ? this.tree.search(minMax) : this.staticTree.search(minMax);            len = results.length;            for (i = 0; i < len; i++)            {                bodyB = results[i];                if (bodyA === bodyB || !bodyB.enable || bodyB.checkCollision.none || !group.contains(bodyB.gameObject))                {                    continue;                }                if (this.separate(bodyA, bodyB, processCallback, callbackContext, overlapOnly))                {                    if (collideCallback)                    {                        collideCallback.call(callbackContext, bodyA.gameObject, bodyB.gameObject);                    }                    this._total++;                }            }        }        else        {            var children = group.getChildren();            var skipIndex = group.children.entries.indexOf(sprite);            len = children.length;            for (i = 0; i < len; i++)            {                bodyB = children[i].body;                if (!bodyB || i === skipIndex || !bodyB.enable)                {                    continue;                }                if (this.separate(bodyA, bodyB, processCallback, callbackContext, overlapOnly))                {                    if (collideCallback)                    {                        collideCallback.call(callbackContext, bodyA.gameObject, bodyB.gameObject);                    }                    this._total++;                }            }        }    },    collideGroupVsTilemapLayer: function (group, tilemapLayer, collideCallback, processCallback, callbackContext, overlapOnly)    {        if (!this.canCollide(group, tilemapLayer))        {            return false;        }        var children = group.getChildren();        if (children.length === 0)        {            return false;        }        var didCollide = false;        for (var i = 0; i < children.length; i++)        {            if (children[i].body || children[i].isBody)            {                if (this.collideSpriteVsTilemapLayer(children[i], tilemapLayer, collideCallback, processCallback, callbackContext, overlapOnly))                {                    didCollide = true;                }            }        }        return didCollide;    },    collideTiles: function (sprite, tiles, collideCallback, processCallback, callbackContext)    {        if (tiles.length === 0 || (sprite.body && !sprite.body.enable) || (sprite.isBody && !sprite.enable))        {            return false;        }        else        {            return this.collideSpriteVsTilesHandler(sprite, tiles, collideCallback, processCallback, callbackContext, false, false);        }    },    overlapTiles: function (sprite, tiles, overlapCallback, processCallback, callbackContext)    {        if (tiles.length === 0 || (sprite.body && !sprite.body.enable) || (sprite.isBody && !sprite.enable))        {            return false;        }        else        {            return this.collideSpriteVsTilesHandler(sprite, tiles, overlapCallback, processCallback, callbackContext, true, false);        }    },    collideSpriteVsTilemapLayer: function (sprite, tilemapLayer, collideCallback, processCallback, callbackContext, overlapOnly)    {        var body = (sprite.isBody) ? sprite : sprite.body;        if (!body.enable || body.checkCollision.none || !this.canCollide(body, tilemapLayer))        {            return false;        }        var layerData = tilemapLayer.layer;        var x = body.x - (layerData.tileWidth * tilemapLayer.scaleX);        var y = body.y - (layerData.tileHeight * tilemapLayer.scaleY);        var w = body.width + (layerData.tileWidth * tilemapLayer.scaleX);        var h = body.height + layerData.tileHeight * tilemapLayer.scaleY;        var options = (overlapOnly) ? null : this.tileFilterOptions;        var mapData = GetTilesWithinWorldXY(x, y, w, h, options, tilemapLayer.scene.cameras.main, tilemapLayer.layer);        if (mapData.length === 0)        {            return false;        }        else        {            return this.collideSpriteVsTilesHandler(sprite, mapData, collideCallback, processCallback, callbackContext, overlapOnly, true);        }    },    collideSpriteVsTilesHandler: function (sprite, tiles, collideCallback, processCallback, callbackContext, overlapOnly, isLayer)    {        var body = (sprite.isBody) ? sprite : sprite.body;        var tile;        var tileWorldRect = { left: 0, right: 0, top: 0, bottom: 0 };        var tilemapLayer;        var collision = false;        for (var i = 0; i < tiles.length; i++)        {            tile = tiles[i];            tilemapLayer = tile.tilemapLayer;            var point = tilemapLayer.tileToWorldXY(tile.x, tile.y);            tileWorldRect.left = point.x;            tileWorldRect.top = point.y;            tileWorldRect.right = tileWorldRect.left + tile.width * tilemapLayer.scaleX;            tileWorldRect.bottom = tileWorldRect.top + tile.height * tilemapLayer.scaleY;            if (                TileIntersectsBody(tileWorldRect, body) &&                (!processCallback || processCallback.call(callbackContext, sprite, tile)) &&                ProcessTileCallbacks(tile, sprite) &&                (overlapOnly || SeparateTile(i, body, tile, tileWorldRect, tilemapLayer, this.TILE_BIAS, isLayer)))            {                this._total++;                collision = true;                if (collideCallback)                {                    collideCallback.call(callbackContext, sprite, tile);                }                if (overlapOnly && body.onOverlap)                {                    this.emit(Events.TILE_OVERLAP, sprite, tile, body);                }                else if (body.onCollide)                {                    this.emit(Events.TILE_COLLIDE, sprite, tile, body);                }            }        }        return collision;    },    collideGroupVsGroup: function (group1, group2, collideCallback, processCallback, callbackContext, overlapOnly)    {        if (group1.getLength() === 0 || group2.getLength() === 0 || !this.canCollide(group1, group2))        {            return;        }        var children = group1.getChildren();        for (var i = 0; i < children.length; i++)        {            this.collideSpriteVsGroup(children[i], group2, collideCallback, processCallback, callbackContext, overlapOnly);        }    },    wrap: function (object, padding)    {        if (object.body)        {            this.wrapObject(object, padding);        }        else if (object.getChildren)        {            this.wrapArray(object.getChildren(), padding);        }        else if (Array.isArray(object))        {            this.wrapArray(object, padding);        }        else        {            this.wrapObject(object, padding);        }    },    wrapArray: function (objects, padding)    {        for (var i = 0; i < objects.length; i++)        {            this.wrapObject(objects[i], padding);        }    },    wrapObject: function (object, padding)    {        if (padding === undefined) { padding = 0; }        object.x = Wrap(object.x, this.bounds.left - padding, this.bounds.right + padding);        object.y = Wrap(object.y, this.bounds.top - padding, this.bounds.bottom + padding);    },    shutdown: function ()    {        this.tree.clear();        this.staticTree.clear();        this.bodies.clear();        this.staticBodies.clear();        this.colliders.destroy();        this.removeAllListeners();    },    destroy: function ()    {        this.shutdown();        this.scene = null;        if (this.debugGraphic)        {            this.debugGraphic.destroy();            this.debugGraphic = null;        }    }});module.exports = World;

@@ -1,1794 +1,1 @@
-var ArrayEach = require('../../utils/array/Each');
-var ArrayRemove = require('../../utils/array/Remove');
-var CameraEvents = require('../../cameras/2d/events');
-var Class = require('../../utils/Class');
-var CONST = require('../../const');
-var EventEmitter = require('eventemitter3');
-var Events = require('../events');
-var IsSizePowerOfTwo = require('../../math/pow2/IsSizePowerOfTwo');
-var Matrix4 = require('../../math/Matrix4');
-var NOOP = require('../../utils/NOOP');
-var PipelineManager = require('./PipelineManager');
-var RenderTarget = require('./RenderTarget');
-var ScaleEvents = require('../../scale/events');
-var TextureEvents = require('../../textures/events');
-var Utils = require('./Utils');
-var WebGLSnapshot = require('../snapshot/WebGLSnapshot');
-var WebGLBufferWrapper = require('./wrappers/WebGLBufferWrapper');
-var WebGLProgramWrapper = require('./wrappers/WebGLProgramWrapper');
-var WebGLTextureWrapper = require('./wrappers/WebGLTextureWrapper');
-var WebGLFramebufferWrapper = require('./wrappers/WebGLFramebufferWrapper');
-var WebGLAttribLocationWrapper = require('./wrappers/WebGLAttribLocationWrapper');
-var WebGLUniformLocationWrapper = require('./wrappers/WebGLUniformLocationWrapper');
-
-var DEBUG = false;
-
-var WebGLRenderer = new Class({
-
-    Extends: EventEmitter,
-
-    initialize:
-
-    function WebGLRenderer (game)
-    {
-        EventEmitter.call(this);
-
-        var gameConfig = game.config;
-
-        var contextCreationConfig = {
-            alpha: gameConfig.transparent,
-            desynchronized: gameConfig.desynchronized,
-            depth: true,
-            antialias: gameConfig.antialiasGL,
-            premultipliedAlpha: gameConfig.premultipliedAlpha,
-            stencil: true,
-            failIfMajorPerformanceCaveat: gameConfig.failIfMajorPerformanceCaveat,
-            powerPreference: gameConfig.powerPreference,
-            preserveDrawingBuffer: gameConfig.preserveDrawingBuffer,
-            willReadFrequently: false
-        };
-
-        this.config = {
-            clearBeforeRender: gameConfig.clearBeforeRender,
-            antialias: gameConfig.antialias,
-            backgroundColor: gameConfig.backgroundColor,
-            contextCreation: contextCreationConfig,
-            roundPixels: gameConfig.roundPixels,
-            maxTextures: gameConfig.maxTextures,
-            maxTextureSize: gameConfig.maxTextureSize,
-            batchSize: gameConfig.batchSize,
-            maxLights: gameConfig.maxLights,
-            mipmapFilter: gameConfig.mipmapFilter
-        };
-
-        this.game = game;
-
-        this.type = CONST.WEBGL;
-
-        this.pipelines = null;
-
-        this.width = 0;
-
-        this.height = 0;
-
-        this.canvas = game.canvas;
-
-        this.blendModes = [];
-
-        this.contextLost = false;
-
-        this.snapshotState = {
-            x: 0,
-            y: 0,
-            width: 1,
-            height: 1,
-            getPixel: false,
-            callback: null,
-            type: 'image/png',
-            encoder: 0.92,
-            isFramebuffer: false,
-            bufferWidth: 0,
-            bufferHeight: 0
-        };
-
-        this.maxTextures = 0;
-
-        this.textureIndexes;
-
-        this.glBufferWrappers = [];
-
-        this.glProgramWrappers = [];
-
-        this.glTextureWrappers = [];
-
-        this.glFramebufferWrappers = [];
-
-        this.glAttribLocationWrappers = [];
-
-        this.glUniformLocationWrappers = [];
-
-        this.currentFramebuffer = null;
-
-        this.fboStack = [];
-
-        this.currentProgram = null;
-
-        this.currentBlendMode = Infinity;
-
-        this.currentScissorEnabled = false;
-
-        this.currentScissor = null;
-
-        this.scissorStack = [];
-
-        this.contextLostHandler = NOOP;
-
-        this.contextRestoredHandler = NOOP;
-
-        this.previousContextLostHandler = NOOP;
-
-        this.previousContextRestoredHandler = NOOP;
-
-        this.gl = null;
-
-        this.supportedExtensions = null;
-
-        this.instancedArraysExtension = null;
-
-        this.vaoExtension = null;
-
-        this.extensions = {};
-
-        this.glFormats;
-
-        this.compression;
-
-        this.drawingBufferHeight = 0;
-
-        this.blankTexture = null;
-
-        this.normalTexture = null;
-
-        this.whiteTexture = null;
-
-        this.maskCount = 0;
-
-        this.maskStack = [];
-
-        this.currentMask = { mask: null, camera: null };
-
-        this.currentCameraMask = { mask: null, camera: null };
-
-        this.glFuncMap = null;
-
-        this.currentType = '';
-
-        this.newType = false;
-
-        this.nextTypeMatch = false;
-
-        this.finalType = false;
-
-        this.mipmapFilter = null;
-
-        this.defaultScissor = [ 0, 0, 0, 0 ];
-
-        this.isBooted = false;
-
-        this.renderTarget = null;
-
-        this.projectionMatrix;
-
-        this.projectionWidth = 0;
-
-        this.projectionHeight = 0;
-
-        this.maskSource = null;
-
-        this.maskTarget = null;
-
-        this.spector = null;
-
-        this._debugCapture = false;
-
-        this.init(this.config);
-    },
-
-    init: function (config)
-    {
-        var gl;
-        var game = this.game;
-        var canvas = this.canvas;
-        var clearColor = config.backgroundColor;
-
-        if (DEBUG)
-        {
-            this.spector = new SPECTOR.Spector();
-
-            this.spector.onCapture.add(this.onCapture.bind(this));
-        }
-
-        if (game.config.context)
-        {
-            gl = game.config.context;
-        }
-        else
-        {
-            gl = canvas.getContext('webgl', config.contextCreation) || canvas.getContext('experimental-webgl', config.contextCreation);
-        }
-
-        if (!gl || gl.isContextLost())
-        {
-            this.contextLost = true;
-
-            throw new Error('WebGL unsupported');
-        }
-
-        this.gl = gl;
-
-        this.setExtensions();
-
-        this.setContextHandlers();
-
-        game.context = gl;
-
-        for (var i = 0; i <= 27; i++)
-        {
-            this.blendModes.push({ func: [ gl.ONE, gl.ONE_MINUS_SRC_ALPHA ], equation: gl.FUNC_ADD });
-        }
-
-        this.blendModes[1].func = [ gl.ONE, gl.DST_ALPHA ];
-
-        this.blendModes[2].func = [ gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA ];
-
-        this.blendModes[3].func = [ gl.ONE, gl.ONE_MINUS_SRC_COLOR ];
-
-        this.blendModes[17] = { func: [ gl.ZERO, gl.ONE_MINUS_SRC_ALPHA ], equation: gl.FUNC_REVERSE_SUBTRACT };
-
-        this.glFormats = [ gl.BYTE, gl.SHORT, gl.UNSIGNED_BYTE, gl.UNSIGNED_SHORT, gl.FLOAT ];
-
-        this.glFuncMap = {
-
-            mat2: { func: gl.uniformMatrix2fv, length: 1, matrix: true },
-            mat3: { func: gl.uniformMatrix3fv, length: 1, matrix: true },
-            mat4: { func: gl.uniformMatrix4fv, length: 1, matrix: true },
-
-            '1f': { func: gl.uniform1f, length: 1 },
-            '1fv': { func: gl.uniform1fv, length: 1 },
-            '1i': { func: gl.uniform1i, length: 1 },
-            '1iv': { func: gl.uniform1iv, length: 1 },
-
-            '2f': { func: gl.uniform2f, length: 2 },
-            '2fv': { func: gl.uniform2fv, length: 1 },
-            '2i': { func: gl.uniform2i, length: 2 },
-            '2iv': { func: gl.uniform2iv, length: 1 },
-
-            '3f': { func: gl.uniform3f, length: 3 },
-            '3fv': { func: gl.uniform3fv, length: 1 },
-            '3i': { func: gl.uniform3i, length: 3 },
-            '3iv': { func: gl.uniform3iv, length: 1 },
-
-            '4f': { func: gl.uniform4f, length: 4 },
-            '4fv': { func: gl.uniform4fv, length: 1 },
-            '4i': { func: gl.uniform4i, length: 4 },
-            '4iv': { func: gl.uniform4iv, length: 1 }
-
-        };
-
-        if (!config.maxTextures || config.maxTextures === -1)
-        {
-            config.maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
-        }
-
-        if (!config.maxTextureSize)
-        {
-            config.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-        }
-
-        this.compression = this.getCompressedTextures();
-
-        gl.disable(gl.DEPTH_TEST);
-        gl.disable(gl.CULL_FACE);
-
-        gl.enable(gl.BLEND);
-
-        gl.clearColor(clearColor.redGL, clearColor.greenGL, clearColor.blueGL, clearColor.alphaGL);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        var validMipMaps = [ 'NEAREST', 'LINEAR', 'NEAREST_MIPMAP_NEAREST', 'LINEAR_MIPMAP_NEAREST', 'NEAREST_MIPMAP_LINEAR', 'LINEAR_MIPMAP_LINEAR' ];
-
-        if (validMipMaps.indexOf(config.mipmapFilter) !== -1)
-        {
-            this.mipmapFilter = gl[config.mipmapFilter];
-        }
-
-        this.maxTextures = Utils.checkShaderMax(gl, config.maxTextures);
-
-        this.textureIndexes = [];
-
-        this.createTemporaryTextures();
-
-        this.pipelines = new PipelineManager(this);
-
-        this.setBlendMode(CONST.BlendModes.NORMAL);
-
-        this.projectionMatrix = new Matrix4().identity();
-
-        game.textures.once(TextureEvents.READY, this.boot, this);
-
-        return this;
-    },
-
-    boot: function ()
-    {
-        var game = this.game;
-        var pipelineManager = this.pipelines;
-
-        var baseSize = game.scale.baseSize;
-
-        var width = baseSize.width;
-        var height = baseSize.height;
-
-        this.width = width;
-        this.height = height;
-
-        this.isBooted = true;
-
-        this.renderTarget = new RenderTarget(this, width, height, 1, 0, true, true);
-
-        this.maskTarget = new RenderTarget(this, width, height, 1, 0, true, true);
-        this.maskSource = new RenderTarget(this, width, height, 1, 0, true, true);
-
-        var config = game.config;
-
-        pipelineManager.boot(config.pipeline, config.defaultPipeline, config.autoMobilePipeline);
-
-        this.blankTexture = game.textures.getFrame('__DEFAULT').glTexture;
-        this.normalTexture = game.textures.getFrame('__NORMAL').glTexture;
-        this.whiteTexture = game.textures.getFrame('__WHITE').glTexture;
-
-        var gl = this.gl;
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-        gl.enable(gl.SCISSOR_TEST);
-
-        game.scale.on(ScaleEvents.RESIZE, this.onResize, this);
-
-        this.resize(width, height);
-    },
-
-    setExtensions: function ()
-    {
-        var gl = this.gl;
-
-        var exts = gl.getSupportedExtensions();
-
-        this.supportedExtensions = exts;
-
-        var angleString = 'ANGLE_instanced_arrays';
-
-        this.instancedArraysExtension = (exts.indexOf(angleString) > -1) ? gl.getExtension(angleString) : null;
-
-        var vaoString = 'OES_vertex_array_object';
-
-        this.vaoExtension = (exts.indexOf(vaoString) > -1) ? gl.getExtension(vaoString) : null;
-    },
-
-    setContextHandlers: function (contextLost, contextRestored)
-    {
-        if (this.previousContextLostHandler)
-        {
-            this.canvas.removeEventListener('webglcontextlost', this.previousContextLostHandler, false);
-        }
-        if (this.previousContextRestoredHandler)
-        {
-            this.canvas.removeEventListener('webglcontextlost', this.previousContextRestoredHandler, false);
-        }
-
-        if (typeof contextLost === 'function')
-        {
-            this.contextLostHandler = contextLost.bind(this);
-        }
-        else
-        {
-            this.contextLostHandler = this.dispatchContextLost.bind(this);
-        }
-
-        if (typeof contextRestored === 'function')
-        {
-            this.contextRestoredHandler = contextRestored.bind(this);
-        }
-        else
-        {
-            this.contextRestoredHandler = this.dispatchContextRestored.bind(this);
-        }
-
-        this.canvas.addEventListener('webglcontextlost', this.contextLostHandler, false);
-        this.canvas.addEventListener('webglcontextrestored', this.contextRestoredHandler, false);
-
-        this.previousContextLostHandler = this.contextLostHandler;
-        this.previousContextRestoredHandler = this.contextRestoredHandler;
-    },
-
-    dispatchContextLost: function (event)
-    {
-        this.contextLost = true;
-
-        if (console)
-        {
-            console.warn('WebGL Context lost. Renderer disabled');
-        }
-
-        this.emit(Events.LOSE_WEBGL, this);
-
-        event.preventDefault();
-    },
-
-    dispatchContextRestored: function (event)
-    {
-        var gl = this.gl;
-
-        if (gl.isContextLost())
-        {
-            if (console)
-            {
-                console.log('WebGL Context restored, but context is still lost');
-            }
-
-            return;
-        }
-
-        this.currentProgram = null;
-        this.currentFramebuffer = null;
-        this.setBlendMode(CONST.BlendModes.NORMAL);
-
-        gl.disable(gl.BLEND);
-        gl.disable(gl.DEPTH_TEST);
-        gl.enable(gl.CULL_FACE);
-
-        this.compression = this.getCompressedTextures();
-
-        var wrapperCreateResource = function (wrapper)
-        {
-            wrapper.createResource();
-        };
-
-        ArrayEach(this.glTextureWrappers, wrapperCreateResource);
-        ArrayEach(this.glBufferWrappers, wrapperCreateResource);
-        ArrayEach(this.glFramebufferWrappers, wrapperCreateResource);
-        ArrayEach(this.glProgramWrappers, wrapperCreateResource);
-        ArrayEach(this.glAttribLocationWrappers, wrapperCreateResource);
-        ArrayEach(this.glUniformLocationWrappers, wrapperCreateResource);
-
-        this.createTemporaryTextures();
-
-        this.pipelines.restoreContext();
-
-        this.resize(this.game.scale.baseSize.width, this.game.scale.baseSize.height);
-
-        this.setExtensions();
-
-        this.contextLost = false;
-
-        if (console)
-        {
-            console.warn('WebGL Context restored. Renderer running again.');
-        }
-
-        this.emit(Events.RESTORE_WEBGL, this);
-
-        event.preventDefault();
-    },
-
-    createTemporaryTextures: function ()
-    {
-        var gl = this.gl;
-
-        for (var index = 0; index < this.maxTextures; index++)
-        {
-            var tempTexture = gl.createTexture();
-
-            gl.activeTexture(gl.TEXTURE0 + index);
-
-            gl.bindTexture(gl.TEXTURE_2D, tempTexture);
-
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([ 0, 0, 255, 255 ]));
-
-            this.textureIndexes.push(index);
-        }
-    },
-
-    captureFrame: function (quickCapture, fullCapture)
-    {
-        if (quickCapture === undefined) { quickCapture = false; }
-        if (fullCapture === undefined) { fullCapture = false; }
-
-        if (DEBUG && this.spector && !this._debugCapture)
-        {
-            this.spector.captureCanvas(this.canvas, 0, quickCapture, fullCapture);
-
-            this._debugCapture = true;
-        }
-    },
-
-    captureNextFrame: function ()
-    {
-        if (DEBUG && this.spector && !this._debugCapture)
-        {
-            this._debugCapture = true;
-
-            this.spector.captureNextFrame(this.canvas);
-        }
-    },
-
-    getFps: function ()
-    {
-        if (DEBUG && this.spector)
-        {
-            return this.spector.getFps();
-        }
-    },
-
-    log: function ()
-    {
-        if (DEBUG && this.spector)
-        {
-            var t = Array.prototype.slice.call(arguments).join(' ');
-
-            return this.spector.log(t);
-        }
-    },
-
-    startCapture: function (commandCount, quickCapture, fullCapture)
-    {
-        if (commandCount === undefined) { commandCount = 0; }
-        if (quickCapture === undefined) { quickCapture = false; }
-        if (fullCapture === undefined) { fullCapture = false; }
-
-        if (DEBUG && this.spector && !this._debugCapture)
-        {
-            this.spector.startCapture(this.canvas, commandCount, quickCapture, fullCapture);
-
-            this._debugCapture = true;
-        }
-    },
-
-    stopCapture: function ()
-    {
-        if (DEBUG && this.spector && this._debugCapture)
-        {
-            return this.spector.stopCapture();
-        }
-    },
-
-    onCapture: function (capture)
-    {
-        if (DEBUG)
-        {
-            var view = this.spector.getResultUI();
-
-            view.display(capture);
-
-            this._debugCapture = false;
-        }
-    },
-
-    onResize: function (gameSize, baseSize)
-    {
-
-        if (baseSize.width !== this.width || baseSize.height !== this.height)
-        {
-            this.resize(baseSize.width, baseSize.height);
-        }
-    },
-
-    beginCapture: function (width, height)
-    {
-        if (width === undefined) { width = this.width; }
-        if (height === undefined) { height = this.height; }
-
-        this.renderTarget.bind(true, width, height);
-
-        this.setProjectionMatrix(width, height);
-    },
-
-    endCapture: function ()
-    {
-        this.renderTarget.unbind(true);
-
-        this.resetProjectionMatrix();
-
-        return this.renderTarget;
-    },
-
-    resize: function (width, height)
-    {
-        var gl = this.gl;
-
-        this.width = width;
-        this.height = height;
-
-        this.setProjectionMatrix(width, height);
-
-        gl.viewport(0, 0, width, height);
-
-        this.drawingBufferHeight = gl.drawingBufferHeight;
-
-        gl.scissor(0, (gl.drawingBufferHeight - height), width, height);
-
-        this.defaultScissor[2] = width;
-        this.defaultScissor[3] = height;
-
-        this.emit(Events.RESIZE, width, height);
-
-        return this;
-    },
-
-    getCompressedTextures: function ()
-    {
-        var extString = 'WEBGL_compressed_texture_';
-        var wkExtString = 'WEBKIT_' + extString;
-        var extEXTString = 'EXT_texture_compression_';
-
-        var hasExt = function (gl, format)
-        {
-            var results = gl.getExtension(extString + format) || gl.getExtension(wkExtString + format) || gl.getExtension(extEXTString + format);
-
-            if (results)
-            {
-                var glEnums = {};
-
-                for (var key in results)
-                {
-                    glEnums[results[key]] = key;
-                }
-
-                return glEnums;
-            }
-        };
-
-        var gl = this.gl;
-
-        return {
-            ETC: hasExt(gl, 'etc'),
-            ETC1: hasExt(gl, 'etc1'),
-            ATC: hasExt(gl, 'atc'),
-            ASTC: hasExt(gl, 'astc'),
-            BPTC: hasExt(gl, 'bptc'),
-            RGTC: hasExt(gl, 'rgtc'),
-            PVRTC: hasExt(gl, 'pvrtc'),
-            S3TC: hasExt(gl, 's3tc'),
-            S3TCSRGB: hasExt(gl, 's3tc_srgb'),
-            IMG: true
-        };
-    },
-
-    getCompressedTextureName: function (baseFormat, format)
-    {
-        var supportedFormats = this.compression[baseFormat.toUpperCase()];
-
-        if (format in supportedFormats)
-        {
-            return supportedFormats[format];
-        }
-    },
-
-    supportsCompressedTexture: function (baseFormat, format)
-    {
-        var supportedFormats = this.compression[baseFormat.toUpperCase()];
-
-        if (supportedFormats)
-        {
-            if (format)
-            {
-                return format in supportedFormats;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        return false;
-    },
-
-    getAspectRatio: function ()
-    {
-        return this.width / this.height;
-    },
-
-    setProjectionMatrix: function (width, height)
-    {
-        if (width !== this.projectionWidth || height !== this.projectionHeight)
-        {
-            this.projectionWidth = width;
-            this.projectionHeight = height;
-
-            this.projectionMatrix.ortho(0, width, height, 0, -1000, 1000);
-        }
-
-        return this;
-    },
-
-    resetProjectionMatrix: function ()
-    {
-        return this.setProjectionMatrix(this.width, this.height);
-    },
-
-    hasExtension: function (extensionName)
-    {
-        return this.supportedExtensions ? this.supportedExtensions.indexOf(extensionName) : false;
-    },
-
-    getExtension: function (extensionName)
-    {
-        if (!this.hasExtension(extensionName)) { return null; }
-
-        if (!(extensionName in this.extensions))
-        {
-            this.extensions[extensionName] = this.gl.getExtension(extensionName);
-        }
-
-        return this.extensions[extensionName];
-    },
-
-    flush: function ()
-    {
-        this.pipelines.flush();
-    },
-
-    pushScissor: function (x, y, width, height, drawingBufferHeight)
-    {
-        if (drawingBufferHeight === undefined) { drawingBufferHeight = this.drawingBufferHeight; }
-
-        var scissorStack = this.scissorStack;
-
-        var scissor = [ x, y, width, height ];
-
-        scissorStack.push(scissor);
-
-        this.setScissor(x, y, width, height, drawingBufferHeight);
-
-        this.currentScissor = scissor;
-
-        return scissor;
-    },
-
-    setScissor: function (x, y, width, height, drawingBufferHeight)
-    {
-        if (drawingBufferHeight === undefined) { drawingBufferHeight = this.drawingBufferHeight; }
-
-        var gl = this.gl;
-
-        var current = this.currentScissor;
-
-        var setScissor = (width > 0 && height > 0);
-
-        if (current && setScissor)
-        {
-            var cx = current[0];
-            var cy = current[1];
-            var cw = current[2];
-            var ch = current[3];
-
-            setScissor = (cx !== x || cy !== y || cw !== width || ch !== height);
-        }
-
-        if (setScissor)
-        {
-            this.flush();
-
-            gl.scissor(x, (drawingBufferHeight - y - height), width, height);
-        }
-    },
-
-    resetScissor: function ()
-    {
-        var gl = this.gl;
-
-        gl.enable(gl.SCISSOR_TEST);
-
-        var current = this.currentScissor;
-
-        if (current)
-        {
-            var x = current[0];
-            var y = current[1];
-            var width = current[2];
-            var height = current[3];
-
-            if (width > 0 && height > 0)
-            {
-                gl.scissor(x, (this.drawingBufferHeight - y - height), width, height);
-            }
-        }
-    },
-
-    popScissor: function ()
-    {
-        var scissorStack = this.scissorStack;
-
-        scissorStack.pop();
-
-        var scissor = scissorStack[scissorStack.length - 1];
-
-        if (scissor)
-        {
-            this.setScissor(scissor[0], scissor[1], scissor[2], scissor[3]);
-        }
-
-        this.currentScissor = scissor;
-    },
-
-    hasActiveStencilMask: function ()
-    {
-        var mask = this.currentMask.mask;
-        var camMask = this.currentCameraMask.mask;
-
-        return ((mask && mask.isStencil) || (camMask && camMask.isStencil));
-    },
-
-    resetViewport: function ()
-    {
-        var gl = this.gl;
-
-        gl.viewport(0, 0, this.width, this.height);
-
-        this.drawingBufferHeight = gl.drawingBufferHeight;
-    },
-
-    setBlendMode: function (blendModeId, force)
-    {
-        if (force === undefined) { force = false; }
-
-        var gl = this.gl;
-        var blendMode = this.blendModes[blendModeId];
-
-        if (force || (blendModeId !== CONST.BlendModes.SKIP_CHECK && this.currentBlendMode !== blendModeId))
-        {
-            this.flush();
-
-            gl.enable(gl.BLEND);
-            gl.blendEquation(blendMode.equation);
-
-            if (blendMode.func.length > 2)
-            {
-                gl.blendFuncSeparate(blendMode.func[0], blendMode.func[1], blendMode.func[2], blendMode.func[3]);
-            }
-            else
-            {
-                gl.blendFunc(blendMode.func[0], blendMode.func[1]);
-            }
-
-            this.currentBlendMode = blendModeId;
-
-            return true;
-        }
-
-        return false;
-    },
-
-    addBlendMode: function (func, equation)
-    {
-        var index = this.blendModes.push({ func: func, equation: equation });
-
-        return index - 1;
-    },
-
-    updateBlendMode: function (index, func, equation)
-    {
-        if (this.blendModes[index])
-        {
-            this.blendModes[index].func = func;
-
-            if (equation)
-            {
-                this.blendModes[index].equation = equation;
-            }
-        }
-
-        return this;
-    },
-
-    removeBlendMode: function (index)
-    {
-        if (index > 17 && this.blendModes[index])
-        {
-            this.blendModes.splice(index, 1);
-        }
-
-        return this;
-    },
-
-    pushFramebuffer: function (framebuffer, updateScissor, setViewport, texture, clear)
-    {
-        if (framebuffer === this.currentFramebuffer)
-        {
-            return this;
-        }
-
-        this.fboStack.push(framebuffer);
-
-        return this.setFramebuffer(framebuffer, updateScissor, setViewport, texture, clear);
-    },
-
-    setFramebuffer: function (framebuffer, updateScissor, setViewport, texture, clear)
-    {
-        if (updateScissor === undefined) { updateScissor = false; }
-        if (setViewport === undefined) { setViewport = true; }
-        if (texture === undefined) { texture = null; }
-        if (clear === undefined) { clear = false; }
-
-        if (framebuffer === this.currentFramebuffer)
-        {
-            return this;
-        }
-
-        var gl = this.gl;
-
-        var width = this.width;
-        var height = this.height;
-
-        if (framebuffer && framebuffer.renderTexture && setViewport)
-        {
-            width = framebuffer.renderTexture.width;
-            height = framebuffer.renderTexture.height;
-        }
-        else
-        {
-            this.flush();
-        }
-
-        if (framebuffer)
-        {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.webGLFramebuffer);
-        }
-        else
-        {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        }
-
-        if (setViewport)
-        {
-            gl.viewport(0, 0, width, height);
-        }
-
-        if (texture)
-        {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture.webGLTexture, 0);
-        }
-
-        if (clear)
-        {
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-
-        if (updateScissor)
-        {
-            if (framebuffer)
-            {
-                this.drawingBufferHeight = height;
-
-                this.pushScissor(0, 0, width, height);
-            }
-            else
-            {
-                this.drawingBufferHeight = this.height;
-
-                this.popScissor();
-            }
-        }
-
-        this.currentFramebuffer = framebuffer;
-
-        return this;
-    },
-
-    popFramebuffer: function (updateScissor, setViewport)
-    {
-        if (updateScissor === undefined) { updateScissor = false; }
-        if (setViewport === undefined) { setViewport = true; }
-
-        var fboStack = this.fboStack;
-
-        fboStack.pop();
-
-        var framebuffer = fboStack[fboStack.length - 1];
-
-        if (!framebuffer)
-        {
-            framebuffer = null;
-        }
-
-        this.setFramebuffer(framebuffer, updateScissor, setViewport);
-
-        return framebuffer;
-    },
-
-    restoreFramebuffer: function (updateScissor, setViewport)
-    {
-        if (updateScissor === undefined) { updateScissor = false; }
-        if (setViewport === undefined) { setViewport = true; }
-
-        var fboStack = this.fboStack;
-
-        var framebuffer = fboStack[fboStack.length - 1];
-
-        if (!framebuffer)
-        {
-            framebuffer = null;
-        }
-
-        this.currentFramebuffer = null;
-
-        this.setFramebuffer(framebuffer, updateScissor, setViewport);
-    },
-
-    setProgram: function (program)
-    {
-        if (program !== this.currentProgram)
-        {
-            this.flush();
-
-            this.gl.useProgram(program.webGLProgram);
-
-            this.currentProgram = program;
-
-            return true;
-        }
-
-        return false;
-    },
-
-    resetProgram: function ()
-    {
-        this.gl.useProgram(this.currentProgram.webGLProgramWrapper);
-
-        return this;
-    },
-
-    createTextureFromSource: function (source, width, height, scaleMode, forceClamp)
-    {
-        if (forceClamp === undefined) { forceClamp = false; }
-
-        var gl = this.gl;
-        var minFilter = gl.NEAREST;
-        var magFilter = gl.NEAREST;
-        var wrap = gl.CLAMP_TO_EDGE;
-        var texture = null;
-
-        width = source ? source.width : width;
-        height = source ? source.height : height;
-
-        var pow = IsSizePowerOfTwo(width, height);
-
-        if (pow && !forceClamp)
-        {
-            wrap = gl.REPEAT;
-        }
-
-        if (scaleMode === CONST.ScaleModes.LINEAR && this.config.antialias)
-        {
-            var isCompressed = source && source.compressed;
-            var isMip = (!isCompressed && pow) || (isCompressed && source.mipmaps.length > 1);
-
-            minFilter = (this.mipmapFilter && isMip) ? this.mipmapFilter : gl.LINEAR;
-            magFilter = gl.LINEAR;
-        }
-
-        if (!source && typeof width === 'number' && typeof height === 'number')
-        {
-            texture = this.createTexture2D(0, minFilter, magFilter, wrap, wrap, gl.RGBA, null, width, height);
-        }
-        else
-        {
-            texture = this.createTexture2D(0, minFilter, magFilter, wrap, wrap, gl.RGBA, source);
-        }
-
-        return texture;
-    },
-
-    createTexture2D: function (mipLevel, minFilter, magFilter, wrapT, wrapS, format, pixels, width, height, pma, forceSize, flipY)
-    {
-        if (typeof width !== 'number') { width = pixels ? pixels.width : 1; }
-        if (typeof height !== 'number') { height = pixels ? pixels.height : 1; }
-
-        var texture = new WebGLTextureWrapper(this.gl, mipLevel, minFilter, magFilter, wrapT, wrapS, format, pixels, width, height, pma, forceSize, flipY);
-
-        this.glTextureWrappers.push(texture);
-
-        return texture;
-    },
-
-    createFramebuffer: function (width, height, renderTexture, addDepthStencilBuffer)
-    {
-        this.currentFramebuffer = null;
-        var framebuffer = new WebGLFramebufferWrapper(this.gl, width, height, renderTexture, addDepthStencilBuffer);
-
-        this.glFramebufferWrappers.push(framebuffer);
-
-        return framebuffer;
-    },
-
-    beginBitmapMask: function (bitmapMask, camera)
-    {
-        var gl = this.gl;
-
-        if (gl)
-        {
-            this.flush();
-
-            this.maskTarget.bind(true);
-
-            if (this.currentCameraMask.mask !== bitmapMask)
-            {
-                this.currentMask.mask = bitmapMask;
-                this.currentMask.camera = camera;
-            }
-        }
-    },
-
-    drawBitmapMask: function (bitmapMask, camera, bitmapMaskPipeline)
-    {
-
-        this.flush();
-
-        this.maskSource.bind();
-
-        this.setBlendMode(0, true);
-
-        bitmapMask.renderWebGL(this, bitmapMask, camera);
-
-        this.maskSource.unbind(true);
-        this.maskTarget.unbind();
-
-        var gl = this.gl;
-        var prev = this.getCurrentStencilMask();
-
-        if (prev)
-        {
-            gl.enable(gl.STENCIL_TEST);
-
-            prev.mask.applyStencil(this, prev.camera, true);
-        }
-        else
-        {
-            this.currentMask.mask = null;
-        }
-
-        this.pipelines.set(bitmapMaskPipeline);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.maskTarget.texture.webGLTexture);
-
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, this.maskSource.texture.webGLTexture);
-    },
-
-    createProgram: function (vertexShader, fragmentShader)
-    {
-        var wrapper = new WebGLProgramWrapper(this.gl, vertexShader, fragmentShader);
-        this.glProgramWrappers.push(wrapper);
-        return wrapper;
-    },
-
-    createVertexBuffer: function (initialDataOrSize, bufferUsage)
-    {
-        var gl = this.gl;
-        var vertexBuffer = new WebGLBufferWrapper(gl, initialDataOrSize, gl.ARRAY_BUFFER, bufferUsage);
-        this.glBufferWrappers.push(vertexBuffer);
-        return vertexBuffer;
-    },
-
-    createAttribLocation: function (program, name)
-    {
-        var attrib = new WebGLAttribLocationWrapper(this.gl, program, name);
-        this.glAttribLocationWrappers.push(attrib);
-        return attrib;
-    },
-
-    createUniformLocation: function (program, name)
-    {
-        var uniform = new WebGLUniformLocationWrapper(this.gl, program, name);
-        this.glUniformLocationWrappers.push(uniform);
-        return uniform;
-    },
-
-    createIndexBuffer: function (initialDataOrSize, bufferUsage)
-    {
-        var gl = this.gl;
-        var indexBuffer = new WebGLBufferWrapper(gl, initialDataOrSize, gl.ELEMENT_ARRAY_BUFFER, bufferUsage);
-        this.glBufferWrappers.push(indexBuffer);
-        return indexBuffer;
-    },
-
-    deleteTexture: function (texture)
-    {
-        if (!texture)
-        {
-            return;
-        }
-        ArrayRemove(this.glTextureWrappers, texture);
-        texture.destroy();
-        return this;
-    },
-
-    deleteFramebuffer: function (framebuffer)
-    {
-        if (!framebuffer)
-        {
-            return this;
-        }
-        ArrayRemove(this.fboStack, framebuffer);
-        ArrayRemove(this.glFramebufferWrappers, framebuffer);
-        framebuffer.destroy();
-        return this;
-    },
-
-    deleteProgram: function (program)
-    {
-        if (program)
-        {
-            ArrayRemove(this.glProgramWrappers, program);
-            program.destroy();
-        }
-
-        return this;
-    },
-
-    deleteAttribLocation: function (attrib)
-    {
-        if (attrib)
-        {
-            ArrayRemove(this.glAttribLocationWrappers, attrib);
-            attrib.destroy();
-        }
-
-        return this;
-    },
-
-    deleteUniformLocation: function (uniform)
-    {
-        if (uniform)
-        {
-            ArrayRemove(this.glUniformLocationWrappers, uniform);
-            uniform.destroy();
-        }
-
-        return this;
-    },
-
-    deleteBuffer: function (buffer)
-    {
-        if (!buffer) { return this; }
-        ArrayRemove(this.glBufferWrappers, buffer);
-        buffer.destroy();
-        return this;
-    },
-
-    preRenderCamera: function (camera)
-    {
-        var cx = camera.x;
-        var cy = camera.y;
-        var cw = camera.width;
-        var ch = camera.height;
-
-        var color = camera.backgroundColor;
-
-        camera.emit(CameraEvents.PRE_RENDER, camera);
-
-        this.pipelines.preBatchCamera(camera);
-
-        this.pushScissor(cx, cy, cw, ch);
-
-        if (camera.mask)
-        {
-            this.currentCameraMask.mask = camera.mask;
-            this.currentCameraMask.camera = camera._maskCamera;
-
-            camera.mask.preRenderWebGL(this, camera, camera._maskCamera);
-        }
-
-        if (color.alphaGL > 0)
-        {
-            var pipeline = this.pipelines.setMulti();
-
-            pipeline.drawFillRect(
-                cx, cy, cw, ch,
-                Utils.getTintFromFloats(color.blueGL, color.greenGL, color.redGL, 1),
-                color.alphaGL
-            );
-        }
-    },
-
-    getCurrentStencilMask: function ()
-    {
-        var prev = null;
-        var stack = this.maskStack;
-        var cameraMask = this.currentCameraMask;
-
-        if (stack.length > 0)
-        {
-            prev = stack[stack.length - 1];
-        }
-        else if (cameraMask.mask && cameraMask.mask.isStencil)
-        {
-            prev = cameraMask;
-        }
-
-        return prev;
-    },
-
-    postRenderCamera: function (camera)
-    {
-        var flashEffect = camera.flashEffect;
-        var fadeEffect = camera.fadeEffect;
-
-        if (flashEffect.isRunning || (fadeEffect.isRunning || fadeEffect.isComplete))
-        {
-            var pipeline = this.pipelines.setMulti();
-
-            flashEffect.postRenderWebGL(pipeline, Utils.getTintFromFloats);
-            fadeEffect.postRenderWebGL(pipeline, Utils.getTintFromFloats);
-        }
-
-        camera.dirty = false;
-
-        this.popScissor();
-
-        if (camera.mask)
-        {
-            this.currentCameraMask.mask = null;
-
-            camera.mask.postRenderWebGL(this, camera._maskCamera);
-        }
-
-        this.pipelines.postBatchCamera(camera);
-
-        camera.emit(CameraEvents.POST_RENDER, camera);
-    },
-
-    preRender: function ()
-    {
-        if (this.contextLost) { return; }
-
-        var gl = this.gl;
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-        this.emit(Events.PRE_RENDER_CLEAR);
-
-        if (this.config.clearBeforeRender)
-        {
-            var clearColor = this.config.backgroundColor;
-
-            gl.clearColor(clearColor.redGL, clearColor.greenGL, clearColor.blueGL, clearColor.alphaGL);
-
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-        }
-
-        gl.enable(gl.SCISSOR_TEST);
-
-        this.currentScissor = this.defaultScissor;
-
-        this.scissorStack.length = 0;
-        this.scissorStack.push(this.currentScissor);
-
-        if (this.game.scene.customViewports)
-        {
-            gl.scissor(0, (this.drawingBufferHeight - this.height), this.width, this.height);
-        }
-
-        this.currentMask.mask = null;
-        this.currentCameraMask.mask = null;
-        this.maskStack.length = 0;
-
-        this.emit(Events.PRE_RENDER);
-    },
-
-    render: function (scene, children, camera)
-    {
-        if (this.contextLost) { return; }
-
-        var childCount = children.length;
-
-        this.emit(Events.RENDER, scene, camera);
-
-        this.preRenderCamera(camera);
-
-        if (childCount === 0)
-        {
-            this.setBlendMode(CONST.BlendModes.NORMAL);
-
-            this.postRenderCamera(camera);
-
-            return;
-        }
-
-        this.currentType = '';
-
-        var current = this.currentMask;
-
-        for (var i = 0; i < childCount; i++)
-        {
-            this.finalType = (i === childCount - 1);
-
-            var child = children[i];
-
-            var mask = child.mask;
-
-            current = this.currentMask;
-
-            if (current.mask && current.mask !== mask)
-            {
-
-                current.mask.postRenderWebGL(this, current.camera);
-            }
-
-            if (mask && current.mask !== mask)
-            {
-                mask.preRenderWebGL(this, child, camera);
-            }
-
-            if (child.blendMode !== this.currentBlendMode)
-            {
-                this.setBlendMode(child.blendMode);
-            }
-
-            var type = child.type;
-
-            if (type !== this.currentType)
-            {
-                this.newType = true;
-                this.currentType = type;
-            }
-
-            if (!this.finalType)
-            {
-                this.nextTypeMatch = (children[i + 1].type === this.currentType);
-            }
-            else
-            {
-                this.nextTypeMatch = false;
-            }
-
-            child.renderWebGL(this, child, camera);
-
-            this.newType = false;
-        }
-
-        current = this.currentMask;
-
-        if (current.mask)
-        {
-
-            current.mask.postRenderWebGL(this, current.camera);
-        }
-
-        this.setBlendMode(CONST.BlendModes.NORMAL);
-
-        this.postRenderCamera(camera);
-    },
-
-    postRender: function ()
-    {
-        if (this.contextLost) { return; }
-
-        this.flush();
-
-        this.emit(Events.POST_RENDER);
-
-        var state = this.snapshotState;
-
-        if (state.callback)
-        {
-            WebGLSnapshot(this.gl, state);
-
-            state.callback = null;
-        }
-    },
-
-    clearStencilMask: function ()
-    {
-        this.gl.disable(this.gl.STENCIL_TEST);
-    },
-
-    restoreStencilMask: function ()
-    {
-        var gl = this.gl;
-
-        var current = this.getCurrentStencilMask();
-
-        if (current)
-        {
-            var mask = current.mask;
-
-            gl.enable(gl.STENCIL_TEST);
-
-            if (mask.invertAlpha)
-            {
-                gl.stencilFunc(gl.NOTEQUAL, mask.level, 0xff);
-            }
-            else
-            {
-                gl.stencilFunc(gl.EQUAL, mask.level, 0xff);
-            }
-        }
-    },
-
-    snapshot: function (callback, type, encoderOptions)
-    {
-        return this.snapshotArea(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight, callback, type, encoderOptions);
-    },
-
-    snapshotArea: function (x, y, width, height, callback, type, encoderOptions)
-    {
-        var state = this.snapshotState;
-
-        state.callback = callback;
-        state.type = type;
-        state.encoder = encoderOptions;
-        state.getPixel = false;
-        state.x = x;
-        state.y = y;
-        state.width = width;
-        state.height = height;
-
-        return this;
-    },
-
-    snapshotPixel: function (x, y, callback)
-    {
-        this.snapshotArea(x, y, 1, 1, callback);
-
-        this.snapshotState.getPixel = true;
-
-        return this;
-    },
-
-    snapshotFramebuffer: function (framebuffer, bufferWidth, bufferHeight, callback, getPixel, x, y, width, height, type, encoderOptions)
-    {
-        if (getPixel === undefined) { getPixel = false; }
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (width === undefined) { width = bufferWidth; }
-        if (height === undefined) { height = bufferHeight; }
-
-        if (type === 'pixel')
-        {
-            getPixel = true;
-            type = 'image/png';
-        }
-
-        var currentFramebuffer = this.currentFramebuffer;
-
-        this.snapshotArea(x, y, width, height, callback, type, encoderOptions);
-
-        var state = this.snapshotState;
-
-        state.getPixel = getPixel;
-
-        state.isFramebuffer = true;
-        state.bufferWidth = bufferWidth;
-        state.bufferHeight = bufferHeight;
-
-        state.width = Math.min(state.width, bufferWidth);
-        state.height = Math.min(state.height, bufferHeight);
-
-        this.setFramebuffer(framebuffer);
-
-        WebGLSnapshot(this.gl, state);
-
-        this.setFramebuffer(currentFramebuffer);
-
-        state.callback = null;
-        state.isFramebuffer = false;
-
-        return this;
-    },
-
-    canvasToTexture: function (srcCanvas, dstTexture, noRepeat, flipY)
-    {
-        if (noRepeat === undefined) { noRepeat = false; }
-        if (flipY === undefined) { flipY = false; }
-
-        var gl = this.gl;
-        var minFilter = gl.NEAREST;
-        var magFilter = gl.NEAREST;
-
-        var width = srcCanvas.width;
-        var height = srcCanvas.height;
-
-        var wrapping = gl.CLAMP_TO_EDGE;
-
-        var pow = IsSizePowerOfTwo(width, height);
-
-        if (!noRepeat && pow)
-        {
-            wrapping = gl.REPEAT;
-        }
-
-        if (this.config.antialias)
-        {
-            minFilter = (pow && this.mipmapFilter) ? this.mipmapFilter : gl.LINEAR;
-            magFilter = gl.LINEAR;
-        }
-
-        if (!dstTexture)
-        {
-            return this.createTexture2D(0, minFilter, magFilter, wrapping, wrapping, gl.RGBA, srcCanvas, width, height, true, false, flipY);
-        }
-        else
-        {
-            dstTexture.update(srcCanvas, width, height, flipY, wrapping, wrapping, minFilter, magFilter, dstTexture.format);
-
-            return dstTexture;
-        }
-    },
-
-    createCanvasTexture: function (srcCanvas, noRepeat, flipY)
-    {
-        if (noRepeat === undefined) { noRepeat = false; }
-        if (flipY === undefined) { flipY = false; }
-
-        return this.canvasToTexture(srcCanvas, null, noRepeat, flipY);
-    },
-
-    updateCanvasTexture: function (srcCanvas, dstTexture, flipY, noRepeat)
-    {
-        if (flipY === undefined) { flipY = false; }
-        if (noRepeat === undefined) { noRepeat = false; }
-
-        return this.canvasToTexture(srcCanvas, dstTexture, noRepeat, flipY);
-    },
-
-    videoToTexture: function (srcVideo, dstTexture, noRepeat, flipY)
-    {
-        if (noRepeat === undefined) { noRepeat = false; }
-        if (flipY === undefined) { flipY = false; }
-
-        var gl = this.gl;
-        var minFilter = gl.NEAREST;
-        var magFilter = gl.NEAREST;
-
-        var width = srcVideo.videoWidth;
-        var height = srcVideo.videoHeight;
-
-        var wrapping = gl.CLAMP_TO_EDGE;
-
-        var pow = IsSizePowerOfTwo(width, height);
-
-        if (!noRepeat && pow)
-        {
-            wrapping = gl.REPEAT;
-        }
-
-        if (this.config.antialias)
-        {
-            minFilter = (pow && this.mipmapFilter) ? this.mipmapFilter : gl.LINEAR;
-            magFilter = gl.LINEAR;
-        }
-
-        if (!dstTexture)
-        {
-            return this.createTexture2D(0, minFilter, magFilter, wrapping, wrapping, gl.RGBA, srcVideo, width, height, true, true, flipY);
-        }
-        else
-        {
-            dstTexture.update(srcVideo, width, height, flipY, wrapping, wrapping, minFilter, magFilter, dstTexture.format);
-
-            return dstTexture;
-        }
-    },
-
-    createVideoTexture: function (srcVideo, noRepeat, flipY)
-    {
-        if (noRepeat === undefined) { noRepeat = false; }
-        if (flipY === undefined) { flipY = false; }
-
-        return this.videoToTexture(srcVideo, null, noRepeat, flipY);
-    },
-
-    updateVideoTexture: function (srcVideo, dstTexture, flipY, noRepeat)
-    {
-        if (flipY === undefined) { flipY = false; }
-        if (noRepeat === undefined) { noRepeat = false; }
-
-        return this.videoToTexture(srcVideo, dstTexture, noRepeat, flipY);
-    },
-
-    createUint8ArrayTexture: function (data, width, height)
-    {
-        var gl = this.gl;
-        var minFilter = gl.NEAREST;
-        var magFilter = gl.NEAREST;
-        var wrap = gl.CLAMP_TO_EDGE;
-
-        var pow = IsSizePowerOfTwo(width, height);
-
-        if (pow)
-        {
-            wrap = gl.REPEAT;
-        }
-
-        return this.createTexture2D(0, minFilter, magFilter, wrap, wrap, gl.RGBA, data, width, height);
-    },
-
-    setTextureFilter: function (texture, filter)
-    {
-        var gl = this.gl;
-
-        var glFilter = (filter === 0) ? gl.LINEAR : gl.NEAREST;
-
-        gl.activeTexture(gl.TEXTURE0);
-
-        var currentTexture = gl.getParameter(gl.TEXTURE_BINDING_2D);
-
-        gl.bindTexture(gl.TEXTURE_2D, texture.webGLTexture);
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glFilter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glFilter);
-
-        texture.minFilter = glFilter;
-        texture.magFilter = glFilter;
-
-        if (currentTexture)
-        {
-            gl.bindTexture(gl.TEXTURE_2D, currentTexture);
-        }
-
-        return this;
-    },
-
-    getMaxTextureSize: function ()
-    {
-        return this.config.maxTextureSize;
-    },
-
-    destroy: function ()
-    {
-        this.canvas.removeEventListener('webglcontextlost', this.contextLostHandler, false);
-
-        this.canvas.removeEventListener('webglcontextrestored', this.contextRestoredHandler, false);
-
-        var wrapperDestroy = function (wrapper)
-        {
-            wrapper.destroy();
-        };
-        ArrayEach(this.glAttribLocationWrappers, wrapperDestroy);
-        ArrayEach(this.glBufferWrappers, wrapperDestroy);
-        ArrayEach(this.glFramebufferWrappers, wrapperDestroy);
-        ArrayEach(this.glProgramWrappers, wrapperDestroy);
-        ArrayEach(this.glTextureWrappers, wrapperDestroy);
-        ArrayEach(this.glUniformLocationWrappers, wrapperDestroy);
-
-        this.maskTarget.destroy();
-        this.maskSource.destroy();
-
-        this.pipelines.destroy();
-
-        this.removeAllListeners();
-
-        this.fboStack = [];
-        this.maskStack = [];
-        this.extensions = {};
-        this.textureIndexes = [];
-
-        this.gl = null;
-        this.game = null;
-        this.canvas = null;
-        this.contextLost = true;
-        this.currentMask = null;
-        this.currentCameraMask = null;
-
-        if (DEBUG)
-        {
-            this.spector = null;
-        }
-    }
-
-});
-
-module.exports = WebGLRenderer;
+var ArrayEach = require('../../utils/array/Each');var ArrayRemove = require('../../utils/array/Remove');var CameraEvents = require('../../cameras/2d/events');var Class = require('../../utils/Class');var CONST = require('../../const');var EventEmitter = require('eventemitter3');var Events = require('../events');var IsSizePowerOfTwo = require('../../math/pow2/IsSizePowerOfTwo');var Matrix4 = require('../../math/Matrix4');var NOOP = require('../../utils/NOOP');var PipelineManager = require('./PipelineManager');var RenderTarget = require('./RenderTarget');var ScaleEvents = require('../../scale/events');var TextureEvents = require('../../textures/events');var Utils = require('./Utils');var WebGLSnapshot = require('../snapshot/WebGLSnapshot');var WebGLBufferWrapper = require('./wrappers/WebGLBufferWrapper');var WebGLProgramWrapper = require('./wrappers/WebGLProgramWrapper');var WebGLTextureWrapper = require('./wrappers/WebGLTextureWrapper');var WebGLFramebufferWrapper = require('./wrappers/WebGLFramebufferWrapper');var WebGLAttribLocationWrapper = require('./wrappers/WebGLAttribLocationWrapper');var WebGLUniformLocationWrapper = require('./wrappers/WebGLUniformLocationWrapper');var DEBUG = false;var WebGLRenderer = new Class({    Extends: EventEmitter,    initialize:    function WebGLRenderer (game)    {        EventEmitter.call(this);        var gameConfig = game.config;        var contextCreationConfig = {            alpha: gameConfig.transparent,            desynchronized: gameConfig.desynchronized,            depth: true,            antialias: gameConfig.antialiasGL,            premultipliedAlpha: gameConfig.premultipliedAlpha,            stencil: true,            failIfMajorPerformanceCaveat: gameConfig.failIfMajorPerformanceCaveat,            powerPreference: gameConfig.powerPreference,            preserveDrawingBuffer: gameConfig.preserveDrawingBuffer,            willReadFrequently: false        };        this.config = {            clearBeforeRender: gameConfig.clearBeforeRender,            antialias: gameConfig.antialias,            backgroundColor: gameConfig.backgroundColor,            contextCreation: contextCreationConfig,            roundPixels: gameConfig.roundPixels,            maxTextures: gameConfig.maxTextures,            maxTextureSize: gameConfig.maxTextureSize,            batchSize: gameConfig.batchSize,            maxLights: gameConfig.maxLights,            mipmapFilter: gameConfig.mipmapFilter        };        this.game = game;        this.type = CONST.WEBGL;        this.pipelines = null;        this.width = 0;        this.height = 0;        this.canvas = game.canvas;        this.blendModes = [];        this.contextLost = false;        this.snapshotState = {            x: 0,            y: 0,            width: 1,            height: 1,            getPixel: false,            callback: null,            type: 'image/png',            encoder: 0.92,            isFramebuffer: false,            bufferWidth: 0,            bufferHeight: 0        };        this.maxTextures = 0;        this.textureIndexes;        this.glBufferWrappers = [];        this.glProgramWrappers = [];        this.glTextureWrappers = [];        this.glFramebufferWrappers = [];        this.glAttribLocationWrappers = [];        this.glUniformLocationWrappers = [];        this.currentFramebuffer = null;        this.fboStack = [];        this.currentProgram = null;        this.currentBlendMode = Infinity;        this.currentScissorEnabled = false;        this.currentScissor = null;        this.scissorStack = [];        this.contextLostHandler = NOOP;        this.contextRestoredHandler = NOOP;        this.previousContextLostHandler = NOOP;        this.previousContextRestoredHandler = NOOP;        this.gl = null;        this.supportedExtensions = null;        this.instancedArraysExtension = null;        this.vaoExtension = null;        this.extensions = {};        this.glFormats;        this.compression;        this.drawingBufferHeight = 0;        this.blankTexture = null;        this.normalTexture = null;        this.whiteTexture = null;        this.maskCount = 0;        this.maskStack = [];        this.currentMask = { mask: null, camera: null };        this.currentCameraMask = { mask: null, camera: null };        this.glFuncMap = null;        this.currentType = '';        this.newType = false;        this.nextTypeMatch = false;        this.finalType = false;        this.mipmapFilter = null;        this.defaultScissor = [ 0, 0, 0, 0 ];        this.isBooted = false;        this.renderTarget = null;        this.projectionMatrix;        this.projectionWidth = 0;        this.projectionHeight = 0;        this.maskSource = null;        this.maskTarget = null;        this.spector = null;        this._debugCapture = false;        this.init(this.config);    },    init: function (config)    {        var gl;        var game = this.game;        var canvas = this.canvas;        var clearColor = config.backgroundColor;        if (DEBUG)        {            this.spector = new SPECTOR.Spector();            this.spector.onCapture.add(this.onCapture.bind(this));        }        if (game.config.context)        {            gl = game.config.context;        }        else        {            gl = canvas.getContext('webgl', config.contextCreation) || canvas.getContext('experimental-webgl', config.contextCreation);        }        if (!gl || gl.isContextLost())        {            this.contextLost = true;            throw new Error('WebGL unsupported');        }        this.gl = gl;        this.setExtensions();        this.setContextHandlers();        game.context = gl;        for (var i = 0; i <= 27; i++)        {            this.blendModes.push({ func: [ gl.ONE, gl.ONE_MINUS_SRC_ALPHA ], equation: gl.FUNC_ADD });        }        this.blendModes[1].func = [ gl.ONE, gl.DST_ALPHA ];        this.blendModes[2].func = [ gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA ];        this.blendModes[3].func = [ gl.ONE, gl.ONE_MINUS_SRC_COLOR ];        this.blendModes[17] = { func: [ gl.ZERO, gl.ONE_MINUS_SRC_ALPHA ], equation: gl.FUNC_REVERSE_SUBTRACT };        this.glFormats = [ gl.BYTE, gl.SHORT, gl.UNSIGNED_BYTE, gl.UNSIGNED_SHORT, gl.FLOAT ];        this.glFuncMap = {            mat2: { func: gl.uniformMatrix2fv, length: 1, matrix: true },            mat3: { func: gl.uniformMatrix3fv, length: 1, matrix: true },            mat4: { func: gl.uniformMatrix4fv, length: 1, matrix: true },            '1f': { func: gl.uniform1f, length: 1 },            '1fv': { func: gl.uniform1fv, length: 1 },            '1i': { func: gl.uniform1i, length: 1 },            '1iv': { func: gl.uniform1iv, length: 1 },            '2f': { func: gl.uniform2f, length: 2 },            '2fv': { func: gl.uniform2fv, length: 1 },            '2i': { func: gl.uniform2i, length: 2 },            '2iv': { func: gl.uniform2iv, length: 1 },            '3f': { func: gl.uniform3f, length: 3 },            '3fv': { func: gl.uniform3fv, length: 1 },            '3i': { func: gl.uniform3i, length: 3 },            '3iv': { func: gl.uniform3iv, length: 1 },            '4f': { func: gl.uniform4f, length: 4 },            '4fv': { func: gl.uniform4fv, length: 1 },            '4i': { func: gl.uniform4i, length: 4 },            '4iv': { func: gl.uniform4iv, length: 1 }        };        if (!config.maxTextures || config.maxTextures === -1)        {            config.maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);        }        if (!config.maxTextureSize)        {            config.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);        }        this.compression = this.getCompressedTextures();        gl.disable(gl.DEPTH_TEST);        gl.disable(gl.CULL_FACE);        gl.enable(gl.BLEND);        gl.clearColor(clearColor.redGL, clearColor.greenGL, clearColor.blueGL, clearColor.alphaGL);        gl.clear(gl.COLOR_BUFFER_BIT);        var validMipMaps = [ 'NEAREST', 'LINEAR', 'NEAREST_MIPMAP_NEAREST', 'LINEAR_MIPMAP_NEAREST', 'NEAREST_MIPMAP_LINEAR', 'LINEAR_MIPMAP_LINEAR' ];        if (validMipMaps.indexOf(config.mipmapFilter) !== -1)        {            this.mipmapFilter = gl[config.mipmapFilter];        }        this.maxTextures = Utils.checkShaderMax(gl, config.maxTextures);        this.textureIndexes = [];        this.createTemporaryTextures();        this.pipelines = new PipelineManager(this);        this.setBlendMode(CONST.BlendModes.NORMAL);        this.projectionMatrix = new Matrix4().identity();        game.textures.once(TextureEvents.READY, this.boot, this);        return this;    },    boot: function ()    {        var game = this.game;        var pipelineManager = this.pipelines;        var baseSize = game.scale.baseSize;        var width = baseSize.width;        var height = baseSize.height;        this.width = width;        this.height = height;        this.isBooted = true;        this.renderTarget = new RenderTarget(this, width, height, 1, 0, true, true);        this.maskTarget = new RenderTarget(this, width, height, 1, 0, true, true);        this.maskSource = new RenderTarget(this, width, height, 1, 0, true, true);        var config = game.config;        pipelineManager.boot(config.pipeline, config.defaultPipeline, config.autoMobilePipeline);        this.blankTexture = game.textures.getFrame('__DEFAULT').glTexture;        this.normalTexture = game.textures.getFrame('__NORMAL').glTexture;        this.whiteTexture = game.textures.getFrame('__WHITE').glTexture;        var gl = this.gl;        gl.bindFramebuffer(gl.FRAMEBUFFER, null);        gl.enable(gl.SCISSOR_TEST);        game.scale.on(ScaleEvents.RESIZE, this.onResize, this);        this.resize(width, height);    },    setExtensions: function ()    {        var gl = this.gl;        var exts = gl.getSupportedExtensions();        this.supportedExtensions = exts;        var angleString = 'ANGLE_instanced_arrays';        this.instancedArraysExtension = (exts.indexOf(angleString) > -1) ? gl.getExtension(angleString) : null;        var vaoString = 'OES_vertex_array_object';        this.vaoExtension = (exts.indexOf(vaoString) > -1) ? gl.getExtension(vaoString) : null;    },    setContextHandlers: function (contextLost, contextRestored)    {        if (this.previousContextLostHandler)        {            this.canvas.removeEventListener('webglcontextlost', this.previousContextLostHandler, false);        }        if (this.previousContextRestoredHandler)        {            this.canvas.removeEventListener('webglcontextlost', this.previousContextRestoredHandler, false);        }        if (typeof contextLost === 'function')        {            this.contextLostHandler = contextLost.bind(this);        }        else        {            this.contextLostHandler = this.dispatchContextLost.bind(this);        }        if (typeof contextRestored === 'function')        {            this.contextRestoredHandler = contextRestored.bind(this);        }        else        {            this.contextRestoredHandler = this.dispatchContextRestored.bind(this);        }        this.canvas.addEventListener('webglcontextlost', this.contextLostHandler, false);        this.canvas.addEventListener('webglcontextrestored', this.contextRestoredHandler, false);        this.previousContextLostHandler = this.contextLostHandler;        this.previousContextRestoredHandler = this.contextRestoredHandler;    },    dispatchContextLost: function (event)    {        this.contextLost = true;        if (console)        {            console.warn('WebGL Context lost. Renderer disabled');        }        this.emit(Events.LOSE_WEBGL, this);        event.preventDefault();    },    dispatchContextRestored: function (event)    {        var gl = this.gl;        if (gl.isContextLost())        {            if (console)            {                console.log('WebGL Context restored, but context is still lost');            }            return;        }        this.currentProgram = null;        this.currentFramebuffer = null;        this.setBlendMode(CONST.BlendModes.NORMAL);        gl.disable(gl.BLEND);        gl.disable(gl.DEPTH_TEST);        gl.enable(gl.CULL_FACE);        this.compression = this.getCompressedTextures();        var wrapperCreateResource = function (wrapper)        {            wrapper.createResource();        };        ArrayEach(this.glTextureWrappers, wrapperCreateResource);        ArrayEach(this.glBufferWrappers, wrapperCreateResource);        ArrayEach(this.glFramebufferWrappers, wrapperCreateResource);        ArrayEach(this.glProgramWrappers, wrapperCreateResource);        ArrayEach(this.glAttribLocationWrappers, wrapperCreateResource);        ArrayEach(this.glUniformLocationWrappers, wrapperCreateResource);        this.createTemporaryTextures();        this.pipelines.restoreContext();        this.resize(this.game.scale.baseSize.width, this.game.scale.baseSize.height);        this.setExtensions();        this.contextLost = false;        if (console)        {            console.warn('WebGL Context restored. Renderer running again.');        }        this.emit(Events.RESTORE_WEBGL, this);        event.preventDefault();    },    createTemporaryTextures: function ()    {        var gl = this.gl;        for (var index = 0; index < this.maxTextures; index++)        {            var tempTexture = gl.createTexture();            gl.activeTexture(gl.TEXTURE0 + index);            gl.bindTexture(gl.TEXTURE_2D, tempTexture);            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([ 0, 0, 255, 255 ]));            this.textureIndexes.push(index);        }    },    captureFrame: function (quickCapture, fullCapture)    {        if (quickCapture === undefined) { quickCapture = false; }        if (fullCapture === undefined) { fullCapture = false; }        if (DEBUG && this.spector && !this._debugCapture)        {            this.spector.captureCanvas(this.canvas, 0, quickCapture, fullCapture);            this._debugCapture = true;        }    },    captureNextFrame: function ()    {        if (DEBUG && this.spector && !this._debugCapture)        {            this._debugCapture = true;            this.spector.captureNextFrame(this.canvas);        }    },    getFps: function ()    {        if (DEBUG && this.spector)        {            return this.spector.getFps();        }    },    log: function ()    {        if (DEBUG && this.spector)        {            var t = Array.prototype.slice.call(arguments).join(' ');            return this.spector.log(t);        }    },    startCapture: function (commandCount, quickCapture, fullCapture)    {        if (commandCount === undefined) { commandCount = 0; }        if (quickCapture === undefined) { quickCapture = false; }        if (fullCapture === undefined) { fullCapture = false; }        if (DEBUG && this.spector && !this._debugCapture)        {            this.spector.startCapture(this.canvas, commandCount, quickCapture, fullCapture);            this._debugCapture = true;        }    },    stopCapture: function ()    {        if (DEBUG && this.spector && this._debugCapture)        {            return this.spector.stopCapture();        }    },    onCapture: function (capture)    {        if (DEBUG)        {            var view = this.spector.getResultUI();            view.display(capture);            this._debugCapture = false;        }    },    onResize: function (gameSize, baseSize)    {        if (baseSize.width !== this.width || baseSize.height !== this.height)        {            this.resize(baseSize.width, baseSize.height);        }    },    beginCapture: function (width, height)    {        if (width === undefined) { width = this.width; }        if (height === undefined) { height = this.height; }        this.renderTarget.bind(true, width, height);        this.setProjectionMatrix(width, height);    },    endCapture: function ()    {        this.renderTarget.unbind(true);        this.resetProjectionMatrix();        return this.renderTarget;    },    resize: function (width, height)    {        var gl = this.gl;        this.width = width;        this.height = height;        this.setProjectionMatrix(width, height);        gl.viewport(0, 0, width, height);        this.drawingBufferHeight = gl.drawingBufferHeight;        gl.scissor(0, (gl.drawingBufferHeight - height), width, height);        this.defaultScissor[2] = width;        this.defaultScissor[3] = height;        this.emit(Events.RESIZE, width, height);        return this;    },    getCompressedTextures: function ()    {        var extString = 'WEBGL_compressed_texture_';        var wkExtString = 'WEBKIT_' + extString;        var extEXTString = 'EXT_texture_compression_';        var hasExt = function (gl, format)        {            var results = gl.getExtension(extString + format) || gl.getExtension(wkExtString + format) || gl.getExtension(extEXTString + format);            if (results)            {                var glEnums = {};                for (var key in results)                {                    glEnums[results[key]] = key;                }                return glEnums;            }        };        var gl = this.gl;        return {            ETC: hasExt(gl, 'etc'),            ETC1: hasExt(gl, 'etc1'),            ATC: hasExt(gl, 'atc'),            ASTC: hasExt(gl, 'astc'),            BPTC: hasExt(gl, 'bptc'),            RGTC: hasExt(gl, 'rgtc'),            PVRTC: hasExt(gl, 'pvrtc'),            S3TC: hasExt(gl, 's3tc'),            S3TCSRGB: hasExt(gl, 's3tc_srgb'),            IMG: true        };    },    getCompressedTextureName: function (baseFormat, format)    {        var supportedFormats = this.compression[baseFormat.toUpperCase()];        if (format in supportedFormats)        {            return supportedFormats[format];        }    },    supportsCompressedTexture: function (baseFormat, format)    {        var supportedFormats = this.compression[baseFormat.toUpperCase()];        if (supportedFormats)        {            if (format)            {                return format in supportedFormats;            }            else            {                return true;            }        }        return false;    },    getAspectRatio: function ()    {        return this.width / this.height;    },    setProjectionMatrix: function (width, height)    {        if (width !== this.projectionWidth || height !== this.projectionHeight)        {            this.projectionWidth = width;            this.projectionHeight = height;            this.projectionMatrix.ortho(0, width, height, 0, -1000, 1000);        }        return this;    },    resetProjectionMatrix: function ()    {        return this.setProjectionMatrix(this.width, this.height);    },    hasExtension: function (extensionName)    {        return this.supportedExtensions ? this.supportedExtensions.indexOf(extensionName) : false;    },    getExtension: function (extensionName)    {        if (!this.hasExtension(extensionName)) { return null; }        if (!(extensionName in this.extensions))        {            this.extensions[extensionName] = this.gl.getExtension(extensionName);        }        return this.extensions[extensionName];    },    flush: function ()    {        this.pipelines.flush();    },    pushScissor: function (x, y, width, height, drawingBufferHeight)    {        if (drawingBufferHeight === undefined) { drawingBufferHeight = this.drawingBufferHeight; }        var scissorStack = this.scissorStack;        var scissor = [ x, y, width, height ];        scissorStack.push(scissor);        this.setScissor(x, y, width, height, drawingBufferHeight);        this.currentScissor = scissor;        return scissor;    },    setScissor: function (x, y, width, height, drawingBufferHeight)    {        if (drawingBufferHeight === undefined) { drawingBufferHeight = this.drawingBufferHeight; }        var gl = this.gl;        var current = this.currentScissor;        var setScissor = (width > 0 && height > 0);        if (current && setScissor)        {            var cx = current[0];            var cy = current[1];            var cw = current[2];            var ch = current[3];            setScissor = (cx !== x || cy !== y || cw !== width || ch !== height);        }        if (setScissor)        {            this.flush();            gl.scissor(x, (drawingBufferHeight - y - height), width, height);        }    },    resetScissor: function ()    {        var gl = this.gl;        gl.enable(gl.SCISSOR_TEST);        var current = this.currentScissor;        if (current)        {            var x = current[0];            var y = current[1];            var width = current[2];            var height = current[3];            if (width > 0 && height > 0)            {                gl.scissor(x, (this.drawingBufferHeight - y - height), width, height);            }        }    },    popScissor: function ()    {        var scissorStack = this.scissorStack;        scissorStack.pop();        var scissor = scissorStack[scissorStack.length - 1];        if (scissor)        {            this.setScissor(scissor[0], scissor[1], scissor[2], scissor[3]);        }        this.currentScissor = scissor;    },    hasActiveStencilMask: function ()    {        var mask = this.currentMask.mask;        var camMask = this.currentCameraMask.mask;        return ((mask && mask.isStencil) || (camMask && camMask.isStencil));    },    resetViewport: function ()    {        var gl = this.gl;        gl.viewport(0, 0, this.width, this.height);        this.drawingBufferHeight = gl.drawingBufferHeight;    },    setBlendMode: function (blendModeId, force)    {        if (force === undefined) { force = false; }        var gl = this.gl;        var blendMode = this.blendModes[blendModeId];        if (force || (blendModeId !== CONST.BlendModes.SKIP_CHECK && this.currentBlendMode !== blendModeId))        {            this.flush();            gl.enable(gl.BLEND);            gl.blendEquation(blendMode.equation);            if (blendMode.func.length > 2)            {                gl.blendFuncSeparate(blendMode.func[0], blendMode.func[1], blendMode.func[2], blendMode.func[3]);            }            else            {                gl.blendFunc(blendMode.func[0], blendMode.func[1]);            }            this.currentBlendMode = blendModeId;            return true;        }        return false;    },    addBlendMode: function (func, equation)    {        var index = this.blendModes.push({ func: func, equation: equation });        return index - 1;    },    updateBlendMode: function (index, func, equation)    {        if (this.blendModes[index])        {            this.blendModes[index].func = func;            if (equation)            {                this.blendModes[index].equation = equation;            }        }        return this;    },    removeBlendMode: function (index)    {        if (index > 17 && this.blendModes[index])        {            this.blendModes.splice(index, 1);        }        return this;    },    pushFramebuffer: function (framebuffer, updateScissor, setViewport, texture, clear)    {        if (framebuffer === this.currentFramebuffer)        {            return this;        }        this.fboStack.push(framebuffer);        return this.setFramebuffer(framebuffer, updateScissor, setViewport, texture, clear);    },    setFramebuffer: function (framebuffer, updateScissor, setViewport, texture, clear)    {        if (updateScissor === undefined) { updateScissor = false; }        if (setViewport === undefined) { setViewport = true; }        if (texture === undefined) { texture = null; }        if (clear === undefined) { clear = false; }        if (framebuffer === this.currentFramebuffer)        {            return this;        }        var gl = this.gl;        var width = this.width;        var height = this.height;        if (framebuffer && framebuffer.renderTexture && setViewport)        {            width = framebuffer.renderTexture.width;            height = framebuffer.renderTexture.height;        }        else        {            this.flush();        }        if (framebuffer)        {            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.webGLFramebuffer);        }        else        {            gl.bindFramebuffer(gl.FRAMEBUFFER, null);        }        if (setViewport)        {            gl.viewport(0, 0, width, height);        }        if (texture)        {            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture.webGLTexture, 0);        }        if (clear)        {            gl.clearColor(0, 0, 0, 0);            gl.clear(gl.COLOR_BUFFER_BIT);        }        if (updateScissor)        {            if (framebuffer)            {                this.drawingBufferHeight = height;                this.pushScissor(0, 0, width, height);            }            else            {                this.drawingBufferHeight = this.height;                this.popScissor();            }        }        this.currentFramebuffer = framebuffer;        return this;    },    popFramebuffer: function (updateScissor, setViewport)    {        if (updateScissor === undefined) { updateScissor = false; }        if (setViewport === undefined) { setViewport = true; }        var fboStack = this.fboStack;        fboStack.pop();        var framebuffer = fboStack[fboStack.length - 1];        if (!framebuffer)        {            framebuffer = null;        }        this.setFramebuffer(framebuffer, updateScissor, setViewport);        return framebuffer;    },    restoreFramebuffer: function (updateScissor, setViewport)    {        if (updateScissor === undefined) { updateScissor = false; }        if (setViewport === undefined) { setViewport = true; }        var fboStack = this.fboStack;        var framebuffer = fboStack[fboStack.length - 1];        if (!framebuffer)        {            framebuffer = null;        }        this.currentFramebuffer = null;        this.setFramebuffer(framebuffer, updateScissor, setViewport);    },    setProgram: function (program)    {        if (program !== this.currentProgram)        {            this.flush();            this.gl.useProgram(program.webGLProgram);            this.currentProgram = program;            return true;        }        return false;    },    resetProgram: function ()    {        this.gl.useProgram(this.currentProgram.webGLProgramWrapper);        return this;    },    createTextureFromSource: function (source, width, height, scaleMode, forceClamp)    {        if (forceClamp === undefined) { forceClamp = false; }        var gl = this.gl;        var minFilter = gl.NEAREST;        var magFilter = gl.NEAREST;        var wrap = gl.CLAMP_TO_EDGE;        var texture = null;        width = source ? source.width : width;        height = source ? source.height : height;        var pow = IsSizePowerOfTwo(width, height);        if (pow && !forceClamp)        {            wrap = gl.REPEAT;        }        if (scaleMode === CONST.ScaleModes.LINEAR && this.config.antialias)        {            var isCompressed = source && source.compressed;            var isMip = (!isCompressed && pow) || (isCompressed && source.mipmaps.length > 1);            minFilter = (this.mipmapFilter && isMip) ? this.mipmapFilter : gl.LINEAR;            magFilter = gl.LINEAR;        }        if (!source && typeof width === 'number' && typeof height === 'number')        {            texture = this.createTexture2D(0, minFilter, magFilter, wrap, wrap, gl.RGBA, null, width, height);        }        else        {            texture = this.createTexture2D(0, minFilter, magFilter, wrap, wrap, gl.RGBA, source);        }        return texture;    },    createTexture2D: function (mipLevel, minFilter, magFilter, wrapT, wrapS, format, pixels, width, height, pma, forceSize, flipY)    {        if (typeof width !== 'number') { width = pixels ? pixels.width : 1; }        if (typeof height !== 'number') { height = pixels ? pixels.height : 1; }        var texture = new WebGLTextureWrapper(this.gl, mipLevel, minFilter, magFilter, wrapT, wrapS, format, pixels, width, height, pma, forceSize, flipY);        this.glTextureWrappers.push(texture);        return texture;    },    createFramebuffer: function (width, height, renderTexture, addDepthStencilBuffer)    {        this.currentFramebuffer = null;        var framebuffer = new WebGLFramebufferWrapper(this.gl, width, height, renderTexture, addDepthStencilBuffer);        this.glFramebufferWrappers.push(framebuffer);        return framebuffer;    },    beginBitmapMask: function (bitmapMask, camera)    {        var gl = this.gl;        if (gl)        {            this.flush();            this.maskTarget.bind(true);            if (this.currentCameraMask.mask !== bitmapMask)            {                this.currentMask.mask = bitmapMask;                this.currentMask.camera = camera;            }        }    },    drawBitmapMask: function (bitmapMask, camera, bitmapMaskPipeline)    {        this.flush();        this.maskSource.bind();        this.setBlendMode(0, true);        bitmapMask.renderWebGL(this, bitmapMask, camera);        this.maskSource.unbind(true);        this.maskTarget.unbind();        var gl = this.gl;        var prev = this.getCurrentStencilMask();        if (prev)        {            gl.enable(gl.STENCIL_TEST);            prev.mask.applyStencil(this, prev.camera, true);        }        else        {            this.currentMask.mask = null;        }        this.pipelines.set(bitmapMaskPipeline);        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, this.maskTarget.texture.webGLTexture);        gl.activeTexture(gl.TEXTURE1);        gl.bindTexture(gl.TEXTURE_2D, this.maskSource.texture.webGLTexture);    },    createProgram: function (vertexShader, fragmentShader)    {        var wrapper = new WebGLProgramWrapper(this.gl, vertexShader, fragmentShader);        this.glProgramWrappers.push(wrapper);        return wrapper;    },    createVertexBuffer: function (initialDataOrSize, bufferUsage)    {        var gl = this.gl;        var vertexBuffer = new WebGLBufferWrapper(gl, initialDataOrSize, gl.ARRAY_BUFFER, bufferUsage);        this.glBufferWrappers.push(vertexBuffer);        return vertexBuffer;    },    createAttribLocation: function (program, name)    {        var attrib = new WebGLAttribLocationWrapper(this.gl, program, name);        this.glAttribLocationWrappers.push(attrib);        return attrib;    },    createUniformLocation: function (program, name)    {        var uniform = new WebGLUniformLocationWrapper(this.gl, program, name);        this.glUniformLocationWrappers.push(uniform);        return uniform;    },    createIndexBuffer: function (initialDataOrSize, bufferUsage)    {        var gl = this.gl;        var indexBuffer = new WebGLBufferWrapper(gl, initialDataOrSize, gl.ELEMENT_ARRAY_BUFFER, bufferUsage);        this.glBufferWrappers.push(indexBuffer);        return indexBuffer;    },    deleteTexture: function (texture)    {        if (!texture)        {            return;        }        ArrayRemove(this.glTextureWrappers, texture);        texture.destroy();        return this;    },    deleteFramebuffer: function (framebuffer)    {        if (!framebuffer)        {            return this;        }        ArrayRemove(this.fboStack, framebuffer);        ArrayRemove(this.glFramebufferWrappers, framebuffer);        framebuffer.destroy();        return this;    },    deleteProgram: function (program)    {        if (program)        {            ArrayRemove(this.glProgramWrappers, program);            program.destroy();        }        return this;    },    deleteAttribLocation: function (attrib)    {        if (attrib)        {            ArrayRemove(this.glAttribLocationWrappers, attrib);            attrib.destroy();        }        return this;    },    deleteUniformLocation: function (uniform)    {        if (uniform)        {            ArrayRemove(this.glUniformLocationWrappers, uniform);            uniform.destroy();        }        return this;    },    deleteBuffer: function (buffer)    {        if (!buffer) { return this; }        ArrayRemove(this.glBufferWrappers, buffer);        buffer.destroy();        return this;    },    preRenderCamera: function (camera)    {        var cx = camera.x;        var cy = camera.y;        var cw = camera.width;        var ch = camera.height;        var color = camera.backgroundColor;        camera.emit(CameraEvents.PRE_RENDER, camera);        this.pipelines.preBatchCamera(camera);        this.pushScissor(cx, cy, cw, ch);        if (camera.mask)        {            this.currentCameraMask.mask = camera.mask;            this.currentCameraMask.camera = camera._maskCamera;            camera.mask.preRenderWebGL(this, camera, camera._maskCamera);        }        if (color.alphaGL > 0)        {            var pipeline = this.pipelines.setMulti();            pipeline.drawFillRect(                cx, cy, cw, ch,                Utils.getTintFromFloats(color.blueGL, color.greenGL, color.redGL, 1),                color.alphaGL            );        }    },    getCurrentStencilMask: function ()    {        var prev = null;        var stack = this.maskStack;        var cameraMask = this.currentCameraMask;        if (stack.length > 0)        {            prev = stack[stack.length - 1];        }        else if (cameraMask.mask && cameraMask.mask.isStencil)        {            prev = cameraMask;        }        return prev;    },    postRenderCamera: function (camera)    {        var flashEffect = camera.flashEffect;        var fadeEffect = camera.fadeEffect;        if (flashEffect.isRunning || (fadeEffect.isRunning || fadeEffect.isComplete))        {            var pipeline = this.pipelines.setMulti();            flashEffect.postRenderWebGL(pipeline, Utils.getTintFromFloats);            fadeEffect.postRenderWebGL(pipeline, Utils.getTintFromFloats);        }        camera.dirty = false;        this.popScissor();        if (camera.mask)        {            this.currentCameraMask.mask = null;            camera.mask.postRenderWebGL(this, camera._maskCamera);        }        this.pipelines.postBatchCamera(camera);        camera.emit(CameraEvents.POST_RENDER, camera);    },    preRender: function ()    {        if (this.contextLost) { return; }        var gl = this.gl;        gl.bindFramebuffer(gl.FRAMEBUFFER, null);        this.emit(Events.PRE_RENDER_CLEAR);        if (this.config.clearBeforeRender)        {            var clearColor = this.config.backgroundColor;            gl.clearColor(clearColor.redGL, clearColor.greenGL, clearColor.blueGL, clearColor.alphaGL);            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);        }        gl.enable(gl.SCISSOR_TEST);        this.currentScissor = this.defaultScissor;        this.scissorStack.length = 0;        this.scissorStack.push(this.currentScissor);        if (this.game.scene.customViewports)        {            gl.scissor(0, (this.drawingBufferHeight - this.height), this.width, this.height);        }        this.currentMask.mask = null;        this.currentCameraMask.mask = null;        this.maskStack.length = 0;        this.emit(Events.PRE_RENDER);    },    render: function (scene, children, camera)    {        if (this.contextLost) { return; }        var childCount = children.length;        this.emit(Events.RENDER, scene, camera);        this.preRenderCamera(camera);        if (childCount === 0)        {            this.setBlendMode(CONST.BlendModes.NORMAL);            this.postRenderCamera(camera);            return;        }        this.currentType = '';        var current = this.currentMask;        for (var i = 0; i < childCount; i++)        {            this.finalType = (i === childCount - 1);            var child = children[i];            var mask = child.mask;            current = this.currentMask;            if (current.mask && current.mask !== mask)            {                current.mask.postRenderWebGL(this, current.camera);            }            if (mask && current.mask !== mask)            {                mask.preRenderWebGL(this, child, camera);            }            if (child.blendMode !== this.currentBlendMode)            {                this.setBlendMode(child.blendMode);            }            var type = child.type;            if (type !== this.currentType)            {                this.newType = true;                this.currentType = type;            }            if (!this.finalType)            {                this.nextTypeMatch = (children[i + 1].type === this.currentType);            }            else            {                this.nextTypeMatch = false;            }            child.renderWebGL(this, child, camera);            this.newType = false;        }        current = this.currentMask;        if (current.mask)        {            current.mask.postRenderWebGL(this, current.camera);        }        this.setBlendMode(CONST.BlendModes.NORMAL);        this.postRenderCamera(camera);    },    postRender: function ()    {        if (this.contextLost) { return; }        this.flush();        this.emit(Events.POST_RENDER);        var state = this.snapshotState;        if (state.callback)        {            WebGLSnapshot(this.gl, state);            state.callback = null;        }    },    clearStencilMask: function ()    {        this.gl.disable(this.gl.STENCIL_TEST);    },    restoreStencilMask: function ()    {        var gl = this.gl;        var current = this.getCurrentStencilMask();        if (current)        {            var mask = current.mask;            gl.enable(gl.STENCIL_TEST);            if (mask.invertAlpha)            {                gl.stencilFunc(gl.NOTEQUAL, mask.level, 0xff);            }            else            {                gl.stencilFunc(gl.EQUAL, mask.level, 0xff);            }        }    },    snapshot: function (callback, type, encoderOptions)    {        return this.snapshotArea(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight, callback, type, encoderOptions);    },    snapshotArea: function (x, y, width, height, callback, type, encoderOptions)    {        var state = this.snapshotState;        state.callback = callback;        state.type = type;        state.encoder = encoderOptions;        state.getPixel = false;        state.x = x;        state.y = y;        state.width = width;        state.height = height;        return this;    },    snapshotPixel: function (x, y, callback)    {        this.snapshotArea(x, y, 1, 1, callback);        this.snapshotState.getPixel = true;        return this;    },    snapshotFramebuffer: function (framebuffer, bufferWidth, bufferHeight, callback, getPixel, x, y, width, height, type, encoderOptions)    {        if (getPixel === undefined) { getPixel = false; }        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (width === undefined) { width = bufferWidth; }        if (height === undefined) { height = bufferHeight; }        if (type === 'pixel')        {            getPixel = true;            type = 'image/png';        }        var currentFramebuffer = this.currentFramebuffer;        this.snapshotArea(x, y, width, height, callback, type, encoderOptions);        var state = this.snapshotState;        state.getPixel = getPixel;        state.isFramebuffer = true;        state.bufferWidth = bufferWidth;        state.bufferHeight = bufferHeight;        state.width = Math.min(state.width, bufferWidth);        state.height = Math.min(state.height, bufferHeight);        this.setFramebuffer(framebuffer);        WebGLSnapshot(this.gl, state);        this.setFramebuffer(currentFramebuffer);        state.callback = null;        state.isFramebuffer = false;        return this;    },    canvasToTexture: function (srcCanvas, dstTexture, noRepeat, flipY)    {        if (noRepeat === undefined) { noRepeat = false; }        if (flipY === undefined) { flipY = false; }        var gl = this.gl;        var minFilter = gl.NEAREST;        var magFilter = gl.NEAREST;        var width = srcCanvas.width;        var height = srcCanvas.height;        var wrapping = gl.CLAMP_TO_EDGE;        var pow = IsSizePowerOfTwo(width, height);        if (!noRepeat && pow)        {            wrapping = gl.REPEAT;        }        if (this.config.antialias)        {            minFilter = (pow && this.mipmapFilter) ? this.mipmapFilter : gl.LINEAR;            magFilter = gl.LINEAR;        }        if (!dstTexture)        {            return this.createTexture2D(0, minFilter, magFilter, wrapping, wrapping, gl.RGBA, srcCanvas, width, height, true, false, flipY);        }        else        {            dstTexture.update(srcCanvas, width, height, flipY, wrapping, wrapping, minFilter, magFilter, dstTexture.format);            return dstTexture;        }    },    createCanvasTexture: function (srcCanvas, noRepeat, flipY)    {        if (noRepeat === undefined) { noRepeat = false; }        if (flipY === undefined) { flipY = false; }        return this.canvasToTexture(srcCanvas, null, noRepeat, flipY);    },    updateCanvasTexture: function (srcCanvas, dstTexture, flipY, noRepeat)    {        if (flipY === undefined) { flipY = false; }        if (noRepeat === undefined) { noRepeat = false; }        return this.canvasToTexture(srcCanvas, dstTexture, noRepeat, flipY);    },    videoToTexture: function (srcVideo, dstTexture, noRepeat, flipY)    {        if (noRepeat === undefined) { noRepeat = false; }        if (flipY === undefined) { flipY = false; }        var gl = this.gl;        var minFilter = gl.NEAREST;        var magFilter = gl.NEAREST;        var width = srcVideo.videoWidth;        var height = srcVideo.videoHeight;        var wrapping = gl.CLAMP_TO_EDGE;        var pow = IsSizePowerOfTwo(width, height);        if (!noRepeat && pow)        {            wrapping = gl.REPEAT;        }        if (this.config.antialias)        {            minFilter = (pow && this.mipmapFilter) ? this.mipmapFilter : gl.LINEAR;            magFilter = gl.LINEAR;        }        if (!dstTexture)        {            return this.createTexture2D(0, minFilter, magFilter, wrapping, wrapping, gl.RGBA, srcVideo, width, height, true, true, flipY);        }        else        {            dstTexture.update(srcVideo, width, height, flipY, wrapping, wrapping, minFilter, magFilter, dstTexture.format);            return dstTexture;        }    },    createVideoTexture: function (srcVideo, noRepeat, flipY)    {        if (noRepeat === undefined) { noRepeat = false; }        if (flipY === undefined) { flipY = false; }        return this.videoToTexture(srcVideo, null, noRepeat, flipY);    },    updateVideoTexture: function (srcVideo, dstTexture, flipY, noRepeat)    {        if (flipY === undefined) { flipY = false; }        if (noRepeat === undefined) { noRepeat = false; }        return this.videoToTexture(srcVideo, dstTexture, noRepeat, flipY);    },    createUint8ArrayTexture: function (data, width, height)    {        var gl = this.gl;        var minFilter = gl.NEAREST;        var magFilter = gl.NEAREST;        var wrap = gl.CLAMP_TO_EDGE;        var pow = IsSizePowerOfTwo(width, height);        if (pow)        {            wrap = gl.REPEAT;        }        return this.createTexture2D(0, minFilter, magFilter, wrap, wrap, gl.RGBA, data, width, height);    },    setTextureFilter: function (texture, filter)    {        var gl = this.gl;        var glFilter = (filter === 0) ? gl.LINEAR : gl.NEAREST;        gl.activeTexture(gl.TEXTURE0);        var currentTexture = gl.getParameter(gl.TEXTURE_BINDING_2D);        gl.bindTexture(gl.TEXTURE_2D, texture.webGLTexture);        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glFilter);        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glFilter);        texture.minFilter = glFilter;        texture.magFilter = glFilter;        if (currentTexture)        {            gl.bindTexture(gl.TEXTURE_2D, currentTexture);        }        return this;    },    getMaxTextureSize: function ()    {        return this.config.maxTextureSize;    },    destroy: function ()    {        this.canvas.removeEventListener('webglcontextlost', this.contextLostHandler, false);        this.canvas.removeEventListener('webglcontextrestored', this.contextRestoredHandler, false);        var wrapperDestroy = function (wrapper)        {            wrapper.destroy();        };        ArrayEach(this.glAttribLocationWrappers, wrapperDestroy);        ArrayEach(this.glBufferWrappers, wrapperDestroy);        ArrayEach(this.glFramebufferWrappers, wrapperDestroy);        ArrayEach(this.glProgramWrappers, wrapperDestroy);        ArrayEach(this.glTextureWrappers, wrapperDestroy);        ArrayEach(this.glUniformLocationWrappers, wrapperDestroy);        this.maskTarget.destroy();        this.maskSource.destroy();        this.pipelines.destroy();        this.removeAllListeners();        this.fboStack = [];        this.maskStack = [];        this.extensions = {};        this.textureIndexes = [];        this.gl = null;        this.game = null;        this.canvas = null;        this.contextLost = true;        this.currentMask = null;        this.currentCameraMask = null;        if (DEBUG)        {            this.spector = null;        }    }});module.exports = WebGLRenderer;

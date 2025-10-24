@@ -1,18 +1,1 @@
-var MoveUp = function (array, item)
-{
-    var currentIndex = array.indexOf(item);
-
-    if (currentIndex !== -1 && currentIndex < array.length - 1)
-    {
-
-        var item2 = array[currentIndex + 1];
-        var index2 = array.indexOf(item2);
-
-        array[currentIndex] = item2;
-        array[index2] = item;
-    }
-
-    return array;
-};
-
-module.exports = MoveUp;
+var MoveUp = function (array, item){    var currentIndex = array.indexOf(item);    if (currentIndex !== -1 && currentIndex < array.length - 1)    {        var item2 = array[currentIndex + 1];        var index2 = array.indexOf(item2);        array[currentIndex] = item2;        array[index2] = item;    }    return array;};module.exports = MoveUp;

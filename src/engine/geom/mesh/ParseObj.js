@@ -1,259 +1,1 @@
-var flip = true;
-
-var defaultModelName = 'untitled';
-var currentGroup = '';
-var currentMaterial = '';
-
-function stripComments (line)
-{
-    var idx = line.indexOf('#');
-
-    return (idx > -1) ? line.substring(0, idx) : line;
-}
-
-function currentModel (result)
-{
-    if (result.models.length === 0)
-    {
-        result.models.push({
-            faces: [],
-            name: defaultModelName,
-            textureCoords: [],
-            vertexNormals: [],
-            vertices: []
-        });
-    }
-
-    currentGroup = '';
-
-    return result.models[result.models.length - 1];
-}
-
-function parseObject (lineItems, result)
-{
-    var modelName = lineItems.length >= 2 ? lineItems[1] : defaultModelName;
-
-    result.models.push({
-        faces: [],
-        name: modelName,
-        textureCoords: [],
-        vertexNormals: [],
-        vertices: []
-    });
-
-    currentGroup = '';
-}
-
-function parseGroup (lineItems)
-{
-    if (lineItems.length === 2)
-    {
-        currentGroup = lineItems[1];
-    }
-}
-
-function parseVertexCoords (lineItems, result)
-{
-    var len = lineItems.length;
-
-    var x = (len >= 2) ? parseFloat(lineItems[1]) : 0;
-    var y = (len >= 3) ? parseFloat(lineItems[2]) : 0;
-    var z = (len >= 4) ? parseFloat(lineItems[3]) : 0;
-
-    currentModel(result).vertices.push({ x: x, y: y, z: z });
-}
-
-function parseTextureCoords (lineItems, result)
-{
-    var len = lineItems.length;
-
-    var u = (len >= 2) ? parseFloat(lineItems[1]) : 0;
-    var v = (len >= 3) ? parseFloat(lineItems[2]) : 0;
-    var w = (len >= 4) ? parseFloat(lineItems[3]) : 0;
-
-    if (isNaN(u))
-    {
-        u = 0;
-    }
-
-    if (isNaN(v))
-    {
-        v = 0;
-    }
-
-    if (isNaN(w))
-    {
-        w = 0;
-    }
-
-    if (flip)
-    {
-        v = 1 - v;
-    }
-
-    currentModel(result).textureCoords.push({ u: u, v: v, w: w });
-}
-
-function parseVertexNormal (lineItems, result)
-{
-    var len = lineItems.length;
-
-    var x = (len >= 2) ? parseFloat(lineItems[1]) : 0;
-    var y = (len >= 3) ? parseFloat(lineItems[2]) : 0;
-    var z = (len >= 4) ? parseFloat(lineItems[3]) : 0;
-
-    currentModel(result).vertexNormals.push({ x: x, y: y, z: z });
-}
-
-function parsePolygon (lineItems, result)
-{
-    var totalVertices = lineItems.length - 1;
-
-    if (totalVertices < 3)
-    {
-        return;
-    }
-
-    var face = {
-        group: currentGroup,
-        material: currentMaterial,
-        vertices: []
-    };
-
-    for (var i = 0; i < totalVertices; i++)
-    {
-        var vertexString = lineItems[i + 1];
-        var vertexValues = vertexString.split('/');
-        var vvLen = vertexValues.length;
-
-        if (vvLen < 1 || vvLen > 3)
-        {
-            continue;
-        }
-
-        var vertexIndex = 0;
-        var textureCoordsIndex = 0;
-        var vertexNormalIndex = 0;
-
-        vertexIndex = parseInt(vertexValues[0], 10);
-
-        if (vvLen > 1 && vertexValues[1] !== '')
-        {
-            textureCoordsIndex = parseInt(vertexValues[1], 10);
-        }
-
-        if (vvLen > 2)
-        {
-            vertexNormalIndex = parseInt(vertexValues[2], 10);
-        }
-
-        if (vertexIndex !== 0)
-        {
-
-            if (vertexIndex < 0)
-            {
-                vertexIndex = currentModel(result).vertices.length + 1 + vertexIndex;
-            }
-
-            textureCoordsIndex -= 1;
-            vertexIndex -= 1;
-            vertexNormalIndex -= 1;
-
-            face.vertices.push({
-                textureCoordsIndex: textureCoordsIndex,
-                vertexIndex: vertexIndex,
-                vertexNormalIndex: vertexNormalIndex
-            });
-        }
-    }
-
-    currentModel(result).faces.push(face);
-}
-
-function parseMtlLib (lineItems, result)
-{
-    if (lineItems.length >= 2)
-    {
-        result.materialLibraries.push(lineItems[1]);
-    }
-}
-
-function parseUseMtl (lineItems)
-{
-    if (lineItems.length >= 2)
-    {
-        currentMaterial = lineItems[1];
-    }
-}
-
-var ParseObj = function (data, flipUV)
-{
-    if (flipUV === undefined) { flipUV = true; }
-
-    flip = flipUV;
-
-    var result = {
-        materials: {},
-        materialLibraries: [],
-        models: []
-    };
-
-    currentGroup = '';
-    currentMaterial = '';
-
-    var lines = data.split('\n');
-
-    for (var i = 0; i < lines.length; i++)
-    {
-        var line = stripComments(lines[i]);
-
-        var lineItems = line.replace(/\s\s+/g, ' ').trim().split(' ');
-
-        switch (lineItems[0].toLowerCase())
-        {
-            case 'o':
-
-                parseObject(lineItems, result);
-                break;
-
-            case 'g':
-
-                parseGroup(lineItems);
-                break;
-
-            case 'v':
-
-                parseVertexCoords(lineItems, result);
-                break;
-
-            case 'vt':
-
-                parseTextureCoords(lineItems, result);
-                break;
-
-            case 'vn':
-
-                parseVertexNormal(lineItems, result);
-                break;
-
-            case 'f':
-
-                parsePolygon(lineItems, result);
-                break;
-
-            case 'mtllib':
-
-                parseMtlLib(lineItems, result);
-                break;
-
-            case 'usemtl':
-
-                parseUseMtl(lineItems);
-                break;
-        }
-    }
-
-    return result;
-};
-
-module.exports = ParseObj;
+var flip = true;var defaultModelName = 'untitled';var currentGroup = '';var currentMaterial = '';function stripComments (line){    var idx = line.indexOf('#');    return (idx > -1) ? line.substring(0, idx) : line;}function currentModel (result){    if (result.models.length === 0)    {        result.models.push({            faces: [],            name: defaultModelName,            textureCoords: [],            vertexNormals: [],            vertices: []        });    }    currentGroup = '';    return result.models[result.models.length - 1];}function parseObject (lineItems, result){    var modelName = lineItems.length >= 2 ? lineItems[1] : defaultModelName;    result.models.push({        faces: [],        name: modelName,        textureCoords: [],        vertexNormals: [],        vertices: []    });    currentGroup = '';}function parseGroup (lineItems){    if (lineItems.length === 2)    {        currentGroup = lineItems[1];    }}function parseVertexCoords (lineItems, result){    var len = lineItems.length;    var x = (len >= 2) ? parseFloat(lineItems[1]) : 0;    var y = (len >= 3) ? parseFloat(lineItems[2]) : 0;    var z = (len >= 4) ? parseFloat(lineItems[3]) : 0;    currentModel(result).vertices.push({ x: x, y: y, z: z });}function parseTextureCoords (lineItems, result){    var len = lineItems.length;    var u = (len >= 2) ? parseFloat(lineItems[1]) : 0;    var v = (len >= 3) ? parseFloat(lineItems[2]) : 0;    var w = (len >= 4) ? parseFloat(lineItems[3]) : 0;    if (isNaN(u))    {        u = 0;    }    if (isNaN(v))    {        v = 0;    }    if (isNaN(w))    {        w = 0;    }    if (flip)    {        v = 1 - v;    }    currentModel(result).textureCoords.push({ u: u, v: v, w: w });}function parseVertexNormal (lineItems, result){    var len = lineItems.length;    var x = (len >= 2) ? parseFloat(lineItems[1]) : 0;    var y = (len >= 3) ? parseFloat(lineItems[2]) : 0;    var z = (len >= 4) ? parseFloat(lineItems[3]) : 0;    currentModel(result).vertexNormals.push({ x: x, y: y, z: z });}function parsePolygon (lineItems, result){    var totalVertices = lineItems.length - 1;    if (totalVertices < 3)    {        return;    }    var face = {        group: currentGroup,        material: currentMaterial,        vertices: []    };    for (var i = 0; i < totalVertices; i++)    {        var vertexString = lineItems[i + 1];        var vertexValues = vertexString.split('/');        var vvLen = vertexValues.length;        if (vvLen < 1 || vvLen > 3)        {            continue;        }        var vertexIndex = 0;        var textureCoordsIndex = 0;        var vertexNormalIndex = 0;        vertexIndex = parseInt(vertexValues[0], 10);        if (vvLen > 1 && vertexValues[1] !== '')        {            textureCoordsIndex = parseInt(vertexValues[1], 10);        }        if (vvLen > 2)        {            vertexNormalIndex = parseInt(vertexValues[2], 10);        }        if (vertexIndex !== 0)        {            if (vertexIndex < 0)            {                vertexIndex = currentModel(result).vertices.length + 1 + vertexIndex;            }            textureCoordsIndex -= 1;            vertexIndex -= 1;            vertexNormalIndex -= 1;            face.vertices.push({                textureCoordsIndex: textureCoordsIndex,                vertexIndex: vertexIndex,                vertexNormalIndex: vertexNormalIndex            });        }    }    currentModel(result).faces.push(face);}function parseMtlLib (lineItems, result){    if (lineItems.length >= 2)    {        result.materialLibraries.push(lineItems[1]);    }}function parseUseMtl (lineItems){    if (lineItems.length >= 2)    {        currentMaterial = lineItems[1];    }}var ParseObj = function (data, flipUV){    if (flipUV === undefined) { flipUV = true; }    flip = flipUV;    var result = {        materials: {},        materialLibraries: [],        models: []    };    currentGroup = '';    currentMaterial = '';    var lines = data.split('\n');    for (var i = 0; i < lines.length; i++)    {        var line = stripComments(lines[i]);        var lineItems = line.replace(/\s\s+/g, ' ').trim().split(' ');        switch (lineItems[0].toLowerCase())        {            case 'o':                parseObject(lineItems, result);                break;            case 'g':                parseGroup(lineItems);                break;            case 'v':                parseVertexCoords(lineItems, result);                break;            case 'vt':                parseTextureCoords(lineItems, result);                break;            case 'vn':                parseVertexNormal(lineItems, result);                break;            case 'f':                parsePolygon(lineItems, result);                break;            case 'mtllib':                parseMtlLib(lineItems, result);                break;            case 'usemtl':                parseUseMtl(lineItems);                break;        }    }    return result;};module.exports = ParseObj;

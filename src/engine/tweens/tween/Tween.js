@@ -1,454 +1,1 @@
-var BaseTween = require('./BaseTween');
-var Class = require('../../utils/Class');
-var Events = require('../events');
-var GameObjectCreator = require('../../gameobjects/GameObjectCreator');
-var GameObjectFactory = require('../../gameobjects/GameObjectFactory');
-var MATH_CONST = require('../../math/const');
-var TWEEN_CONST = require('./const');
-var TweenData = require('./TweenData');
-var TweenFrameData = require('./TweenFrameData');
-
-var Tween = new Class({
-
-    Extends: BaseTween,
-
-    initialize:
-
-    function Tween (parent, targets)
-    {
-        BaseTween.call(this, parent);
-
-        this.targets = targets;
-
-        this.totalTargets = targets.length;
-
-        this.isSeeking = false;
-
-        this.isInfinite = false;
-
-        this.elapsed = 0;
-
-        this.totalElapsed = 0;
-
-        this.duration = 0;
-
-        this.progress = 0;
-
-        this.totalDuration = 0;
-
-        this.totalProgress = 0;
-
-        this.isNumberTween = false;
-    },
-
-    add: function (targetIndex, key, getEnd, getStart, getActive, ease, delay, duration, yoyo, hold, repeat, repeatDelay, flipX, flipY, interpolation, interpolationData)
-    {
-        var tweenData = new TweenData(this, targetIndex, key, getEnd, getStart, getActive, ease, delay, duration, yoyo, hold, repeat, repeatDelay, flipX, flipY, interpolation, interpolationData);
-
-        this.totalData = this.data.push(tweenData);
-
-        return tweenData;
-    },
-
-    addFrame: function (targetIndex, texture, frame, delay, duration, hold, repeat, repeatDelay, flipX, flipY)
-    {
-        var tweenData = new TweenFrameData(this, targetIndex, texture, frame, delay, duration, hold, repeat, repeatDelay, flipX, flipY);
-
-        this.totalData = this.data.push(tweenData);
-
-        return tweenData;
-    },
-
-    getValue: function (index)
-    {
-        if (index === undefined) { index = 0; }
-
-        var value = null;
-
-        if (this.data)
-        {
-            value = this.data[index].current;
-        }
-
-        return value;
-    },
-
-    hasTarget: function (target)
-    {
-        return (this.targets && this.targets.indexOf(target) !== -1);
-    },
-
-    updateTo: function (key, value, startToCurrent)
-    {
-        if (startToCurrent === undefined) { startToCurrent = false; }
-
-        if (key !== 'texture')
-        {
-            for (var i = 0; i < this.totalData; i++)
-            {
-                var tweenData = this.data[i];
-
-                if (tweenData.key === key && (tweenData.isPlayingForward() || tweenData.isPlayingBackward()))
-                {
-                    tweenData.end = value;
-
-                    if (startToCurrent)
-                    {
-                        tweenData.start = tweenData.current;
-                    }
-                }
-            }
-        }
-
-        return this;
-    },
-
-    restart: function ()
-    {
-        switch (this.state)
-        {
-            case TWEEN_CONST.REMOVED:
-            case TWEEN_CONST.FINISHED:
-                this.seek();
-                this.parent.makeActive(this);
-                break;
-
-            case TWEEN_CONST.PENDING:
-            case TWEEN_CONST.PENDING_REMOVE:
-                this.parent.reset(this);
-                break;
-
-            case TWEEN_CONST.DESTROYED:
-                console.warn('Cannot restart destroyed Tween', this);
-                break;
-
-            default:
-                this.seek();
-                break;
-        }
-
-        this.paused = false;
-        this.hasStarted = false;
-
-        return this;
-    },
-
-    nextState: function ()
-    {
-        if (this.loopCounter > 0)
-        {
-            this.elapsed = 0;
-            this.progress = 0;
-            this.loopCounter--;
-
-            this.initTweenData(true);
-
-            if (this.loopDelay > 0)
-            {
-                this.countdown = this.loopDelay;
-
-                this.setLoopDelayState();
-            }
-            else
-            {
-                this.setActiveState();
-
-                this.dispatchEvent(Events.TWEEN_LOOP, 'onLoop');
-            }
-        }
-        else if (this.completeDelay > 0)
-        {
-            this.countdown = this.completeDelay;
-
-            this.setCompleteDelayState();
-        }
-        else
-        {
-            this.onCompleteHandler();
-
-            return true;
-        }
-
-        return false;
-    },
-
-    onCompleteHandler: function ()
-    {
-        this.progress = 1;
-        this.totalProgress = 1;
-
-        BaseTween.prototype.onCompleteHandler.call(this);
-    },
-
-    play: function ()
-    {
-        if (this.isDestroyed())
-        {
-            console.warn('Cannot play destroyed Tween', this);
-
-            return this;
-        }
-
-        if (this.isPendingRemove() || this.isFinished())
-        {
-            this.seek();
-        }
-
-        this.paused = false;
-
-        this.setActiveState();
-
-        return this;
-    },
-
-    seek: function (amount, delta, emit)
-    {
-        if (amount === undefined) { amount = 0; }
-        if (delta === undefined) { delta = 16.6; }
-        if (emit === undefined) { emit = false; }
-
-        if (this.isDestroyed())
-        {
-            console.warn('Cannot seek destroyed Tween', this);
-
-            return this;
-        }
-
-        if (!emit)
-        {
-            this.isSeeking = true;
-        }
-
-        this.reset(true);
-
-        this.initTweenData(true);
-
-        this.setActiveState();
-
-        this.dispatchEvent(Events.TWEEN_ACTIVE, 'onActive');
-
-        var isPaused = this.paused;
-
-        this.paused = false;
-
-        if (amount > 0)
-        {
-            var iterations = Math.floor(amount / delta);
-            var remainder = amount - (iterations * delta);
-
-            for (var i = 0; i < iterations; i++)
-            {
-                this.update(delta);
-            }
-
-            if (remainder > 0)
-            {
-                this.update(remainder);
-            }
-        }
-
-        this.paused = isPaused;
-
-        this.isSeeking = false;
-
-        return this;
-    },
-
-    initTweenData: function (isSeeking)
-    {
-        if (isSeeking === undefined) { isSeeking = false; }
-
-        this.duration = 0;
-        this.startDelay = MATH_CONST.MAX_SAFE_INTEGER;
-
-        var data = this.data;
-
-        for (var i = 0; i < this.totalData; i++)
-        {
-            data[i].reset(isSeeking);
-        }
-
-        this.duration = Math.max(this.duration, 0.01);
-
-        var duration = this.duration;
-        var completeDelay = this.completeDelay;
-        var loopCounter = this.loopCounter;
-        var loopDelay = this.loopDelay;
-
-        if (loopCounter > 0)
-        {
-            this.totalDuration = duration + completeDelay + ((duration + loopDelay) * loopCounter);
-        }
-        else
-        {
-            this.totalDuration = duration + completeDelay;
-        }
-    },
-
-    reset: function (skipInit)
-    {
-        if (skipInit === undefined) { skipInit = false; }
-
-        this.elapsed = 0;
-        this.totalElapsed = 0;
-        this.progress = 0;
-        this.totalProgress = 0;
-        this.loopCounter = this.loop;
-
-        if (this.loop === -1)
-        {
-            this.isInfinite = true;
-            this.loopCounter = TWEEN_CONST.MAX;
-        }
-
-        if (!skipInit)
-        {
-            this.initTweenData();
-
-            this.setActiveState();
-
-            this.dispatchEvent(Events.TWEEN_ACTIVE, 'onActive');
-        }
-
-        return this;
-    },
-
-    update: function (delta)
-    {
-        if (this.isPendingRemove() || this.isDestroyed())
-        {
-            if (this.persist)
-            {
-                this.setFinishedState();
-
-                return false;
-            }
-
-            return true;
-        }
-        else if (this.paused || this.isFinished())
-        {
-            return false;
-        }
-
-        delta *= this.timeScale * this.parent.timeScale;
-
-        if (this.isLoopDelayed())
-        {
-            this.updateLoopCountdown(delta);
-
-            return false;
-        }
-        else if (this.isCompleteDelayed())
-        {
-            this.updateCompleteDelay(delta);
-
-            return false;
-        }
-        else if (!this.hasStarted)
-        {
-            this.startDelay -= delta;
-
-            if (this.startDelay <= 0)
-            {
-                this.hasStarted = true;
-
-                this.dispatchEvent(Events.TWEEN_START, 'onStart');
-
-                delta = 0;
-            }
-        }
-
-        var stillRunning = false;
-
-        if (this.isActive())
-        {
-            var data = this.data;
-
-            for (var i = 0; i < this.totalData; i++)
-            {
-                if (data[i].update(delta))
-                {
-                    stillRunning = true;
-                }
-            }
-        }
-
-        this.elapsed += delta;
-        this.progress = Math.min(this.elapsed / this.duration, 1);
-
-        this.totalElapsed += delta;
-        this.totalProgress = Math.min(this.totalElapsed / this.totalDuration, 1);
-
-        if (!stillRunning)
-        {
-
-            this.nextState();
-        }
-
-        var remove = this.isPendingRemove();
-
-        if (remove && this.persist)
-        {
-            this.setFinishedState();
-
-            remove = false;
-        }
-
-        return remove;
-    },
-
-    forward: function (ms)
-    {
-        this.update(ms);
-
-        return this;
-    },
-
-    rewind: function (ms)
-    {
-        this.update(-ms);
-
-        return this;
-    },
-
-    dispatchEvent: function (event, callback)
-    {
-        if (!this.isSeeking)
-        {
-            this.emit(event, this, this.targets);
-
-            if (!this.callbacks)
-            {
-                return;
-            }
-
-            var handler = this.callbacks[callback];
-
-            if (handler)
-            {
-                handler.func.apply(this.callbackScope, [ this, this.targets ].concat(handler.params));
-            }
-        }
-    },
-
-    destroy: function ()
-    {
-        BaseTween.prototype.destroy.call(this);
-
-        this.targets = null;
-    }
-
-});
-
-GameObjectFactory.register('tween', function (config)
-{
-    return this.scene.sys.tweens.add(config);
-});
-
-GameObjectCreator.register('tween', function (config)
-{
-    return this.scene.sys.tweens.create(config);
-});
-
-module.exports = Tween;
+var BaseTween = require('./BaseTween');var Class = require('../../utils/Class');var Events = require('../events');var GameObjectCreator = require('../../gameobjects/GameObjectCreator');var GameObjectFactory = require('../../gameobjects/GameObjectFactory');var MATH_CONST = require('../../math/const');var TWEEN_CONST = require('./const');var TweenData = require('./TweenData');var TweenFrameData = require('./TweenFrameData');var Tween = new Class({    Extends: BaseTween,    initialize:    function Tween (parent, targets)    {        BaseTween.call(this, parent);        this.targets = targets;        this.totalTargets = targets.length;        this.isSeeking = false;        this.isInfinite = false;        this.elapsed = 0;        this.totalElapsed = 0;        this.duration = 0;        this.progress = 0;        this.totalDuration = 0;        this.totalProgress = 0;        this.isNumberTween = false;    },    add: function (targetIndex, key, getEnd, getStart, getActive, ease, delay, duration, yoyo, hold, repeat, repeatDelay, flipX, flipY, interpolation, interpolationData)    {        var tweenData = new TweenData(this, targetIndex, key, getEnd, getStart, getActive, ease, delay, duration, yoyo, hold, repeat, repeatDelay, flipX, flipY, interpolation, interpolationData);        this.totalData = this.data.push(tweenData);        return tweenData;    },    addFrame: function (targetIndex, texture, frame, delay, duration, hold, repeat, repeatDelay, flipX, flipY)    {        var tweenData = new TweenFrameData(this, targetIndex, texture, frame, delay, duration, hold, repeat, repeatDelay, flipX, flipY);        this.totalData = this.data.push(tweenData);        return tweenData;    },    getValue: function (index)    {        if (index === undefined) { index = 0; }        var value = null;        if (this.data)        {            value = this.data[index].current;        }        return value;    },    hasTarget: function (target)    {        return (this.targets && this.targets.indexOf(target) !== -1);    },    updateTo: function (key, value, startToCurrent)    {        if (startToCurrent === undefined) { startToCurrent = false; }        if (key !== 'texture')        {            for (var i = 0; i < this.totalData; i++)            {                var tweenData = this.data[i];                if (tweenData.key === key && (tweenData.isPlayingForward() || tweenData.isPlayingBackward()))                {                    tweenData.end = value;                    if (startToCurrent)                    {                        tweenData.start = tweenData.current;                    }                }            }        }        return this;    },    restart: function ()    {        switch (this.state)        {            case TWEEN_CONST.REMOVED:            case TWEEN_CONST.FINISHED:                this.seek();                this.parent.makeActive(this);                break;            case TWEEN_CONST.PENDING:            case TWEEN_CONST.PENDING_REMOVE:                this.parent.reset(this);                break;            case TWEEN_CONST.DESTROYED:                console.warn('Cannot restart destroyed Tween', this);                break;            default:                this.seek();                break;        }        this.paused = false;        this.hasStarted = false;        return this;    },    nextState: function ()    {        if (this.loopCounter > 0)        {            this.elapsed = 0;            this.progress = 0;            this.loopCounter--;            this.initTweenData(true);            if (this.loopDelay > 0)            {                this.countdown = this.loopDelay;                this.setLoopDelayState();            }            else            {                this.setActiveState();                this.dispatchEvent(Events.TWEEN_LOOP, 'onLoop');            }        }        else if (this.completeDelay > 0)        {            this.countdown = this.completeDelay;            this.setCompleteDelayState();        }        else        {            this.onCompleteHandler();            return true;        }        return false;    },    onCompleteHandler: function ()    {        this.progress = 1;        this.totalProgress = 1;        BaseTween.prototype.onCompleteHandler.call(this);    },    play: function ()    {        if (this.isDestroyed())        {            console.warn('Cannot play destroyed Tween', this);            return this;        }        if (this.isPendingRemove() || this.isFinished())        {            this.seek();        }        this.paused = false;        this.setActiveState();        return this;    },    seek: function (amount, delta, emit)    {        if (amount === undefined) { amount = 0; }        if (delta === undefined) { delta = 16.6; }        if (emit === undefined) { emit = false; }        if (this.isDestroyed())        {            console.warn('Cannot seek destroyed Tween', this);            return this;        }        if (!emit)        {            this.isSeeking = true;        }        this.reset(true);        this.initTweenData(true);        this.setActiveState();        this.dispatchEvent(Events.TWEEN_ACTIVE, 'onActive');        var isPaused = this.paused;        this.paused = false;        if (amount > 0)        {            var iterations = Math.floor(amount / delta);            var remainder = amount - (iterations * delta);            for (var i = 0; i < iterations; i++)            {                this.update(delta);            }            if (remainder > 0)            {                this.update(remainder);            }        }        this.paused = isPaused;        this.isSeeking = false;        return this;    },    initTweenData: function (isSeeking)    {        if (isSeeking === undefined) { isSeeking = false; }        this.duration = 0;        this.startDelay = MATH_CONST.MAX_SAFE_INTEGER;        var data = this.data;        for (var i = 0; i < this.totalData; i++)        {            data[i].reset(isSeeking);        }        this.duration = Math.max(this.duration, 0.01);        var duration = this.duration;        var completeDelay = this.completeDelay;        var loopCounter = this.loopCounter;        var loopDelay = this.loopDelay;        if (loopCounter > 0)        {            this.totalDuration = duration + completeDelay + ((duration + loopDelay) * loopCounter);        }        else        {            this.totalDuration = duration + completeDelay;        }    },    reset: function (skipInit)    {        if (skipInit === undefined) { skipInit = false; }        this.elapsed = 0;        this.totalElapsed = 0;        this.progress = 0;        this.totalProgress = 0;        this.loopCounter = this.loop;        if (this.loop === -1)        {            this.isInfinite = true;            this.loopCounter = TWEEN_CONST.MAX;        }        if (!skipInit)        {            this.initTweenData();            this.setActiveState();            this.dispatchEvent(Events.TWEEN_ACTIVE, 'onActive');        }        return this;    },    update: function (delta)    {        if (this.isPendingRemove() || this.isDestroyed())        {            if (this.persist)            {                this.setFinishedState();                return false;            }            return true;        }        else if (this.paused || this.isFinished())        {            return false;        }        delta *= this.timeScale * this.parent.timeScale;        if (this.isLoopDelayed())        {            this.updateLoopCountdown(delta);            return false;        }        else if (this.isCompleteDelayed())        {            this.updateCompleteDelay(delta);            return false;        }        else if (!this.hasStarted)        {            this.startDelay -= delta;            if (this.startDelay <= 0)            {                this.hasStarted = true;                this.dispatchEvent(Events.TWEEN_START, 'onStart');                delta = 0;            }        }        var stillRunning = false;        if (this.isActive())        {            var data = this.data;            for (var i = 0; i < this.totalData; i++)            {                if (data[i].update(delta))                {                    stillRunning = true;                }            }        }        this.elapsed += delta;        this.progress = Math.min(this.elapsed / this.duration, 1);        this.totalElapsed += delta;        this.totalProgress = Math.min(this.totalElapsed / this.totalDuration, 1);        if (!stillRunning)        {            this.nextState();        }        var remove = this.isPendingRemove();        if (remove && this.persist)        {            this.setFinishedState();            remove = false;        }        return remove;    },    forward: function (ms)    {        this.update(ms);        return this;    },    rewind: function (ms)    {        this.update(-ms);        return this;    },    dispatchEvent: function (event, callback)    {        if (!this.isSeeking)        {            this.emit(event, this, this.targets);            if (!this.callbacks)            {                return;            }            var handler = this.callbacks[callback];            if (handler)            {                handler.func.apply(this.callbackScope, [ this, this.targets ].concat(handler.params));            }        }    },    destroy: function ()    {        BaseTween.prototype.destroy.call(this);        this.targets = null;    }});GameObjectFactory.register('tween', function (config){    return this.scene.sys.tweens.add(config);});GameObjectCreator.register('tween', function (config){    return this.scene.sys.tweens.create(config);});module.exports = Tween;

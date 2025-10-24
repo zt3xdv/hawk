@@ -1,7 +1,4 @@
-var IsEvenStrict = function (value)
-{
-
-    return (value === parseFloat(value)) ? !(value % 2) : void 0;
+var IsEvenStrict = function (value) {
+  return value === parseFloat(value) ? !(value % 2) : void 0;
 };
-
 module.exports = IsEvenStrict;

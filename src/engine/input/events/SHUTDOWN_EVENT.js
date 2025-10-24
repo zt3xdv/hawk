@@ -1,1 +1,1 @@
-module.exports = 'shutdown';
+module.exports = 'shutdown';

@@ -1,30 +1,1 @@
-var Class = require('../../utils/Class');
-var Components = require('../components');
-var Sprite = require('../sprite/Sprite');
-
-var PathFollower = new Class({
-
-    Extends: Sprite,
-
-    Mixins: [
-        Components.PathFollower
-    ],
-
-    initialize:
-
-    function PathFollower (scene, path, x, y, texture, frame)
-    {
-        Sprite.call(this, scene, x, y, texture, frame);
-
-        this.path = path;
-    },
-
-    preUpdate: function (time, delta)
-    {
-        this.anims.update(time, delta);
-        this.pathUpdate(time);
-    }
-
-});
-
-module.exports = PathFollower;
+var Class = require('../../utils/Class');var Components = require('../components');var Sprite = require('../sprite/Sprite');var PathFollower = new Class({    Extends: Sprite,    Mixins: [        Components.PathFollower    ],    initialize:    function PathFollower (scene, path, x, y, texture, frame)    {        Sprite.call(this, scene, x, y, texture, frame);        this.path = path;    },    preUpdate: function (time, delta)    {        this.anims.update(time, delta);        this.pathUpdate(time);    }});module.exports = PathFollower;

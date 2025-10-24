@@ -1,51 +1,1 @@
-var RGBToHSV = function (r, g, b, out)
-{
-    if (out === undefined) { out = { h: 0, s: 0, v: 0 }; }
-
-    r /= 255;
-    g /= 255;
-    b /= 255;
-
-    var min = Math.min(r, g, b);
-    var max = Math.max(r, g, b);
-    var d = max - min;
-
-    var h = 0;
-    var s = (max === 0) ? 0 : d / max;
-    var v = max;
-
-    if (max !== min)
-    {
-        if (max === r)
-        {
-            h = (g - b) / d + ((g < b) ? 6 : 0);
-        }
-        else if (max === g)
-        {
-            h = (b - r) / d + 2;
-        }
-        else if (max === b)
-        {
-            h = (r - g) / d + 4;
-        }
-
-        h /= 6;
-    }
-
-    if (out.hasOwnProperty('_h'))
-    {
-        out._h = h;
-        out._s = s;
-        out._v = v;
-    }
-    else
-    {
-        out.h = h;
-        out.s = s;
-        out.v = v;
-    }
-
-    return out;
-};
-
-module.exports = RGBToHSV;
+var RGBToHSV = function (r, g, b, out){    if (out === undefined) { out = { h: 0, s: 0, v: 0 }; }    r /= 255;    g /= 255;    b /= 255;    var min = Math.min(r, g, b);    var max = Math.max(r, g, b);    var d = max - min;    var h = 0;    var s = (max === 0) ? 0 : d / max;    var v = max;    if (max !== min)    {        if (max === r)        {            h = (g - b) / d + ((g < b) ? 6 : 0);        }        else if (max === g)        {            h = (b - r) / d + 2;        }        else if (max === b)        {            h = (r - g) / d + 4;        }        h /= 6;    }    if (out.hasOwnProperty('_h'))    {        out._h = h;        out._s = s;        out._v = v;    }    else    {        out.h = h;        out.s = s;        out.v = v;    }    return out;};module.exports = RGBToHSV;

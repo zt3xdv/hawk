@@ -1,11 +1,1 @@
-module.exports = {
-
-    NO_ZOOM: 1,
-
-    ZOOM_2X: 2,
-
-    ZOOM_4X: 4,
-
-    MAX_ZOOM: -1
-
-};
+module.exports = {    NO_ZOOM: 1,    ZOOM_2X: 2,    ZOOM_4X: 4,    MAX_ZOOM: -1};

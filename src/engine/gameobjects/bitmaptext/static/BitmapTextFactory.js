@@ -1,7 +1,1 @@
-var BitmapText = require('./BitmapText');
-var GameObjectFactory = require('../../GameObjectFactory');
-
-GameObjectFactory.register('bitmapText', function (x, y, font, text, size, align)
-{
-    return this.displayList.add(new BitmapText(this.scene, x, y, font, text, size, align));
-});
+var BitmapText = require('./BitmapText');var GameObjectFactory = require('../../GameObjectFactory');GameObjectFactory.register('bitmapText', function (x, y, font, text, size, align){    return this.displayList.add(new BitmapText(this.scene, x, y, font, text, size, align));});

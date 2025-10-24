@@ -1,56 +1,1 @@
-var Contains = require('../circle/Contains');
-var Point = require('../point/Point');
-
-var tmp = new Point();
-
-var LineToCircle = function (line, circle, nearest)
-{
-    if (nearest === undefined) { nearest = tmp; }
-
-    if (Contains(circle, line.x1, line.y1))
-    {
-        nearest.x = line.x1;
-        nearest.y = line.y1;
-
-        return true;
-    }
-
-    if (Contains(circle, line.x2, line.y2))
-    {
-        nearest.x = line.x2;
-        nearest.y = line.y2;
-
-        return true;
-    }
-
-    var dx = line.x2 - line.x1;
-    var dy = line.y2 - line.y1;
-
-    var lcx = circle.x - line.x1;
-    var lcy = circle.y - line.y1;
-
-    var dLen2 = (dx * dx) + (dy * dy);
-    var px = dx;
-    var py = dy;
-
-    if (dLen2 > 0)
-    {
-        var dp = ((lcx * dx) + (lcy * dy)) / dLen2;
-
-        px *= dp;
-        py *= dp;
-    }
-
-    nearest.x = line.x1 + px;
-    nearest.y = line.y1 + py;
-
-    var pLen2 = (px * px) + (py * py);
-
-    return (
-        pLen2 <= dLen2 &&
-        ((px * dx) + (py * dy)) >= 0 &&
-        Contains(circle, nearest.x, nearest.y)
-    );
-};
-
-module.exports = LineToCircle;
+var Contains = require('../circle/Contains');var Point = require('../point/Point');var tmp = new Point();var LineToCircle = function (line, circle, nearest){    if (nearest === undefined) { nearest = tmp; }    if (Contains(circle, line.x1, line.y1))    {        nearest.x = line.x1;        nearest.y = line.y1;        return true;    }    if (Contains(circle, line.x2, line.y2))    {        nearest.x = line.x2;        nearest.y = line.y2;        return true;    }    var dx = line.x2 - line.x1;    var dy = line.y2 - line.y1;    var lcx = circle.x - line.x1;    var lcy = circle.y - line.y1;    var dLen2 = (dx * dx) + (dy * dy);    var px = dx;    var py = dy;    if (dLen2 > 0)    {        var dp = ((lcx * dx) + (lcy * dy)) / dLen2;        px *= dp;        py *= dp;    }    nearest.x = line.x1 + px;    nearest.y = line.y1 + py;    var pLen2 = (px * px) + (py * py);    return (        pLen2 <= dLen2 &&        ((px * dx) + (py * dy)) >= 0 &&        Contains(circle, nearest.x, nearest.y)    );};module.exports = LineToCircle;

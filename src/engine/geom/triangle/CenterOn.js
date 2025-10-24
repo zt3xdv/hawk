@@ -1,16 +1,1 @@
-var Centroid = require('./Centroid');
-var Offset = require('./Offset');
-
-var CenterOn = function (triangle, x, y, centerFunc)
-{
-    if (centerFunc === undefined) { centerFunc = Centroid; }
-
-    var center = centerFunc(triangle);
-
-    var diffX = x - center.x;
-    var diffY = y - center.y;
-
-    return Offset(triangle, diffX, diffY);
-};
-
-module.exports = CenterOn;
+var Centroid = require('./Centroid');var Offset = require('./Offset');var CenterOn = function (triangle, x, y, centerFunc){    if (centerFunc === undefined) { centerFunc = Centroid; }    var center = centerFunc(triangle);    var diffX = x - center.x;    var diffY = y - center.y;    return Offset(triangle, diffX, diffY);};module.exports = CenterOn;

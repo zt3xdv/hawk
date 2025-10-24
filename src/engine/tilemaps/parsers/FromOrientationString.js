@@ -1,25 +1,1 @@
-var CONST = require('../const/ORIENTATION_CONST');
-
-var FromOrientationString = function (orientation)
-{
-    orientation = orientation.toLowerCase();
-
-    if (orientation === 'isometric')
-    {
-        return CONST.ISOMETRIC;
-    }
-    else if (orientation === 'staggered')
-    {
-        return CONST.STAGGERED;
-    }
-    else if (orientation === 'hexagonal')
-    {
-        return CONST.HEXAGONAL;
-    }
-    else
-    {
-        return CONST.ORTHOGONAL;
-    }
-};
-
-module.exports = FromOrientationString;
+var CONST = require('../const/ORIENTATION_CONST');var FromOrientationString = function (orientation){    orientation = orientation.toLowerCase();    if (orientation === 'isometric')    {        return CONST.ISOMETRIC;    }    else if (orientation === 'staggered')    {        return CONST.STAGGERED;    }    else if (orientation === 'hexagonal')    {        return CONST.HEXAGONAL;    }    else    {        return CONST.ORTHOGONAL;    }};module.exports = FromOrientationString;

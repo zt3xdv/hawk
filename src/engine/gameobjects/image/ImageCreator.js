@@ -1,23 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var Image = require('./Image');
-
-GameObjectCreator.register('image', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var key = GetAdvancedValue(config, 'key', null);
-    var frame = GetAdvancedValue(config, 'frame', null);
-
-    var image = new Image(this.scene, 0, 0, key, frame);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, image, config);
-
-    return image;
-});
+var BuildGameObject = require('../BuildGameObject');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var Image = require('./Image');GameObjectCreator.register('image', function (config, addToScene){    if (config === undefined) { config = {}; }    var key = GetAdvancedValue(config, 'key', null);    var frame = GetAdvancedValue(config, 'frame', null);    var image = new Image(this.scene, 0, 0, key, frame);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, image, config);    return image;});

@@ -1,7 +1,1 @@
-var DynamicBitmapText = require('./DynamicBitmapText');
-var GameObjectFactory = require('../../GameObjectFactory');
-
-GameObjectFactory.register('dynamicBitmapText', function (x, y, font, text, size)
-{
-    return this.displayList.add(new DynamicBitmapText(this.scene, x, y, font, text, size));
-});
+var DynamicBitmapText = require('./DynamicBitmapText');var GameObjectFactory = require('../../GameObjectFactory');GameObjectFactory.register('dynamicBitmapText', function (x, y, font, text, size){    return this.displayList.add(new DynamicBitmapText(this.scene, x, y, font, text, size));});

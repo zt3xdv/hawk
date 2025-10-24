@@ -1,61 +1,31 @@
 module.exports = {
-
-    SKIP_CHECK: -1,
-
-    NORMAL: 0,
-
-    ADD: 1,
-
-    MULTIPLY: 2,
-
-    SCREEN: 3,
-
-    OVERLAY: 4,
-
-    DARKEN: 5,
-
-    LIGHTEN: 6,
-
-    COLOR_DODGE: 7,
-
-    COLOR_BURN: 8,
-
-    HARD_LIGHT: 9,
-
-    SOFT_LIGHT: 10,
-
-    DIFFERENCE: 11,
-
-    EXCLUSION: 12,
-
-    HUE: 13,
-
-    SATURATION: 14,
-
-    COLOR: 15,
-
-    LUMINOSITY: 16,
-
-    ERASE: 17,
-
-    SOURCE_IN: 18,
-
-    SOURCE_OUT: 19,
-
-    SOURCE_ATOP: 20,
-
-    DESTINATION_OVER: 21,
-
-    DESTINATION_IN: 22,
-
-    DESTINATION_OUT: 23,
-
-    DESTINATION_ATOP: 24,
-
-    LIGHTER: 25,
-
-    COPY: 26,
-
-    XOR: 27
-
+  SKIP_CHECK: -1,
+  NORMAL: 0,
+  ADD: 1,
+  MULTIPLY: 2,
+  SCREEN: 3,
+  OVERLAY: 4,
+  DARKEN: 5,
+  LIGHTEN: 6,
+  COLOR_DODGE: 7,
+  COLOR_BURN: 8,
+  HARD_LIGHT: 9,
+  SOFT_LIGHT: 10,
+  DIFFERENCE: 11,
+  EXCLUSION: 12,
+  HUE: 13,
+  SATURATION: 14,
+  COLOR: 15,
+  LUMINOSITY: 16,
+  ERASE: 17,
+  SOURCE_IN: 18,
+  SOURCE_OUT: 19,
+  SOURCE_ATOP: 20,
+  DESTINATION_OVER: 21,
+  DESTINATION_IN: 22,
+  DESTINATION_OUT: 23,
+  DESTINATION_ATOP: 24,
+  LIGHTER: 25,
+  COPY: 26,
+  XOR: 27,
 };

@@ -1,1 +1,1 @@
-module.exports = 'fullscreenunsupported';
+module.exports = 'fullscreenunsupported';

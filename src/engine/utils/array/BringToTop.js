@@ -1,14 +1,1 @@
-var BringToTop = function (array, item)
-{
-    var currentIndex = array.indexOf(item);
-
-    if (currentIndex !== -1 && currentIndex < array.length)
-    {
-        array.splice(currentIndex, 1);
-        array.push(item);
-    }
-
-    return item;
-};
-
-module.exports = BringToTop;
+var BringToTop = function (array, item){    var currentIndex = array.indexOf(item);    if (currentIndex !== -1 && currentIndex < array.length)    {        array.splice(currentIndex, 1);        array.push(item);    }    return item;};module.exports = BringToTop;

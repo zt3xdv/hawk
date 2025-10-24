@@ -1,6 +1,1 @@
-module.exports = {
-
-    Canvas: require('./CanvasSnapshot'),
-    WebGL: require('./WebGLSnapshot')
-
-};
+module.exports = {    Canvas: require('./CanvasSnapshot'),    WebGL: require('./WebGLSnapshot')};

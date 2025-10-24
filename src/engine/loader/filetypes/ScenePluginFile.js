@@ -1,112 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var CONST = require('../const');
-var File = require('../File');
-var FileTypesManager = require('../FileTypesManager');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-
-
-var ScenePluginFile = new Class({
-
-    Extends: File,
-
-    initialize:
-
-    function ScenePluginFile (loader, key, url, systemKey, sceneKey, xhrSettings)
-    {
-        var extension = 'js';
-
-        if (IsPlainObject(key))
-        {
-            var config = key;
-
-            key = GetFastValue(config, 'key');
-            url = GetFastValue(config, 'url');
-            xhrSettings = GetFastValue(config, 'xhrSettings');
-            extension = GetFastValue(config, 'extension', extension);
-            systemKey = GetFastValue(config, 'systemKey');
-            sceneKey = GetFastValue(config, 'sceneKey');
-        }
-
-        var fileConfig = {
-            type: 'scenePlugin',
-            cache: false,
-            extension: extension,
-            responseType: 'text',
-            key: key,
-            url: url,
-            xhrSettings: xhrSettings,
-            config: {
-                systemKey: systemKey,
-                sceneKey: sceneKey
-            }
-        };
-
-        File.call(this, loader, fileConfig);
-
-        // If the url variable refers to a class, add the plugin directly
-        if (typeof url === 'function')
-        {
-            this.data = url;
-
-            this.state = CONST.FILE_POPULATED;
-        }
-    },
-
-    
-    onProcess: function ()
-    {
-        var pluginManager = this.loader.systems.plugins;
-        var config = this.config;
-
-        var key = this.key;
-        var systemKey = GetFastValue(config, 'systemKey', key);
-        var sceneKey = GetFastValue(config, 'sceneKey', key);
-
-        if (this.state === CONST.FILE_POPULATED)
-        {
-            pluginManager.installScenePlugin(systemKey, this.data, sceneKey, this.loader.scene, true);
-        }
-        else
-        {
-            //  Plugin added via a js file
-            this.state = CONST.FILE_PROCESSING;
-
-            this.data = document.createElement('script');
-            this.data.language = 'javascript';
-            this.data.type = 'text/javascript';
-            this.data.defer = false;
-            this.data.text = this.xhrLoader.responseText;
-
-            document.head.appendChild(this.data);
-
-            pluginManager.installScenePlugin(systemKey, window[this.key], sceneKey, this.loader.scene, true);
-        }
-
-        this.onProcessComplete();
-    }
-
-});
-
-
-FileTypesManager.register('scenePlugin', function (key, url, systemKey, sceneKey, xhrSettings)
-{
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object
-            this.addFile(new ScenePluginFile(this, key[i]));
-        }
-    }
-    else
-    {
-        this.addFile(new ScenePluginFile(this, key, url, systemKey, sceneKey, xhrSettings));
-    }
-
-    return this;
-});
-
-module.exports = ScenePluginFile;
+var Class = require('../../utils/Class');var CONST = require('../const');var File = require('../File');var FileTypesManager = require('../FileTypesManager');var GetFastValue = require('../../utils/object/GetFastValue');var IsPlainObject = require('../../utils/object/IsPlainObject');var ScenePluginFile = new Class({    Extends: File,    initialize:    function ScenePluginFile (loader, key, url, systemKey, sceneKey, xhrSettings)    {        var extension = 'js';        if (IsPlainObject(key))        {            var config = key;            key = GetFastValue(config, 'key');            url = GetFastValue(config, 'url');            xhrSettings = GetFastValue(config, 'xhrSettings');            extension = GetFastValue(config, 'extension', extension);            systemKey = GetFastValue(config, 'systemKey');            sceneKey = GetFastValue(config, 'sceneKey');        }        var fileConfig = {            type: 'scenePlugin',            cache: false,            extension: extension,            responseType: 'text',            key: key,            url: url,            xhrSettings: xhrSettings,            config: {                systemKey: systemKey,                sceneKey: sceneKey            }        };        File.call(this, loader, fileConfig);        // If the url variable refers to a class, add the plugin directly        if (typeof url === 'function')        {            this.data = url;            this.state = CONST.FILE_POPULATED;        }    },        onProcess: function ()    {        var pluginManager = this.loader.systems.plugins;        var config = this.config;        var key = this.key;        var systemKey = GetFastValue(config, 'systemKey', key);        var sceneKey = GetFastValue(config, 'sceneKey', key);        if (this.state === CONST.FILE_POPULATED)        {            pluginManager.installScenePlugin(systemKey, this.data, sceneKey, this.loader.scene, true);        }        else        {            //  Plugin added via a js file            this.state = CONST.FILE_PROCESSING;            this.data = document.createElement('script');            this.data.language = 'javascript';            this.data.type = 'text/javascript';            this.data.defer = false;            this.data.text = this.xhrLoader.responseText;            document.head.appendChild(this.data);            pluginManager.installScenePlugin(systemKey, window[this.key], sceneKey, this.loader.scene, true);        }        this.onProcessComplete();    }});FileTypesManager.register('scenePlugin', function (key, url, systemKey, sceneKey, xhrSettings){    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object            this.addFile(new ScenePluginFile(this, key[i]));        }    }    else    {        this.addFile(new ScenePluginFile(this, key, url, systemKey, sceneKey, xhrSettings));    }    return this;});module.exports = ScenePluginFile;

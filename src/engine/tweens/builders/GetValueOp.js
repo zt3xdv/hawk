@@ -1,209 +1,1 @@
-var Between = require('../../math/Between');
-var FloatBetween = require('../../math/FloatBetween');
-
-function hasGetActive (def)
-{
-    return (!!def.getActive && typeof def.getActive === 'function');
-}
-
-function hasGetStart (def)
-{
-    return (!!def.getStart && typeof def.getStart === 'function');
-}
-
-function hasGetEnd (def)
-{
-    return (!!def.getEnd && typeof def.getEnd === 'function');
-}
-
-function hasGetters (def)
-{
-    return hasGetStart(def) || hasGetEnd(def) || hasGetActive(def);
-}
-
-var GetValueOp = function (key, propertyValue)
-{
-    var callbacks;
-
-    var getEnd = function (target, key, value) { return value; };
-
-    var getStart = function (target, key, value) { return value; };
-
-    var getActive = null;
-
-    var t = typeof(propertyValue);
-
-    if (t === 'number')
-    {
-
-        getEnd = function ()
-        {
-            return propertyValue;
-        };
-    }
-    else if (Array.isArray(propertyValue))
-    {
-
-        getStart = function ()
-        {
-            return propertyValue[0];
-        };
-
-        getEnd = function ()
-        {
-            return propertyValue[propertyValue.length - 1];
-        };
-    }
-    else if (t === 'string')
-    {
-
-        var op = propertyValue.toLowerCase();
-        var isRandom = (op.substring(0, 6) === 'random');
-        var isInt = (op.substring(0, 3) === 'int');
-
-        if (isRandom || isInt)
-        {
-
-            var brace1 = op.indexOf('(');
-            var brace2 = op.indexOf(')');
-            var comma = op.indexOf(',');
-
-            if (brace1 && brace2 && comma)
-            {
-                var value1 = parseFloat(op.substring(brace1 + 1, comma));
-                var value2 = parseFloat(op.substring(comma + 1, brace2));
-
-                if (isRandom)
-                {
-                    getEnd = function ()
-                    {
-                        return FloatBetween(value1, value2);
-                    };
-                }
-                else
-                {
-                    getEnd = function ()
-                    {
-                        return Between(value1, value2);
-                    };
-                }
-            }
-            else
-            {
-                throw new Error('invalid random() format');
-            }
-        }
-        else
-        {
-            op = op[0];
-            var num = parseFloat(propertyValue.substr(2));
-
-            switch (op)
-            {
-                case '+':
-                    getEnd = function (target, key, value)
-                    {
-                        return value + num;
-                    };
-                    break;
-
-                case '-':
-                    getEnd = function (target, key, value)
-                    {
-                        return value - num;
-                    };
-                    break;
-
-                case '*':
-                    getEnd = function (target, key, value)
-                    {
-                        return value * num;
-                    };
-                    break;
-
-                case '/':
-                    getEnd = function (target, key, value)
-                    {
-                        return value / num;
-                    };
-                    break;
-
-                default:
-                    getEnd = function ()
-                    {
-                        return parseFloat(propertyValue);
-                    };
-            }
-        }
-    }
-    else if (t === 'function')
-    {
-
-        getEnd = propertyValue;
-    }
-    else if (t === 'object')
-    {
-        if (hasGetters(propertyValue))
-        {
-
-            if (hasGetActive(propertyValue))
-            {
-                getActive = propertyValue.getActive;
-            }
-
-            if (hasGetEnd(propertyValue))
-            {
-                getEnd = propertyValue.getEnd;
-            }
-
-            if (hasGetStart(propertyValue))
-            {
-                getStart = propertyValue.getStart;
-            }
-        }
-        else if (propertyValue.hasOwnProperty('value'))
-        {
-
-            callbacks = GetValueOp(key, propertyValue.value);
-        }
-        else
-        {
-
-            var hasTo = propertyValue.hasOwnProperty('to');
-            var hasFrom = propertyValue.hasOwnProperty('from');
-            var hasStart = propertyValue.hasOwnProperty('start');
-
-            if (hasTo && (hasFrom || hasStart))
-            {
-                callbacks = GetValueOp(key, propertyValue.to);
-
-                if (hasStart)
-                {
-                    var startCallbacks = GetValueOp(key, propertyValue.start);
-
-                    callbacks.getActive = startCallbacks.getEnd;
-                }
-
-                if (hasFrom)
-                {
-                    var fromCallbacks = GetValueOp(key, propertyValue.from);
-
-                    callbacks.getStart = fromCallbacks.getEnd;
-                }
-            }
-        }
-    }
-
-    if (!callbacks)
-    {
-        callbacks = {
-            getActive: getActive,
-            getEnd: getEnd,
-            getStart: getStart
-        };
-    }
-
-    return callbacks;
-};
-
-module.exports = GetValueOp;
+var Between = require('../../math/Between');var FloatBetween = require('../../math/FloatBetween');function hasGetActive (def){    return (!!def.getActive && typeof def.getActive === 'function');}function hasGetStart (def){    return (!!def.getStart && typeof def.getStart === 'function');}function hasGetEnd (def){    return (!!def.getEnd && typeof def.getEnd === 'function');}function hasGetters (def){    return hasGetStart(def) || hasGetEnd(def) || hasGetActive(def);}var GetValueOp = function (key, propertyValue){    var callbacks;    var getEnd = function (target, key, value) { return value; };    var getStart = function (target, key, value) { return value; };    var getActive = null;    var t = typeof(propertyValue);    if (t === 'number')    {        getEnd = function ()        {            return propertyValue;        };    }    else if (Array.isArray(propertyValue))    {        getStart = function ()        {            return propertyValue[0];        };        getEnd = function ()        {            return propertyValue[propertyValue.length - 1];        };    }    else if (t === 'string')    {        var op = propertyValue.toLowerCase();        var isRandom = (op.substring(0, 6) === 'random');        var isInt = (op.substring(0, 3) === 'int');        if (isRandom || isInt)        {            var brace1 = op.indexOf('(');            var brace2 = op.indexOf(')');            var comma = op.indexOf(',');            if (brace1 && brace2 && comma)            {                var value1 = parseFloat(op.substring(brace1 + 1, comma));                var value2 = parseFloat(op.substring(comma + 1, brace2));                if (isRandom)                {                    getEnd = function ()                    {                        return FloatBetween(value1, value2);                    };                }                else                {                    getEnd = function ()                    {                        return Between(value1, value2);                    };                }            }            else            {                throw new Error('invalid random() format');            }        }        else        {            op = op[0];            var num = parseFloat(propertyValue.substr(2));            switch (op)            {                case '+':                    getEnd = function (target, key, value)                    {                        return value + num;                    };                    break;                case '-':                    getEnd = function (target, key, value)                    {                        return value - num;                    };                    break;                case '*':                    getEnd = function (target, key, value)                    {                        return value * num;                    };                    break;                case '/':                    getEnd = function (target, key, value)                    {                        return value / num;                    };                    break;                default:                    getEnd = function ()                    {                        return parseFloat(propertyValue);                    };            }        }    }    else if (t === 'function')    {        getEnd = propertyValue;    }    else if (t === 'object')    {        if (hasGetters(propertyValue))        {            if (hasGetActive(propertyValue))            {                getActive = propertyValue.getActive;            }            if (hasGetEnd(propertyValue))            {                getEnd = propertyValue.getEnd;            }            if (hasGetStart(propertyValue))            {                getStart = propertyValue.getStart;            }        }        else if (propertyValue.hasOwnProperty('value'))        {            callbacks = GetValueOp(key, propertyValue.value);        }        else        {            var hasTo = propertyValue.hasOwnProperty('to');            var hasFrom = propertyValue.hasOwnProperty('from');            var hasStart = propertyValue.hasOwnProperty('start');            if (hasTo && (hasFrom || hasStart))            {                callbacks = GetValueOp(key, propertyValue.to);                if (hasStart)                {                    var startCallbacks = GetValueOp(key, propertyValue.start);                    callbacks.getActive = startCallbacks.getEnd;                }                if (hasFrom)                {                    var fromCallbacks = GetValueOp(key, propertyValue.from);                    callbacks.getStart = fromCallbacks.getEnd;                }            }        }    }    if (!callbacks)    {        callbacks = {            getActive: getActive,            getEnd: getEnd,            getStart: getStart        };    }    return callbacks;};module.exports = GetValueOp;

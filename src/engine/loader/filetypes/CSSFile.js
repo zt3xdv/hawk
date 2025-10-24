@@ -1,79 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var CONST = require('../const');
-var File = require('../File');
-var FileTypesManager = require('../FileTypesManager');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-
-
-var CSSFile = new Class({
-
-    Extends: File,
-
-    initialize:
-
-    function CSSFile (loader, key, url, xhrSettings)
-    {
-        var extension = 'css';
-
-        if (IsPlainObject(key))
-        {
-            var config = key;
-
-            key = GetFastValue(config, 'key');
-            url = GetFastValue(config, 'url');
-            xhrSettings = GetFastValue(config, 'xhrSettings');
-            extension = GetFastValue(config, 'extension', extension);
-        }
-
-        var fileConfig = {
-            type: 'script',
-            cache: false,
-            extension: extension,
-            responseType: 'text',
-            key: key,
-            url: url,
-            xhrSettings: xhrSettings
-        };
-
-        File.call(this, loader, fileConfig);
-    },
-
-    
-    onProcess: function ()
-    {
-        this.state = CONST.FILE_PROCESSING;
-
-        this.data = document.createElement('style');
-        this.data.defer = false;
-        this.data.innerHTML = this.xhrLoader.responseText;
-
-        document.head.appendChild(this.data);
-
-        this.onProcessComplete();
-    }
-
-});
-
-
-FileTypesManager.register('css', function (key, url, xhrSettings)
-{
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object
-            this.addFile(new CSSFile(this, key[i]));
-        }
-    }
-    else
-    {
-        this.addFile(new CSSFile(this, key, url, xhrSettings));
-    }
-
-    return this;
-});
-
-module.exports = CSSFile;
+var Class = require('../../utils/Class');var CONST = require('../const');var File = require('../File');var FileTypesManager = require('../FileTypesManager');var GetFastValue = require('../../utils/object/GetFastValue');var IsPlainObject = require('../../utils/object/IsPlainObject');var CSSFile = new Class({    Extends: File,    initialize:    function CSSFile (loader, key, url, xhrSettings)    {        var extension = 'css';        if (IsPlainObject(key))        {            var config = key;            key = GetFastValue(config, 'key');            url = GetFastValue(config, 'url');            xhrSettings = GetFastValue(config, 'xhrSettings');            extension = GetFastValue(config, 'extension', extension);        }        var fileConfig = {            type: 'script',            cache: false,            extension: extension,            responseType: 'text',            key: key,            url: url,            xhrSettings: xhrSettings        };        File.call(this, loader, fileConfig);    },        onProcess: function ()    {        this.state = CONST.FILE_PROCESSING;        this.data = document.createElement('style');        this.data.defer = false;        this.data.innerHTML = this.xhrLoader.responseText;        document.head.appendChild(this.data);        this.onProcessComplete();    }});FileTypesManager.register('css', function (key, url, xhrSettings){    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object            this.addFile(new CSSFile(this, key[i]));        }    }    else    {        this.addFile(new CSSFile(this, key, url, xhrSettings));    }    return this;});module.exports = CSSFile;

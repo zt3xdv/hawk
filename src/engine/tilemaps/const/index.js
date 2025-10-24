@@ -1,7 +1,1 @@
-var CONST = {
-
-    ORIENTATION: require('./ORIENTATION_CONST')
-
-};
-
-module.exports = CONST;
+var CONST = {    ORIENTATION: require('./ORIENTATION_CONST')};module.exports = CONST;

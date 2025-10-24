@@ -1,22 +1,1 @@
-var GetBottom = require('./GetBottom');
-var GetLeft = require('./GetLeft');
-var GetRight = require('./GetRight');
-var GetTop = require('./GetTop');
-var Rectangle = require('../../geom/rectangle/Rectangle');
-
-var GetBounds = function (gameObject, output)
-{
-    if (output === undefined) { output = new Rectangle(); }
-
-    var left = GetLeft(gameObject);
-    var top = GetTop(gameObject);
-
-    output.x = left;
-    output.y = top;
-    output.width = GetRight(gameObject) - left;
-    output.height = GetBottom(gameObject) - top;
-
-    return output;
-};
-
-module.exports = GetBounds;
+var GetBottom = require('./GetBottom');var GetLeft = require('./GetLeft');var GetRight = require('./GetRight');var GetTop = require('./GetTop');var Rectangle = require('../../geom/rectangle/Rectangle');var GetBounds = function (gameObject, output){    if (output === undefined) { output = new Rectangle(); }    var left = GetLeft(gameObject);    var top = GetTop(gameObject);    output.x = left;    output.y = top;    output.width = GetRight(gameObject) - left;    output.height = GetBottom(gameObject) - top;    return output;};module.exports = GetBounds;

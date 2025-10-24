@@ -19,18 +19,21 @@
   <link rel="manifest" href="/api/game/manifest">
   <title>route_title</title>
   
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <script src="main.js" type="module"></script>
 </head>
 <body>
   <div id="loading">
-    <img src="/logo.png"></img>
+    <img src="/logo.svg"></img>
+    <div id="tip-wrapper">
+      <span id="tip-title">DID YOU KNOW</span>
+      <span id="tip"></span>
+    </div>
     <div id="loading-bar-wrapper">
       <div id="loading-bar">
         <div></div>
       </div>
-      <span id="loading-bar-percentage"><span id="loading-bar-percentage-int">0%<span></span>
     </div>
-    <span id="tip"></span>
   </div>
 </body>
 </html>

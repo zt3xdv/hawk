@@ -1,27 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var TileSprite = require('./TileSprite');
-
-GameObjectCreator.register('tileSprite', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var x = GetAdvancedValue(config, 'x', 0);
-    var y = GetAdvancedValue(config, 'y', 0);
-    var width = GetAdvancedValue(config, 'width', 512);
-    var height = GetAdvancedValue(config, 'height', 512);
-    var key = GetAdvancedValue(config, 'key', '');
-    var frame = GetAdvancedValue(config, 'frame', '');
-
-    var tile = new TileSprite(this.scene, x, y, width, height, key, frame);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, tile, config);
-
-    return tile;
-});
+var BuildGameObject = require('../BuildGameObject');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var TileSprite = require('./TileSprite');GameObjectCreator.register('tileSprite', function (config, addToScene){    if (config === undefined) { config = {}; }    var x = GetAdvancedValue(config, 'x', 0);    var y = GetAdvancedValue(config, 'y', 0);    var width = GetAdvancedValue(config, 'width', 512);    var height = GetAdvancedValue(config, 'height', 512);    var key = GetAdvancedValue(config, 'key', '');    var frame = GetAdvancedValue(config, 'frame', '');    var tile = new TileSprite(this.scene, x, y, width, height, key, frame);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, tile, config);    return tile;});

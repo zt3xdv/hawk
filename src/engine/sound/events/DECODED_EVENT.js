@@ -1,1 +1,1 @@
-module.exports = 'decoded';
+module.exports = 'decoded';

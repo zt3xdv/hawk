@@ -1,8 +1,1 @@
-var WrapAngle = require('./Wrap');
-
-var GetShortestDistance = function (angle1, angle2)
-{
-    return WrapAngle(angle2 - angle1);
-};
-
-module.exports = GetShortestDistance;
+var WrapAngle = require('./Wrap');var GetShortestDistance = function (angle1, angle2){    return WrapAngle(angle2 - angle1);};module.exports = GetShortestDistance;

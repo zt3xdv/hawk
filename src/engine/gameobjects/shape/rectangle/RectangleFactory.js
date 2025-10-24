@@ -1,7 +1,1 @@
-var GameObjectFactory = require('../../GameObjectFactory');
-var Rectangle = require('./Rectangle');
-
-GameObjectFactory.register('rectangle', function (x, y, width, height, fillColor, fillAlpha)
-{
-    return this.displayList.add(new Rectangle(this.scene, x, y, width, height, fillColor, fillAlpha));
-});
+var GameObjectFactory = require('../../GameObjectFactory');var Rectangle = require('./Rectangle');GameObjectFactory.register('rectangle', function (x, y, width, height, fillColor, fillAlpha){    return this.displayList.add(new Rectangle(this.scene, x, y, width, height, fillColor, fillAlpha));});

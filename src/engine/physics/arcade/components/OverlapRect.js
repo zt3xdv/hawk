@@ -1,57 +1,1 @@
-var OverlapRect = function (world, x, y, width, height, includeDynamic, includeStatic)
-{
-    if (includeDynamic === undefined) { includeDynamic = true; }
-    if (includeStatic === undefined) { includeStatic = false; }
-
-    var dynamicBodies = [];
-    var staticBodies = [];
-
-    var minMax = world.treeMinMax;
-
-    minMax.minX = x;
-    minMax.minY = y;
-    minMax.maxX = x + width;
-    minMax.maxY = y + height;
-
-    if (includeStatic)
-    {
-        staticBodies = world.staticTree.search(minMax);
-    }
-
-    if (includeDynamic && world.useTree)
-    {
-        dynamicBodies = world.tree.search(minMax);
-    }
-    else if (includeDynamic)
-    {
-        var bodies = world.bodies;
-
-        var fakeBody =
-        {
-            position: {
-                x: x,
-                y: y
-            },
-            left: x,
-            top: y,
-            right: x + width,
-            bottom: y + height,
-            isCircle: false
-        };
-
-        var intersects = world.intersects;
-
-        bodies.iterate(function (target)
-        {
-            if (intersects(target, fakeBody))
-            {
-                dynamicBodies.push(target);
-            }
-
-        });
-    }
-
-    return staticBodies.concat(dynamicBodies);
-};
-
-module.exports = OverlapRect;
+var OverlapRect = function (world, x, y, width, height, includeDynamic, includeStatic){    if (includeDynamic === undefined) { includeDynamic = true; }    if (includeStatic === undefined) { includeStatic = false; }    var dynamicBodies = [];    var staticBodies = [];    var minMax = world.treeMinMax;    minMax.minX = x;    minMax.minY = y;    minMax.maxX = x + width;    minMax.maxY = y + height;    if (includeStatic)    {        staticBodies = world.staticTree.search(minMax);    }    if (includeDynamic && world.useTree)    {        dynamicBodies = world.tree.search(minMax);    }    else if (includeDynamic)    {        var bodies = world.bodies;        var fakeBody =        {            position: {                x: x,                y: y            },            left: x,            top: y,            right: x + width,            bottom: y + height,            isCircle: false        };        var intersects = world.intersects;        bodies.iterate(function (target)        {            if (intersects(target, fakeBody))            {                dynamicBodies.push(target);            }        });    }    return staticBodies.concat(dynamicBodies);};module.exports = OverlapRect;

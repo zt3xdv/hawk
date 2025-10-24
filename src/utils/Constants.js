@@ -35,7 +35,8 @@ export const API = {
 
 export const DISCORD_SERVER = "https://discord.gg/P8yrhaeCgy";
 
-export const DEV = false;
+export const DEV = true;
+export const TURNSTILE = false;
 
 export const CONTRIBUTORS = [
   {
@@ -81,7 +82,6 @@ export const SERVERS = [
 ];
 
 export const TIPS = [
-  "You can go to <a href='/avatar'>Avatar Page</a><br>to change your game avatar, yes its customizable.",
-  "If u wanna change your username<br>go to /profile-settings and do it.",
-  "This game is written in javascript."
+  "You can change your in-game avatar in profile page",
+  "You can change your username in profile page",
 ];

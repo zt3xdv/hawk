@@ -1,81 +1,1 @@
-var imageHeight = 0;
-
-var addFrame = function (texture, sourceIndex, name, frame)
-{
-
-    var y = imageHeight - frame.y - frame.height;
-
-    texture.add(name, sourceIndex, frame.x, y, frame.width, frame.height);
-
-};
-
-var UnityYAML = function (texture, sourceIndex, yaml)
-{
-
-    var source = texture.source[sourceIndex];
-
-    texture.add('__BASE', sourceIndex, 0, 0, source.width, source.height);
-
-    imageHeight = source.height;
-
-    var data = yaml.split('\n');
-
-    var lineRegExp = /^[ ]*(- )*(\w+)+[: ]+(.*)/;
-
-    var prevSprite = '';
-    var currentSprite = '';
-    var rect = { x: 0, y: 0, width: 0, height: 0 };
-
-    for (var i = 0; i < data.length; i++)
-    {
-        var results = data[i].match(lineRegExp);
-
-        if (!results)
-        {
-            continue;
-        }
-
-        var isList = (results[1] === '- ');
-        var key = results[2];
-        var value = results[3];
-
-        if (isList)
-        {
-            if (currentSprite !== prevSprite)
-            {
-                addFrame(texture, sourceIndex, currentSprite, rect);
-
-                prevSprite = currentSprite;
-            }
-
-            rect = { x: 0, y: 0, width: 0, height: 0 };
-        }
-
-        if (key === 'name')
-        {
-
-            currentSprite = value;
-            continue;
-        }
-
-        switch (key)
-        {
-            case 'x':
-            case 'y':
-            case 'width':
-            case 'height':
-                rect[key] = parseInt(value, 10);
-                break;
-
-        }
-    }
-
-    if (currentSprite !== prevSprite)
-    {
-        addFrame(texture, sourceIndex, currentSprite, rect);
-    }
-
-    return texture;
-};
-
-module.exports = UnityYAML;
+var imageHeight = 0;var addFrame = function (texture, sourceIndex, name, frame){    var y = imageHeight - frame.y - frame.height;    texture.add(name, sourceIndex, frame.x, y, frame.width, frame.height);};var UnityYAML = function (texture, sourceIndex, yaml){    var source = texture.source[sourceIndex];    texture.add('__BASE', sourceIndex, 0, 0, source.width, source.height);    imageHeight = source.height;    var data = yaml.split('\n');    var lineRegExp = /^[ ]*(- )*(\w+)+[: ]+(.*)/;    var prevSprite = '';    var currentSprite = '';    var rect = { x: 0, y: 0, width: 0, height: 0 };    for (var i = 0; i < data.length; i++)    {        var results = data[i].match(lineRegExp);        if (!results)        {            continue;        }        var isList = (results[1] === '- ');        var key = results[2];        var value = results[3];        if (isList)        {            if (currentSprite !== prevSprite)            {                addFrame(texture, sourceIndex, currentSprite, rect);                prevSprite = currentSprite;            }            rect = { x: 0, y: 0, width: 0, height: 0 };        }        if (key === 'name')        {            currentSprite = value;            continue;        }        switch (key)        {            case 'x':            case 'y':            case 'width':            case 'height':                rect[key] = parseInt(value, 10);                break;        }    }    if (currentSprite !== prevSprite)    {        addFrame(texture, sourceIndex, currentSprite, rect);    }    return texture;};module.exports = UnityYAML;

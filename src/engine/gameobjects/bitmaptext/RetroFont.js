@@ -1,8 +1,1 @@
-var RETRO_FONT_CONST = require('./const');
-var Extend = require('../../utils/object/Extend');
-
-var RetroFont = { Parse: require('./ParseRetroFont') };
-
-RetroFont = Extend(false, RetroFont, RETRO_FONT_CONST);
-
-module.exports = RetroFont;
+var RETRO_FONT_CONST = require('./const');var Extend = require('../../utils/object/Extend');var RetroFont = { Parse: require('./ParseRetroFont') };RetroFont = Extend(false, RetroFont, RETRO_FONT_CONST);module.exports = RetroFont;

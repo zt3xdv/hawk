@@ -1,26 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var BuildGameObjectAnimation = require('../BuildGameObjectAnimation');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var Sprite = require('./Sprite');
-
-GameObjectCreator.register('sprite', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var key = GetAdvancedValue(config, 'key', null);
-    var frame = GetAdvancedValue(config, 'frame', null);
-
-    var sprite = new Sprite(this.scene, 0, 0, key, frame);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, sprite, config);
-
-    BuildGameObjectAnimation(sprite, config);
-
-    return sprite;
-});
+var BuildGameObject = require('../BuildGameObject');var BuildGameObjectAnimation = require('../BuildGameObjectAnimation');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var Sprite = require('./Sprite');GameObjectCreator.register('sprite', function (config, addToScene){    if (config === undefined) { config = {}; }    var key = GetAdvancedValue(config, 'key', null);    var frame = GetAdvancedValue(config, 'frame', null);    var sprite = new Sprite(this.scene, 0, 0, key, frame);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, sprite, config);    BuildGameObjectAnimation(sprite, config);    return sprite;});

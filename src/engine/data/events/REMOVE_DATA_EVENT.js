@@ -1,1 +1,1 @@
-module.exports = 'removedata';
+module.exports = 'removedata';

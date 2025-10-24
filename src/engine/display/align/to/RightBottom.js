@@ -1,17 +1,1 @@
-var GetBottom = require('../../bounds/GetBottom');
-var GetRight = require('../../bounds/GetRight');
-var SetBottom = require('../../bounds/SetBottom');
-var SetLeft = require('../../bounds/SetLeft');
-
-var RightBottom = function (gameObject, alignTo, offsetX, offsetY)
-{
-    if (offsetX === undefined) { offsetX = 0; }
-    if (offsetY === undefined) { offsetY = 0; }
-
-    SetLeft(gameObject, GetRight(alignTo) + offsetX);
-    SetBottom(gameObject, GetBottom(alignTo) + offsetY);
-
-    return gameObject;
-};
-
-module.exports = RightBottom;
+var GetBottom = require('../../bounds/GetBottom');var GetRight = require('../../bounds/GetRight');var SetBottom = require('../../bounds/SetBottom');var SetLeft = require('../../bounds/SetLeft');var RightBottom = function (gameObject, alignTo, offsetX, offsetY){    if (offsetX === undefined) { offsetX = 0; }    if (offsetY === undefined) { offsetY = 0; }    SetLeft(gameObject, GetRight(alignTo) + offsetX);    SetBottom(gameObject, GetBottom(alignTo) + offsetY);    return gameObject;};module.exports = RightBottom;

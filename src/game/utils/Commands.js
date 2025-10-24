@@ -52,16 +52,15 @@ class Commands {
           return;
         }
         const pick = args[Math.floor(Math.random() * args.length)];
-        chatlog.send("Choose \"" + pick + "\"", true);
+        chatlog.send("Choosed \"" + pick + "\"", true);
       }
     },
     {
       name: 'time',
       id: '/time',
-      description: 'Show current local date/time',
+      description: 'Show current time',
       execute: (scene, chatlog, args) => {
-        const now = new Date();
-        chatlog.send(now.toString(), true);
+        chatlog.send("Time: " + scene.lightManager.getTimeF(), true);
       }
     }
   ];

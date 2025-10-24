@@ -1,1 +1,1 @@
-module.exports = 'deathzone';
+module.exports = 'deathzone';

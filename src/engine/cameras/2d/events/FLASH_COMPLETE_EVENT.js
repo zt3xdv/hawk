@@ -1,1 +1,1 @@
-module.exports = 'cameraflashcomplete';
+module.exports = 'cameraflashcomplete';

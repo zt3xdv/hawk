@@ -1,5 +1,1 @@
-var RopeCanvasRenderer = function ()
-{
-};
-
-module.exports = RopeCanvasRenderer;
+var RopeCanvasRenderer = function (){};module.exports = RopeCanvasRenderer;

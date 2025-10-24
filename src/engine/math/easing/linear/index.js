@@ -1,1 +1,1 @@
-module.exports = require('./Linear');
+module.exports = require('./Linear');

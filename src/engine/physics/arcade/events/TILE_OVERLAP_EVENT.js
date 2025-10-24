@@ -1,1 +1,1 @@
-module.exports = 'tileoverlap';
+module.exports = 'tileoverlap';

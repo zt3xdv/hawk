@@ -1,21 +1,1 @@
-var Class = require('../../../utils/Class');
-var GetFastValue = require('../../../utils/object/GetFastValue');
-var MultiPipeline = require('./MultiPipeline');
-
-var RopePipeline = new Class({
-
-    Extends: MultiPipeline,
-
-    initialize:
-
-    function RopePipeline (config)
-    {
-
-        config.topology = 5;
-        config.batchSize = GetFastValue(config, 'batchSize', 256);
-
-        MultiPipeline.call(this, config);
-    }
-});
-
-module.exports = RopePipeline;
+var Class = require('../../../utils/Class');var GetFastValue = require('../../../utils/object/GetFastValue');var MultiPipeline = require('./MultiPipeline');var RopePipeline = new Class({    Extends: MultiPipeline,    initialize:    function RopePipeline (config)    {        config.topology = 5;        config.batchSize = GetFastValue(config, 'batchSize', 256);        MultiPipeline.call(this, config);    }});module.exports = RopePipeline;

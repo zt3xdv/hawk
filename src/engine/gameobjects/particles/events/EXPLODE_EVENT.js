@@ -1,1 +1,1 @@
-module.exports = 'explode';
+module.exports = 'explode';

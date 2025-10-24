@@ -1,46 +1,1 @@
-var SetTileCollision = require('./SetTileCollision');
-var CalculateFacesWithin = require('./CalculateFacesWithin');
-var HasValue = require('../../utils/object/HasValue');
-
-var SetCollisionByProperty = function (properties, collides, recalculateFaces, layer)
-{
-    if (collides === undefined) { collides = true; }
-    if (recalculateFaces === undefined) { recalculateFaces = true; }
-
-    for (var ty = 0; ty < layer.height; ty++)
-    {
-        for (var tx = 0; tx < layer.width; tx++)
-        {
-            var tile = layer.data[ty][tx];
-
-            if (!tile) { continue; }
-
-            for (var property in properties)
-            {
-                if (!HasValue(tile.properties, property)) { continue; }
-
-                var values = properties[property];
-
-                if (!Array.isArray(values))
-                {
-                    values = [ values ];
-                }
-
-                for (var i = 0; i < values.length; i++)
-                {
-                    if (tile.properties[property] === values[i])
-                    {
-                        SetTileCollision(tile, collides);
-                    }
-                }
-            }
-        }
-    }
-
-    if (recalculateFaces)
-    {
-        CalculateFacesWithin(0, 0, layer.width, layer.height, layer);
-    }
-};
-
-module.exports = SetCollisionByProperty;
+var SetTileCollision = require('./SetTileCollision');var CalculateFacesWithin = require('./CalculateFacesWithin');var HasValue = require('../../utils/object/HasValue');var SetCollisionByProperty = function (properties, collides, recalculateFaces, layer){    if (collides === undefined) { collides = true; }    if (recalculateFaces === undefined) { recalculateFaces = true; }    for (var ty = 0; ty < layer.height; ty++)    {        for (var tx = 0; tx < layer.width; tx++)        {            var tile = layer.data[ty][tx];            if (!tile) { continue; }            for (var property in properties)            {                if (!HasValue(tile.properties, property)) { continue; }                var values = properties[property];                if (!Array.isArray(values))                {                    values = [ values ];                }                for (var i = 0; i < values.length; i++)                {                    if (tile.properties[property] === values[i])                    {                        SetTileCollision(tile, collides);                    }                }            }        }    }    if (recalculateFaces)    {        CalculateFacesWithin(0, 0, layer.width, layer.height, layer);    }};module.exports = SetCollisionByProperty;

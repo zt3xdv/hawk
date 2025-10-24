@@ -1,5 +1,1 @@
-module.exports = {
-
-    Arcade: require('./arcade'),
-
-};
+module.exports = { Arcade: require('./arcade') };

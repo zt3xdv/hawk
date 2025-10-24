@@ -1,876 +1,1 @@
-var Class = require('../../utils/Class');
-var Components = require('../../gameobjects/components');
-var DegToRad = require('../../math/DegToRad');
-var EventEmitter = require('eventemitter3');
-var Events = require('./events');
-var Rectangle = require('../../geom/rectangle/Rectangle');
-var TransformMatrix = require('../../gameobjects/components/TransformMatrix');
-var ValueToColor = require('../../display/color/ValueToColor');
-var Vector2 = require('../../math/Vector2');
-
-var BaseCamera = new Class({
-
-    Extends: EventEmitter,
-
-    Mixins: [
-        Components.AlphaSingle,
-        Components.Visible
-    ],
-
-    initialize:
-
-    function BaseCamera (x, y, width, height)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (width === undefined) { width = 0; }
-        if (height === undefined) { height = 0; }
-
-        EventEmitter.call(this);
-
-        this.scene;
-
-        this.sceneManager;
-
-        this.scaleManager;
-
-        this.cameraManager;
-
-        this.id = 0;
-
-        this.name = '';
-
-        this.roundPixels = false;
-
-        this.useBounds = false;
-
-        this.worldView = new Rectangle();
-
-        this.dirty = true;
-
-        this._x = x;
-
-        this._y = y;
-
-        this._width = width;
-
-        this._height = height;
-
-        this._bounds = new Rectangle();
-
-        this._scrollX = 0;
-
-        this._scrollY = 0;
-
-        this._zoomX = 1;
-
-        this._zoomY = 1;
-
-        this._rotation = 0;
-
-        this.matrix = new TransformMatrix();
-
-        this.transparent = true;
-
-        this.backgroundColor = ValueToColor('rgba(0,0,0,0)');
-
-        this.disableCull = false;
-
-        this.culledObjects = [];
-
-        this.midPoint = new Vector2(width / 2, height / 2);
-
-        this.originX = 0.5;
-
-        this.originY = 0.5;
-
-        this._customViewport = false;
-
-        this.mask = null;
-
-        this._maskCamera = null;
-
-        this.renderList = [];
-
-        this.isSceneCamera = true;
-
-        this.renderRoundPixels = true;
-    },
-
-    addToRenderList: function (child)
-    {
-        this.renderList.push(child);
-    },
-
-    setOrigin: function (x, y)
-    {
-        if (x === undefined) { x = 0.5; }
-        if (y === undefined) { y = x; }
-
-        this.originX = x;
-        this.originY = y;
-
-        return this;
-    },
-
-    getScroll: function (x, y, out)
-    {
-        if (out === undefined) { out = new Vector2(); }
-
-        var originX = this.width * 0.5;
-        var originY = this.height * 0.5;
-
-        out.x = x - originX;
-        out.y = y - originY;
-
-        if (this.useBounds)
-        {
-            out.x = this.clampX(out.x);
-            out.y = this.clampY(out.y);
-        }
-
-        return out;
-    },
-
-    centerOnX: function (x)
-    {
-        var originX = this.width * 0.5;
-
-        this.midPoint.x = x;
-
-        this.scrollX = x - originX;
-
-        if (this.useBounds)
-        {
-            this.scrollX = this.clampX(this.scrollX);
-        }
-
-        return this;
-    },
-
-    centerOnY: function (y)
-    {
-        var originY = this.height * 0.5;
-
-        this.midPoint.y = y;
-
-        this.scrollY = y - originY;
-
-        if (this.useBounds)
-        {
-            this.scrollY = this.clampY(this.scrollY);
-        }
-
-        return this;
-    },
-
-    centerOn: function (x, y)
-    {
-        this.centerOnX(x);
-        this.centerOnY(y);
-
-        return this;
-    },
-
-    centerToBounds: function ()
-    {
-        if (this.useBounds)
-        {
-            var bounds = this._bounds;
-            var originX = this.width * 0.5;
-            var originY = this.height * 0.5;
-
-            this.midPoint.set(bounds.centerX, bounds.centerY);
-
-            this.scrollX = bounds.centerX - originX;
-            this.scrollY = bounds.centerY - originY;
-        }
-
-        return this;
-    },
-
-    centerToSize: function ()
-    {
-        this.scrollX = this.width * 0.5;
-        this.scrollY = this.height * 0.5;
-
-        return this;
-    },
-
-    cull: function (renderableObjects)
-    {
-        if (this.disableCull)
-        {
-            return renderableObjects;
-        }
-
-        var cameraMatrix = this.matrix.matrix;
-
-        var mva = cameraMatrix[0];
-        var mvb = cameraMatrix[1];
-        var mvc = cameraMatrix[2];
-        var mvd = cameraMatrix[3];
-
-        var determinant = (mva * mvd) - (mvb * mvc);
-
-        if (!determinant)
-        {
-            return renderableObjects;
-        }
-
-        var mve = cameraMatrix[4];
-        var mvf = cameraMatrix[5];
-
-        var scrollX = this.scrollX;
-        var scrollY = this.scrollY;
-        var cameraW = this.width;
-        var cameraH = this.height;
-        var cullTop = this.y;
-        var cullBottom = cullTop + cameraH;
-        var cullLeft = this.x;
-        var cullRight = cullLeft + cameraW;
-        var culledObjects = this.culledObjects;
-        var length = renderableObjects.length;
-
-        determinant = 1 / determinant;
-
-        culledObjects.length = 0;
-
-        for (var index = 0; index < length; ++index)
-        {
-            var object = renderableObjects[index];
-
-            if (!object.hasOwnProperty('width') || object.parentContainer)
-            {
-                culledObjects.push(object);
-                continue;
-            }
-
-            var objectW = object.width;
-            var objectH = object.height;
-            var objectX = (object.x - (scrollX * object.scrollFactorX)) - (objectW * object.originX);
-            var objectY = (object.y - (scrollY * object.scrollFactorY)) - (objectH * object.originY);
-            var tx = (objectX * mva + objectY * mvc + mve);
-            var ty = (objectX * mvb + objectY * mvd + mvf);
-            var tw = ((objectX + objectW) * mva + (objectY + objectH) * mvc + mve);
-            var th = ((objectX + objectW) * mvb + (objectY + objectH) * mvd + mvf);
-
-            if ((tw > cullLeft && tx < cullRight) && (th > cullTop && ty < cullBottom))
-            {
-                culledObjects.push(object);
-            }
-        }
-
-        return culledObjects;
-    },
-
-    getWorldPoint: function (x, y, output)
-    {
-        if (output === undefined) { output = new Vector2(); }
-
-        var cameraMatrix = this.matrix.matrix;
-
-        var mva = cameraMatrix[0];
-        var mvb = cameraMatrix[1];
-        var mvc = cameraMatrix[2];
-        var mvd = cameraMatrix[3];
-        var mve = cameraMatrix[4];
-        var mvf = cameraMatrix[5];
-
-        var determinant = (mva * mvd) - (mvb * mvc);
-
-        if (!determinant)
-        {
-            output.x = x;
-            output.y = y;
-
-            return output;
-        }
-
-        determinant = 1 / determinant;
-
-        var ima = mvd * determinant;
-        var imb = -mvb * determinant;
-        var imc = -mvc * determinant;
-        var imd = mva * determinant;
-        var ime = (mvc * mvf - mvd * mve) * determinant;
-        var imf = (mvb * mve - mva * mvf) * determinant;
-
-        var c = Math.cos(this.rotation);
-        var s = Math.sin(this.rotation);
-
-        var zoomX = this.zoomX;
-        var zoomY = this.zoomY;
-
-        var scrollX = this.scrollX;
-        var scrollY = this.scrollY;
-
-        var sx = x + ((scrollX * c - scrollY * s) * zoomX);
-        var sy = y + ((scrollX * s + scrollY * c) * zoomY);
-
-        output.x = (sx * ima + sy * imc) + ime;
-        output.y = (sx * imb + sy * imd) + imf;
-
-        return output;
-    },
-
-    ignore: function (entries)
-    {
-        var id = this.id;
-
-        if (!Array.isArray(entries))
-        {
-            entries = [ entries ];
-        }
-
-        for (var i = 0; i < entries.length; i++)
-        {
-            var entry = entries[i];
-
-            if (Array.isArray(entry))
-            {
-                this.ignore(entry);
-            }
-            else if (entry.isParent)
-            {
-                this.ignore(entry.getChildren());
-            }
-            else
-            {
-                entry.cameraFilter |= id;
-            }
-        }
-
-        return this;
-    },
-
-    clampX: function (x)
-    {
-        var bounds = this._bounds;
-
-        var dw = this.displayWidth;
-
-        var bx = bounds.x + ((dw - this.width) / 2);
-        var bw = Math.max(bx, bx + bounds.width - dw);
-
-        if (x < bx)
-        {
-            x = bx;
-        }
-        else if (x > bw)
-        {
-            x = bw;
-        }
-
-        return x;
-    },
-
-    clampY: function (y)
-    {
-        var bounds = this._bounds;
-
-        var dh = this.displayHeight;
-
-        var by = bounds.y + ((dh - this.height) / 2);
-        var bh = Math.max(by, by + bounds.height - dh);
-
-        if (y < by)
-        {
-            y = by;
-        }
-        else if (y > bh)
-        {
-            y = bh;
-        }
-
-        return y;
-    },
-
-    removeBounds: function ()
-    {
-        this.useBounds = false;
-
-        this.dirty = true;
-
-        this._bounds.setEmpty();
-
-        return this;
-    },
-
-    setAngle: function (value)
-    {
-        if (value === undefined) { value = 0; }
-
-        this.rotation = DegToRad(value);
-
-        return this;
-    },
-
-    setBackgroundColor: function (color)
-    {
-        if (color === undefined) { color = 'rgba(0,0,0,0)'; }
-
-        this.backgroundColor = ValueToColor(color);
-
-        this.transparent = (this.backgroundColor.alpha === 0);
-
-        return this;
-    },
-
-    setBounds: function (x, y, width, height, centerOn)
-    {
-        if (centerOn === undefined) { centerOn = false; }
-
-        this._bounds.setTo(x, y, width, height);
-
-        this.dirty = true;
-        this.useBounds = true;
-
-        if (centerOn)
-        {
-            this.centerToBounds();
-        }
-        else
-        {
-            this.scrollX = this.clampX(this.scrollX);
-            this.scrollY = this.clampY(this.scrollY);
-        }
-
-        return this;
-    },
-
-    getBounds: function (out)
-    {
-        if (out === undefined) { out = new Rectangle(); }
-
-        var source = this._bounds;
-
-        out.setTo(source.x, source.y, source.width, source.height);
-
-        return out;
-    },
-
-    setName: function (value)
-    {
-        if (value === undefined) { value = ''; }
-
-        this.name = value;
-
-        return this;
-    },
-
-    setPosition: function (x, y)
-    {
-        if (y === undefined) { y = x; }
-
-        this.x = x;
-        this.y = y;
-
-        return this;
-    },
-
-    setRotation: function (value)
-    {
-        if (value === undefined) { value = 0; }
-
-        this.rotation = value;
-
-        return this;
-    },
-
-    setRoundPixels: function (value)
-    {
-        this.roundPixels = value;
-
-        return this;
-    },
-
-    setScene: function (scene, isSceneCamera)
-    {
-        if (isSceneCamera === undefined) { isSceneCamera = true; }
-
-        if (this.scene && this._customViewport)
-        {
-            this.sceneManager.customViewports--;
-        }
-
-        this.scene = scene;
-        this.isSceneCamera = isSceneCamera;
-
-        var sys = scene.sys;
-
-        this.sceneManager = sys.game.scene;
-        this.scaleManager = sys.scale;
-        this.cameraManager = sys.cameras;
-
-        this.updateSystem();
-
-        return this;
-    },
-
-    setScroll: function (x, y)
-    {
-        if (y === undefined) { y = x; }
-
-        this.scrollX = x;
-        this.scrollY = y;
-
-        return this;
-    },
-
-    setSize: function (width, height)
-    {
-        if (height === undefined) { height = width; }
-
-        this.width = width;
-        this.height = height;
-
-        return this;
-    },
-
-    setViewport: function (x, y, width, height)
-    {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-
-        return this;
-    },
-
-    setZoom: function (x, y)
-    {
-        if (x === undefined) { x = 1; }
-        if (y === undefined) { y = x; }
-
-        if (x === 0)
-        {
-            x = 0.001;
-        }
-
-        if (y === 0)
-        {
-            y = 0.001;
-        }
-
-        this.zoomX = x;
-        this.zoomY = y;
-
-        return this;
-    },
-
-    setMask: function (mask, fixedPosition)
-    {
-        if (fixedPosition === undefined) { fixedPosition = true; }
-
-        this.mask = mask;
-
-        this._maskCamera = (fixedPosition) ? this.cameraManager.default : this;
-
-        return this;
-    },
-
-    clearMask: function (destroyMask)
-    {
-        if (destroyMask === undefined) { destroyMask = false; }
-
-        if (destroyMask && this.mask)
-        {
-            this.mask.destroy();
-        }
-
-        this.mask = null;
-
-        return this;
-    },
-
-    toJSON: function ()
-    {
-        var output = {
-            name: this.name,
-            x: this.x,
-            y: this.y,
-            width: this.width,
-            height: this.height,
-            zoom: this.zoom,
-            rotation: this.rotation,
-            roundPixels: this.roundPixels,
-            scrollX: this.scrollX,
-            scrollY: this.scrollY,
-            backgroundColor: this.backgroundColor.rgba
-        };
-
-        if (this.useBounds)
-        {
-            output['bounds'] = {
-                x: this._bounds.x,
-                y: this._bounds.y,
-                width: this._bounds.width,
-                height: this._bounds.height
-            };
-        }
-
-        return output;
-    },
-
-    update: function ()
-    {
-
-    },
-
-    setIsSceneCamera: function (value)
-    {
-        this.isSceneCamera = value;
-
-        return this;
-    },
-
-    updateSystem: function ()
-    {
-        if (!this.scaleManager || !this.isSceneCamera)
-        {
-            return;
-        }
-
-        var custom = (this._x !== 0 || this._y !== 0 || this.scaleManager.width !== this._width || this.scaleManager.height !== this._height);
-
-        var sceneManager = this.sceneManager;
-
-        if (custom && !this._customViewport)
-        {
-
-            sceneManager.customViewports++;
-        }
-        else if (!custom && this._customViewport)
-        {
-
-            sceneManager.customViewports--;
-        }
-
-        this.dirty = true;
-        this._customViewport = custom;
-    },
-
-    destroy: function ()
-    {
-        this.emit(Events.DESTROY, this);
-
-        this.removeAllListeners();
-
-        this.matrix.destroy();
-
-        this.culledObjects = [];
-
-        if (this._customViewport)
-        {
-
-            this.sceneManager.customViewports--;
-        }
-
-        this.renderList = [];
-
-        this._bounds = null;
-
-        this.scene = null;
-        this.scaleManager = null;
-        this.sceneManager = null;
-        this.cameraManager = null;
-    },
-
-    x: {
-
-        get: function ()
-        {
-            return this._x;
-        },
-
-        set: function (value)
-        {
-            this._x = value;
-            this.updateSystem();
-        }
-
-    },
-
-    y: {
-
-        get: function ()
-        {
-            return this._y;
-        },
-
-        set: function (value)
-        {
-            this._y = value;
-            this.updateSystem();
-        }
-
-    },
-
-    width: {
-
-        get: function ()
-        {
-            return this._width;
-        },
-
-        set: function (value)
-        {
-            this._width = value;
-            this.updateSystem();
-        }
-
-    },
-
-    height: {
-
-        get: function ()
-        {
-            return this._height;
-        },
-
-        set: function (value)
-        {
-            this._height = value;
-            this.updateSystem();
-        }
-
-    },
-
-    scrollX: {
-
-        get: function ()
-        {
-            return this._scrollX;
-        },
-
-        set: function (value)
-        {
-            if (value !== this._scrollX)
-            {
-                this._scrollX = value;
-                this.dirty = true;
-            }
-        }
-
-    },
-
-    scrollY: {
-
-        get: function ()
-        {
-            return this._scrollY;
-        },
-
-        set: function (value)
-        {
-            if (value !== this._scrollY)
-            {
-                this._scrollY = value;
-                this.dirty = true;
-            }
-        }
-
-    },
-
-    zoom: {
-
-        get: function ()
-        {
-            return (this._zoomX + this._zoomY) / 2;
-        },
-
-        set: function (value)
-        {
-            this._zoomX = value;
-            this._zoomY = value;
-
-            this.dirty = true;
-        }
-
-    },
-
-    zoomX: {
-
-        get: function ()
-        {
-            return this._zoomX;
-        },
-
-        set: function (value)
-        {
-            this._zoomX = value;
-            this.dirty = true;
-        }
-
-    },
-
-    zoomY: {
-
-        get: function ()
-        {
-            return this._zoomY;
-        },
-
-        set: function (value)
-        {
-            this._zoomY = value;
-            this.dirty = true;
-        }
-
-    },
-
-    rotation: {
-
-        get: function ()
-        {
-            return this._rotation;
-        },
-
-        set: function (value)
-        {
-            this._rotation = value;
-            this.dirty = true;
-        }
-
-    },
-
-    centerX: {
-
-        get: function ()
-        {
-            return this.x + (0.5 * this.width);
-        }
-
-    },
-
-    centerY: {
-
-        get: function ()
-        {
-            return this.y + (0.5 * this.height);
-        }
-
-    },
-
-    displayWidth: {
-
-        get: function ()
-        {
-            return this.width / this.zoomX;
-        }
-
-    },
-
-    displayHeight: {
-
-        get: function ()
-        {
-            return this.height / this.zoomY;
-        }
-
-    }
-
-});
-
-module.exports = BaseCamera;
+var Class = require('../../utils/Class');var Components = require('../../gameobjects/components');var DegToRad = require('../../math/DegToRad');var EventEmitter = require('eventemitter3');var Events = require('./events');var Rectangle = require('../../geom/rectangle/Rectangle');var TransformMatrix = require('../../gameobjects/components/TransformMatrix');var ValueToColor = require('../../display/color/ValueToColor');var Vector2 = require('../../math/Vector2');var BaseCamera = new Class({    Extends: EventEmitter,    Mixins: [        Components.AlphaSingle,        Components.Visible    ],    initialize:    function BaseCamera (x, y, width, height)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (width === undefined) { width = 0; }        if (height === undefined) { height = 0; }        EventEmitter.call(this);        this.scene;        this.sceneManager;        this.scaleManager;        this.cameraManager;        this.id = 0;        this.name = '';        this.roundPixels = false;        this.useBounds = false;        this.worldView = new Rectangle();        this.dirty = true;        this._x = x;        this._y = y;        this._width = width;        this._height = height;        this._bounds = new Rectangle();        this._scrollX = 0;        this._scrollY = 0;        this._zoomX = 1;        this._zoomY = 1;        this._rotation = 0;        this.matrix = new TransformMatrix();        this.transparent = true;        this.backgroundColor = ValueToColor('rgba(0,0,0,0)');        this.disableCull = false;        this.culledObjects = [];        this.midPoint = new Vector2(width / 2, height / 2);        this.originX = 0.5;        this.originY = 0.5;        this._customViewport = false;        this.mask = null;        this._maskCamera = null;        this.renderList = [];        this.isSceneCamera = true;        this.renderRoundPixels = true;    },    addToRenderList: function (child)    {        this.renderList.push(child);    },    setOrigin: function (x, y)    {        if (x === undefined) { x = 0.5; }        if (y === undefined) { y = x; }        this.originX = x;        this.originY = y;        return this;    },    getScroll: function (x, y, out)    {        if (out === undefined) { out = new Vector2(); }        var originX = this.width * 0.5;        var originY = this.height * 0.5;        out.x = x - originX;        out.y = y - originY;        if (this.useBounds)        {            out.x = this.clampX(out.x);            out.y = this.clampY(out.y);        }        return out;    },    centerOnX: function (x)    {        var originX = this.width * 0.5;        this.midPoint.x = x;        this.scrollX = x - originX;        if (this.useBounds)        {            this.scrollX = this.clampX(this.scrollX);        }        return this;    },    centerOnY: function (y)    {        var originY = this.height * 0.5;        this.midPoint.y = y;        this.scrollY = y - originY;        if (this.useBounds)        {            this.scrollY = this.clampY(this.scrollY);        }        return this;    },    centerOn: function (x, y)    {        this.centerOnX(x);        this.centerOnY(y);        return this;    },    centerToBounds: function ()    {        if (this.useBounds)        {            var bounds = this._bounds;            var originX = this.width * 0.5;            var originY = this.height * 0.5;            this.midPoint.set(bounds.centerX, bounds.centerY);            this.scrollX = bounds.centerX - originX;            this.scrollY = bounds.centerY - originY;        }        return this;    },    centerToSize: function ()    {        this.scrollX = this.width * 0.5;        this.scrollY = this.height * 0.5;        return this;    },    cull: function (renderableObjects)    {        if (this.disableCull)        {            return renderableObjects;        }        var cameraMatrix = this.matrix.matrix;        var mva = cameraMatrix[0];        var mvb = cameraMatrix[1];        var mvc = cameraMatrix[2];        var mvd = cameraMatrix[3];        var determinant = (mva * mvd) - (mvb * mvc);        if (!determinant)        {            return renderableObjects;        }        var mve = cameraMatrix[4];        var mvf = cameraMatrix[5];        var scrollX = this.scrollX;        var scrollY = this.scrollY;        var cameraW = this.width;        var cameraH = this.height;        var cullTop = this.y;        var cullBottom = cullTop + cameraH;        var cullLeft = this.x;        var cullRight = cullLeft + cameraW;        var culledObjects = this.culledObjects;        var length = renderableObjects.length;        determinant = 1 / determinant;        culledObjects.length = 0;        for (var index = 0; index < length; ++index)        {            var object = renderableObjects[index];            if (!object.hasOwnProperty('width') || object.parentContainer)            {                culledObjects.push(object);                continue;            }            var objectW = object.width;            var objectH = object.height;            var objectX = (object.x - (scrollX * object.scrollFactorX)) - (objectW * object.originX);            var objectY = (object.y - (scrollY * object.scrollFactorY)) - (objectH * object.originY);            var tx = (objectX * mva + objectY * mvc + mve);            var ty = (objectX * mvb + objectY * mvd + mvf);            var tw = ((objectX + objectW) * mva + (objectY + objectH) * mvc + mve);            var th = ((objectX + objectW) * mvb + (objectY + objectH) * mvd + mvf);            if ((tw > cullLeft && tx < cullRight) && (th > cullTop && ty < cullBottom))            {                culledObjects.push(object);            }        }        return culledObjects;    },    getWorldPoint: function (x, y, output)    {        if (output === undefined) { output = new Vector2(); }        var cameraMatrix = this.matrix.matrix;        var mva = cameraMatrix[0];        var mvb = cameraMatrix[1];        var mvc = cameraMatrix[2];        var mvd = cameraMatrix[3];        var mve = cameraMatrix[4];        var mvf = cameraMatrix[5];        var determinant = (mva * mvd) - (mvb * mvc);        if (!determinant)        {            output.x = x;            output.y = y;            return output;        }        determinant = 1 / determinant;        var ima = mvd * determinant;        var imb = -mvb * determinant;        var imc = -mvc * determinant;        var imd = mva * determinant;        var ime = (mvc * mvf - mvd * mve) * determinant;        var imf = (mvb * mve - mva * mvf) * determinant;        var c = Math.cos(this.rotation);        var s = Math.sin(this.rotation);        var zoomX = this.zoomX;        var zoomY = this.zoomY;        var scrollX = this.scrollX;        var scrollY = this.scrollY;        var sx = x + ((scrollX * c - scrollY * s) * zoomX);        var sy = y + ((scrollX * s + scrollY * c) * zoomY);        output.x = (sx * ima + sy * imc) + ime;        output.y = (sx * imb + sy * imd) + imf;        return output;    },    ignore: function (entries)    {        var id = this.id;        if (!Array.isArray(entries))        {            entries = [ entries ];        }        for (var i = 0; i < entries.length; i++)        {            var entry = entries[i];            if (Array.isArray(entry))            {                this.ignore(entry);            }            else if (entry.isParent)            {                this.ignore(entry.getChildren());            }            else            {                entry.cameraFilter |= id;            }        }        return this;    },    clampX: function (x)    {        var bounds = this._bounds;        var dw = this.displayWidth;        var bx = bounds.x + ((dw - this.width) / 2);        var bw = Math.max(bx, bx + bounds.width - dw);        if (x < bx)        {            x = bx;        }        else if (x > bw)        {            x = bw;        }        return x;    },    clampY: function (y)    {        var bounds = this._bounds;        var dh = this.displayHeight;        var by = bounds.y + ((dh - this.height) / 2);        var bh = Math.max(by, by + bounds.height - dh);        if (y < by)        {            y = by;        }        else if (y > bh)        {            y = bh;        }        return y;    },    removeBounds: function ()    {        this.useBounds = false;        this.dirty = true;        this._bounds.setEmpty();        return this;    },    setAngle: function (value)    {        if (value === undefined) { value = 0; }        this.rotation = DegToRad(value);        return this;    },    setBackgroundColor: function (color)    {        if (color === undefined) { color = 'rgba(0,0,0,0)'; }        this.backgroundColor = ValueToColor(color);        this.transparent = (this.backgroundColor.alpha === 0);        return this;    },    setBounds: function (x, y, width, height, centerOn)    {        if (centerOn === undefined) { centerOn = false; }        this._bounds.setTo(x, y, width, height);        this.dirty = true;        this.useBounds = true;        if (centerOn)        {            this.centerToBounds();        }        else        {            this.scrollX = this.clampX(this.scrollX);            this.scrollY = this.clampY(this.scrollY);        }        return this;    },    getBounds: function (out)    {        if (out === undefined) { out = new Rectangle(); }        var source = this._bounds;        out.setTo(source.x, source.y, source.width, source.height);        return out;    },    setName: function (value)    {        if (value === undefined) { value = ''; }        this.name = value;        return this;    },    setPosition: function (x, y)    {        if (y === undefined) { y = x; }        this.x = x;        this.y = y;        return this;    },    setRotation: function (value)    {        if (value === undefined) { value = 0; }        this.rotation = value;        return this;    },    setRoundPixels: function (value)    {        this.roundPixels = value;        return this;    },    setScene: function (scene, isSceneCamera)    {        if (isSceneCamera === undefined) { isSceneCamera = true; }        if (this.scene && this._customViewport)        {            this.sceneManager.customViewports--;        }        this.scene = scene;        this.isSceneCamera = isSceneCamera;        var sys = scene.sys;        this.sceneManager = sys.game.scene;        this.scaleManager = sys.scale;        this.cameraManager = sys.cameras;        this.updateSystem();        return this;    },    setScroll: function (x, y)    {        if (y === undefined) { y = x; }        this.scrollX = x;        this.scrollY = y;        return this;    },    setSize: function (width, height)    {        if (height === undefined) { height = width; }        this.width = width;        this.height = height;        return this;    },    setViewport: function (x, y, width, height)    {        this.x = x;        this.y = y;        this.width = width;        this.height = height;        return this;    },    setZoom: function (x, y)    {        if (x === undefined) { x = 1; }        if (y === undefined) { y = x; }        if (x === 0)        {            x = 0.001;        }        if (y === 0)        {            y = 0.001;        }        this.zoomX = x;        this.zoomY = y;        return this;    },    setMask: function (mask, fixedPosition)    {        if (fixedPosition === undefined) { fixedPosition = true; }        this.mask = mask;        this._maskCamera = (fixedPosition) ? this.cameraManager.default : this;        return this;    },    clearMask: function (destroyMask)    {        if (destroyMask === undefined) { destroyMask = false; }        if (destroyMask && this.mask)        {            this.mask.destroy();        }        this.mask = null;        return this;    },    toJSON: function ()    {        var output = {            name: this.name,            x: this.x,            y: this.y,            width: this.width,            height: this.height,            zoom: this.zoom,            rotation: this.rotation,            roundPixels: this.roundPixels,            scrollX: this.scrollX,            scrollY: this.scrollY,            backgroundColor: this.backgroundColor.rgba        };        if (this.useBounds)        {            output['bounds'] = {                x: this._bounds.x,                y: this._bounds.y,                width: this._bounds.width,                height: this._bounds.height            };        }        return output;    },    update: function ()    {    },    setIsSceneCamera: function (value)    {        this.isSceneCamera = value;        return this;    },    updateSystem: function ()    {        if (!this.scaleManager || !this.isSceneCamera)        {            return;        }        var custom = (this._x !== 0 || this._y !== 0 || this.scaleManager.width !== this._width || this.scaleManager.height !== this._height);        var sceneManager = this.sceneManager;        if (custom && !this._customViewport)        {            sceneManager.customViewports++;        }        else if (!custom && this._customViewport)        {            sceneManager.customViewports--;        }        this.dirty = true;        this._customViewport = custom;    },    destroy: function ()    {        this.emit(Events.DESTROY, this);        this.removeAllListeners();        this.matrix.destroy();        this.culledObjects = [];        if (this._customViewport)        {            this.sceneManager.customViewports--;        }        this.renderList = [];        this._bounds = null;        this.scene = null;        this.scaleManager = null;        this.sceneManager = null;        this.cameraManager = null;    },    x: {        get: function ()        {            return this._x;        },        set: function (value)        {            this._x = value;            this.updateSystem();        }    },    y: {        get: function ()        {            return this._y;        },        set: function (value)        {            this._y = value;            this.updateSystem();        }    },    width: {        get: function ()        {            return this._width;        },        set: function (value)        {            this._width = value;            this.updateSystem();        }    },    height: {        get: function ()        {            return this._height;        },        set: function (value)        {            this._height = value;            this.updateSystem();        }    },    scrollX: {        get: function ()        {            return this._scrollX;        },        set: function (value)        {            if (value !== this._scrollX)            {                this._scrollX = value;                this.dirty = true;            }        }    },    scrollY: {        get: function ()        {            return this._scrollY;        },        set: function (value)        {            if (value !== this._scrollY)            {                this._scrollY = value;                this.dirty = true;            }        }    },    zoom: {        get: function ()        {            return (this._zoomX + this._zoomY) / 2;        },        set: function (value)        {            this._zoomX = value;            this._zoomY = value;            this.dirty = true;        }    },    zoomX: {        get: function ()        {            return this._zoomX;        },        set: function (value)        {            this._zoomX = value;            this.dirty = true;        }    },    zoomY: {        get: function ()        {            return this._zoomY;        },        set: function (value)        {            this._zoomY = value;            this.dirty = true;        }    },    rotation: {        get: function ()        {            return this._rotation;        },        set: function (value)        {            this._rotation = value;            this.dirty = true;        }    },    centerX: {        get: function ()        {            return this.x + (0.5 * this.width);        }    },    centerY: {        get: function ()        {            return this.y + (0.5 * this.height);        }    },    displayWidth: {        get: function ()        {            return this.width / this.zoomX;        }    },    displayHeight: {        get: function ()        {            return this.height / this.zoomY;        }    }});module.exports = BaseCamera;

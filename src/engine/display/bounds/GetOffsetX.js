@@ -1,6 +1,1 @@
-var GetOffsetX = function (gameObject)
-{
-    return gameObject.width * gameObject.originX;
-};
-
-module.exports = GetOffsetX;
+var GetOffsetX = function (gameObject){    return gameObject.width * gameObject.originX;};module.exports = GetOffsetX;

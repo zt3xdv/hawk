@@ -1,1 +1,1 @@
-module.exports = 'pointermove';
+module.exports = 'pointermove';

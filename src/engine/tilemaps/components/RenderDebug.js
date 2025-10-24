@@ -1,56 +1,1 @@
-var GetTilesWithin = require('./GetTilesWithin');
-var Color = require('../../display/color');
-
-var defaultTileColor = new Color(105, 210, 231, 150);
-var defaultCollidingTileColor = new Color(243, 134, 48, 200);
-var defaultFaceColor = new Color(40, 39, 37, 150);
-
-var RenderDebug = function (graphics, styleConfig, layer)
-{
-    if (styleConfig === undefined) { styleConfig = {}; }
-
-    var tileColor = (styleConfig.tileColor !== undefined) ? styleConfig.tileColor : defaultTileColor;
-    var collidingTileColor = (styleConfig.collidingTileColor !== undefined) ? styleConfig.collidingTileColor : defaultCollidingTileColor;
-    var faceColor = (styleConfig.faceColor !== undefined) ? styleConfig.faceColor : defaultFaceColor;
-
-    var tiles = GetTilesWithin(0, 0, layer.width, layer.height, null, layer);
-
-    graphics.translateCanvas(layer.tilemapLayer.x, layer.tilemapLayer.y);
-    graphics.scaleCanvas(layer.tilemapLayer.scaleX, layer.tilemapLayer.scaleY);
-
-    for (var i = 0; i < tiles.length; i++)
-    {
-        var tile = tiles[i];
-
-        var offset = tile.tileset ? tile.tileset.tileOffset : { x: 0, y: 0 };
-        var tw = tile.width;
-        var th = tile.height;
-        var x = tile.pixelX - offset.x;
-        var y = tile.pixelY - offset.y;
-
-        var color = tile.collides ? collidingTileColor : tileColor;
-
-        if (color !== null)
-        {
-            graphics.fillStyle(color.color, color.alpha / 255);
-            graphics.fillRect(x, y, tw, th);
-        }
-
-        x += 1;
-        y += 1;
-        tw -= 2;
-        th -= 2;
-
-        if (faceColor !== null)
-        {
-            graphics.lineStyle(1, faceColor.color, faceColor.alpha / 255);
-
-            if (tile.faceTop) { graphics.lineBetween(x, y, x + tw, y); }
-            if (tile.faceRight) { graphics.lineBetween(x + tw, y, x + tw, y + th); }
-            if (tile.faceBottom) { graphics.lineBetween(x, y + th, x + tw, y + th); }
-            if (tile.faceLeft) { graphics.lineBetween(x, y, x, y + th); }
-        }
-    }
-};
-
-module.exports = RenderDebug;
+var GetTilesWithin = require('./GetTilesWithin');var Color = require('../../display/color');var defaultTileColor = new Color(105, 210, 231, 150);var defaultCollidingTileColor = new Color(243, 134, 48, 200);var defaultFaceColor = new Color(40, 39, 37, 150);var RenderDebug = function (graphics, styleConfig, layer){    if (styleConfig === undefined) { styleConfig = {}; }    var tileColor = (styleConfig.tileColor !== undefined) ? styleConfig.tileColor : defaultTileColor;    var collidingTileColor = (styleConfig.collidingTileColor !== undefined) ? styleConfig.collidingTileColor : defaultCollidingTileColor;    var faceColor = (styleConfig.faceColor !== undefined) ? styleConfig.faceColor : defaultFaceColor;    var tiles = GetTilesWithin(0, 0, layer.width, layer.height, null, layer);    graphics.translateCanvas(layer.tilemapLayer.x, layer.tilemapLayer.y);    graphics.scaleCanvas(layer.tilemapLayer.scaleX, layer.tilemapLayer.scaleY);    for (var i = 0; i < tiles.length; i++)    {        var tile = tiles[i];        var offset = tile.tileset ? tile.tileset.tileOffset : { x: 0, y: 0 };        var tw = tile.width;        var th = tile.height;        var x = tile.pixelX - offset.x;        var y = tile.pixelY - offset.y;        var color = tile.collides ? collidingTileColor : tileColor;        if (color !== null)        {            graphics.fillStyle(color.color, color.alpha / 255);            graphics.fillRect(x, y, tw, th);        }        x += 1;        y += 1;        tw -= 2;        th -= 2;        if (faceColor !== null)        {            graphics.lineStyle(1, faceColor.color, faceColor.alpha / 255);            if (tile.faceTop) { graphics.lineBetween(x, y, x + tw, y); }            if (tile.faceRight) { graphics.lineBetween(x + tw, y, x + tw, y + th); }            if (tile.faceBottom) { graphics.lineBetween(x, y + th, x + tw, y + th); }            if (tile.faceLeft) { graphics.lineBetween(x, y, x, y + th); }        }    }};module.exports = RenderDebug;

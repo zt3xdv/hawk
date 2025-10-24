@@ -1,470 +1,1 @@
-var AddBlendFS = require('../shaders/AddBlend-frag');
-var BlendModes = require('../../BlendModes');
-var Class = require('../../../utils/Class');
-var ColorMatrix = require('../../../display/ColorMatrix');
-var ColorMatrixFS = require('../shaders/ColorMatrix-frag');
-var CopyFS = require('../shaders/Copy-frag');
-var GetFastValue = require('../../../utils/object/GetFastValue');
-var LinearBlendFS = require('../shaders/LinearBlend-frag');
-var QuadVS = require('../shaders/Quad-vert');
-var WebGLPipeline = require('../WebGLPipeline');
-
-var UtilityPipeline = new Class({
-
-    Extends: WebGLPipeline,
-
-    initialize:
-
-    function UtilityPipeline (config)
-    {
-        config.renderTarget = GetFastValue(config, 'renderTarget', [
-            {
-                scale: 1,
-                autoResize: true
-            },
-            {
-                scale: 1,
-                autoResize: true
-            },
-            {
-                scale: 0.5,
-                autoResize: true
-            },
-            {
-                scale: 0.5,
-                autoResize: true
-            }
-        ]);
-
-        config.vertShader = GetFastValue(config, 'vertShader', QuadVS);
-
-        config.shaders = GetFastValue(config, 'shaders', [
-            {
-                name: 'Copy',
-                fragShader: CopyFS
-            },
-            {
-                name: 'AddBlend',
-                fragShader: AddBlendFS
-            },
-            {
-                name: 'LinearBlend',
-                fragShader: LinearBlendFS
-            },
-            {
-                name: 'ColorMatrix',
-                fragShader: ColorMatrixFS
-            }
-        ]);
-
-        config.attributes = GetFastValue(config, 'attributes', [
-            {
-                name: 'inPosition',
-                size: 2
-            },
-            {
-                name: 'inTexCoord',
-                size: 2
-            }
-        ]);
-
-        config.vertices = [
-            -1, -1, 0, 0,
-            -1, 1, 0, 1,
-            1, 1, 1, 1,
-            -1, -1, 0, 0,
-            1, 1, 1, 1,
-            1, -1, 1, 0
-        ];
-
-        config.batchSize = 1;
-
-        WebGLPipeline.call(this, config);
-
-        this.colorMatrix = new ColorMatrix();
-
-        this.copyShader;
-
-        this.addShader;
-
-        this.linearShader;
-
-        this.colorMatrixShader;
-
-        this.fullFrame1;
-
-        this.fullFrame2;
-
-        this.halfFrame1;
-
-        this.halfFrame2;
-    },
-
-    boot: function ()
-    {
-        WebGLPipeline.prototype.boot.call(this);
-
-        var shaders = this.shaders;
-        var targets = this.renderTargets;
-
-        this.copyShader = shaders[0];
-        this.addShader = shaders[1];
-        this.linearShader = shaders[2];
-        this.colorMatrixShader = shaders[3];
-
-        this.fullFrame1 = targets[0];
-        this.fullFrame2 = targets[1];
-        this.halfFrame1 = targets[2];
-        this.halfFrame2 = targets[3];
-    },
-
-    copyFrame: function (source, target, brightness, clear, clearAlpha)
-    {
-        if (brightness === undefined) { brightness = 1; }
-        if (clear === undefined) { clear = true; }
-        if (clearAlpha === undefined) { clearAlpha = true; }
-
-        var gl = this.gl;
-
-        this.setShader(this.copyShader);
-
-        this.set1i('uMainSampler', 0);
-        this.set1f('uBrightness', brightness);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);
-
-        if (target)
-        {
-            gl.viewport(0, 0, target.width, target.height);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);
-        }
-        else
-        {
-            gl.viewport(0, 0, source.width, source.height);
-        }
-
-        if (clear)
-        {
-            if (clearAlpha)
-            {
-                gl.clearColor(0, 0, 0, 0);
-            }
-            else
-            {
-                gl.clearColor(0, 0, 0, 1);
-            }
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-
-        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    },
-
-    blitFrame: function (source, target, brightness, clear, clearAlpha, eraseMode, flipY)
-    {
-        if (brightness === undefined) { brightness = 1; }
-        if (clear === undefined) { clear = true; }
-        if (clearAlpha === undefined) { clearAlpha = true; }
-        if (eraseMode === undefined) { eraseMode = false; }
-        if (flipY === undefined) { flipY = false; }
-
-        var gl = this.gl;
-
-        this.setShader(this.copyShader);
-
-        this.set1i('uMainSampler', 0);
-        this.set1f('uBrightness', brightness);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);
-
-        if (source.height > target.height)
-        {
-            gl.viewport(0, 0, source.width, source.height);
-
-            this.setTargetUVs(source, target);
-        }
-        else
-        {
-            var diff = target.height - source.height;
-
-            gl.viewport(0, diff, source.width, source.height);
-        }
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);
-
-        if (clear)
-        {
-            if (clearAlpha)
-            {
-                gl.clearColor(0, 0, 0, 0);
-            }
-            else
-            {
-                gl.clearColor(0, 0, 0, 1);
-            }
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-
-        if (eraseMode)
-        {
-            var blendMode = this.renderer.currentBlendMode;
-
-            this.renderer.setBlendMode(BlendModes.ERASE);
-        }
-
-        if (flipY)
-        {
-            this.flipY();
-        }
-
-        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        if (eraseMode)
-        {
-            this.renderer.setBlendMode(blendMode);
-        }
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-        this.resetUVs();
-    },
-
-    copyFrameRect: function (source, target, x, y, width, height, clear, clearAlpha)
-    {
-        if (clear === undefined) { clear = true; }
-        if (clearAlpha === undefined) { clearAlpha = true; }
-
-        var gl = this.gl;
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, source.framebuffer.webGLFramebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, source.texture.webGLTexture, 0);
-
-        if (clear)
-        {
-            if (clearAlpha)
-            {
-                gl.clearColor(0, 0, 0, 0);
-            }
-            else
-            {
-                gl.clearColor(0, 0, 0, 1);
-            }
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, target.texture.webGLTexture);
-
-        gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, x, y, width, height);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    },
-
-    copyToGame: function (source)
-    {
-        var gl = this.gl;
-
-        this.setShader(this.copyShader);
-
-        this.set1i('uMainSampler', 0);
-        this.set1f('uBrightness', 1);
-
-        this.renderer.popFramebuffer();
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);
-
-        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-    },
-
-    drawFrame: function (source, target, clearAlpha, colorMatrix)
-    {
-        if (clearAlpha === undefined) { clearAlpha = true; }
-        if (colorMatrix === undefined) { colorMatrix = this.colorMatrix; }
-
-        var gl = this.gl;
-
-        this.setShader(this.colorMatrixShader);
-
-        this.set1i('uMainSampler', 0);
-        this.set1fv('uColorMatrix', colorMatrix.getData());
-        this.set1f('uAlpha', colorMatrix.alpha);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);
-
-        if (target)
-        {
-            gl.viewport(0, 0, target.width, target.height);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);
-        }
-        else
-        {
-            gl.viewport(0, 0, source.width, source.height);
-        }
-
-        if (clearAlpha)
-        {
-            gl.clearColor(0, 0, 0, 0);
-        }
-        else
-        {
-            gl.clearColor(0, 0, 0, 1);
-        }
-
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    },
-
-    blendFrames: function (source1, source2, target, strength, clearAlpha, blendShader)
-    {
-        if (strength === undefined) { strength = 1; }
-        if (clearAlpha === undefined) { clearAlpha = true; }
-        if (blendShader === undefined) { blendShader = this.linearShader; }
-
-        var gl = this.gl;
-
-        this.setShader(blendShader);
-
-        this.set1i('uMainSampler1', 0);
-        this.set1i('uMainSampler2', 1);
-        this.set1f('uStrength', strength);
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, source1.texture.webGLTexture);
-
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, source2.texture.webGLTexture);
-
-        if (target)
-        {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);
-            gl.viewport(0, 0, target.width, target.height);
-        }
-        else
-        {
-            gl.viewport(0, 0, source1.width, source1.height);
-        }
-
-        if (clearAlpha)
-        {
-            gl.clearColor(0, 0, 0, 0);
-        }
-        else
-        {
-            gl.clearColor(0, 0, 0, 1);
-        }
-
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    },
-
-    blendFramesAdditive: function (source1, source2, target, strength, clearAlpha)
-    {
-        this.blendFrames(source1, source2, target, strength, clearAlpha, this.addShader);
-    },
-
-    clearFrame: function (target, clearAlpha)
-    {
-        if (clearAlpha === undefined) { clearAlpha = true; }
-
-        var gl = this.gl;
-
-        gl.viewport(0, 0, target.width, target.height);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);
-
-        if (clearAlpha)
-        {
-            gl.clearColor(0, 0, 0, 0);
-        }
-        else
-        {
-            gl.clearColor(0, 0, 0, 1);
-        }
-
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        var fbo = this.renderer.currentFramebuffer;
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.webGLFramebuffer);
-    },
-
-    setUVs: function (uA, vA, uB, vB, uC, vC, uD, vD)
-    {
-        var vertexViewF32 = this.vertexViewF32;
-
-        vertexViewF32[2] = uA;
-        vertexViewF32[3] = vA;
-        vertexViewF32[6] = uB;
-        vertexViewF32[7] = vB;
-        vertexViewF32[10] = uC;
-        vertexViewF32[11] = vC;
-        vertexViewF32[14] = uA;
-        vertexViewF32[15] = vA;
-        vertexViewF32[18] = uC;
-        vertexViewF32[19] = vC;
-        vertexViewF32[22] = uD;
-        vertexViewF32[23] = vD;
-    },
-
-    setTargetUVs: function (source, target)
-    {
-        var diff = (target.height / source.height);
-
-        if (diff > 0.5)
-        {
-            diff = 0.5 - (diff - 0.5);
-        }
-        else
-        {
-            diff = 0.5 + (0.5 - diff);
-        }
-
-        this.setUVs(0, diff, 0, 1 + diff, 1, 1 + diff, 1, diff);
-    },
-
-    flipX: function ()
-    {
-        this.setUVs(1, 0, 1, 1, 0, 1, 0, 0);
-    },
-
-    flipY: function ()
-    {
-        this.setUVs(0, 1, 0, 0, 1, 0, 1, 1);
-    },
-
-    resetUVs: function ()
-    {
-        this.setUVs(0, 0, 0, 1, 1, 1, 1, 0);
-    }
-
-});
-
-module.exports = UtilityPipeline;
+var AddBlendFS = require('../shaders/AddBlend-frag');var BlendModes = require('../../BlendModes');var Class = require('../../../utils/Class');var ColorMatrix = require('../../../display/ColorMatrix');var ColorMatrixFS = require('../shaders/ColorMatrix-frag');var CopyFS = require('../shaders/Copy-frag');var GetFastValue = require('../../../utils/object/GetFastValue');var LinearBlendFS = require('../shaders/LinearBlend-frag');var QuadVS = require('../shaders/Quad-vert');var WebGLPipeline = require('../WebGLPipeline');var UtilityPipeline = new Class({    Extends: WebGLPipeline,    initialize:    function UtilityPipeline (config)    {        config.renderTarget = GetFastValue(config, 'renderTarget', [            {                scale: 1,                autoResize: true            },            {                scale: 1,                autoResize: true            },            {                scale: 0.5,                autoResize: true            },            {                scale: 0.5,                autoResize: true            }        ]);        config.vertShader = GetFastValue(config, 'vertShader', QuadVS);        config.shaders = GetFastValue(config, 'shaders', [            {                name: 'Copy',                fragShader: CopyFS            },            {                name: 'AddBlend',                fragShader: AddBlendFS            },            {                name: 'LinearBlend',                fragShader: LinearBlendFS            },            {                name: 'ColorMatrix',                fragShader: ColorMatrixFS            }        ]);        config.attributes = GetFastValue(config, 'attributes', [            {                name: 'inPosition',                size: 2            },            {                name: 'inTexCoord',                size: 2            }        ]);        config.vertices = [            -1, -1, 0, 0,            -1, 1, 0, 1,            1, 1, 1, 1,            -1, -1, 0, 0,            1, 1, 1, 1,            1, -1, 1, 0        ];        config.batchSize = 1;        WebGLPipeline.call(this, config);        this.colorMatrix = new ColorMatrix();        this.copyShader;        this.addShader;        this.linearShader;        this.colorMatrixShader;        this.fullFrame1;        this.fullFrame2;        this.halfFrame1;        this.halfFrame2;    },    boot: function ()    {        WebGLPipeline.prototype.boot.call(this);        var shaders = this.shaders;        var targets = this.renderTargets;        this.copyShader = shaders[0];        this.addShader = shaders[1];        this.linearShader = shaders[2];        this.colorMatrixShader = shaders[3];        this.fullFrame1 = targets[0];        this.fullFrame2 = targets[1];        this.halfFrame1 = targets[2];        this.halfFrame2 = targets[3];    },    copyFrame: function (source, target, brightness, clear, clearAlpha)    {        if (brightness === undefined) { brightness = 1; }        if (clear === undefined) { clear = true; }        if (clearAlpha === undefined) { clearAlpha = true; }        var gl = this.gl;        this.setShader(this.copyShader);        this.set1i('uMainSampler', 0);        this.set1f('uBrightness', brightness);        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);        if (target)        {            gl.viewport(0, 0, target.width, target.height);            gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);        }        else        {            gl.viewport(0, 0, source.width, source.height);        }        if (clear)        {            if (clearAlpha)            {                gl.clearColor(0, 0, 0, 0);            }            else            {                gl.clearColor(0, 0, 0, 1);            }            gl.clear(gl.COLOR_BUFFER_BIT);        }        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);        gl.drawArrays(gl.TRIANGLES, 0, 6);        gl.bindFramebuffer(gl.FRAMEBUFFER, null);        gl.bindTexture(gl.TEXTURE_2D, null);    },    blitFrame: function (source, target, brightness, clear, clearAlpha, eraseMode, flipY)    {        if (brightness === undefined) { brightness = 1; }        if (clear === undefined) { clear = true; }        if (clearAlpha === undefined) { clearAlpha = true; }        if (eraseMode === undefined) { eraseMode = false; }        if (flipY === undefined) { flipY = false; }        var gl = this.gl;        this.setShader(this.copyShader);        this.set1i('uMainSampler', 0);        this.set1f('uBrightness', brightness);        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);        if (source.height > target.height)        {            gl.viewport(0, 0, source.width, source.height);            this.setTargetUVs(source, target);        }        else        {            var diff = target.height - source.height;            gl.viewport(0, diff, source.width, source.height);        }        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);        if (clear)        {            if (clearAlpha)            {                gl.clearColor(0, 0, 0, 0);            }            else            {                gl.clearColor(0, 0, 0, 1);            }            gl.clear(gl.COLOR_BUFFER_BIT);        }        if (eraseMode)        {            var blendMode = this.renderer.currentBlendMode;            this.renderer.setBlendMode(BlendModes.ERASE);        }        if (flipY)        {            this.flipY();        }        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);        gl.drawArrays(gl.TRIANGLES, 0, 6);        if (eraseMode)        {            this.renderer.setBlendMode(blendMode);        }        gl.bindFramebuffer(gl.FRAMEBUFFER, null);        gl.bindTexture(gl.TEXTURE_2D, null);        this.resetUVs();    },    copyFrameRect: function (source, target, x, y, width, height, clear, clearAlpha)    {        if (clear === undefined) { clear = true; }        if (clearAlpha === undefined) { clearAlpha = true; }        var gl = this.gl;        gl.bindFramebuffer(gl.FRAMEBUFFER, source.framebuffer.webGLFramebuffer);        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, source.texture.webGLTexture, 0);        if (clear)        {            if (clearAlpha)            {                gl.clearColor(0, 0, 0, 0);            }            else            {                gl.clearColor(0, 0, 0, 1);            }            gl.clear(gl.COLOR_BUFFER_BIT);        }        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, target.texture.webGLTexture);        gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, x, y, width, height);        gl.bindFramebuffer(gl.FRAMEBUFFER, null);        gl.bindTexture(gl.TEXTURE_2D, null);    },    copyToGame: function (source)    {        var gl = this.gl;        this.setShader(this.copyShader);        this.set1i('uMainSampler', 0);        this.set1f('uBrightness', 1);        this.renderer.popFramebuffer();        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);        gl.drawArrays(gl.TRIANGLES, 0, 6);    },    drawFrame: function (source, target, clearAlpha, colorMatrix)    {        if (clearAlpha === undefined) { clearAlpha = true; }        if (colorMatrix === undefined) { colorMatrix = this.colorMatrix; }        var gl = this.gl;        this.setShader(this.colorMatrixShader);        this.set1i('uMainSampler', 0);        this.set1fv('uColorMatrix', colorMatrix.getData());        this.set1f('uAlpha', colorMatrix.alpha);        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);        if (target)        {            gl.viewport(0, 0, target.width, target.height);            gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);        }        else        {            gl.viewport(0, 0, source.width, source.height);        }        if (clearAlpha)        {            gl.clearColor(0, 0, 0, 0);        }        else        {            gl.clearColor(0, 0, 0, 1);        }        gl.clear(gl.COLOR_BUFFER_BIT);        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);        gl.drawArrays(gl.TRIANGLES, 0, 6);        gl.bindFramebuffer(gl.FRAMEBUFFER, null);        gl.bindTexture(gl.TEXTURE_2D, null);    },    blendFrames: function (source1, source2, target, strength, clearAlpha, blendShader)    {        if (strength === undefined) { strength = 1; }        if (clearAlpha === undefined) { clearAlpha = true; }        if (blendShader === undefined) { blendShader = this.linearShader; }        var gl = this.gl;        this.setShader(blendShader);        this.set1i('uMainSampler1', 0);        this.set1i('uMainSampler2', 1);        this.set1f('uStrength', strength);        gl.activeTexture(gl.TEXTURE0);        gl.bindTexture(gl.TEXTURE_2D, source1.texture.webGLTexture);        gl.activeTexture(gl.TEXTURE1);        gl.bindTexture(gl.TEXTURE_2D, source2.texture.webGLTexture);        if (target)        {            gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture.webGLTexture, 0);            gl.viewport(0, 0, target.width, target.height);        }        else        {            gl.viewport(0, 0, source1.width, source1.height);        }        if (clearAlpha)        {            gl.clearColor(0, 0, 0, 0);        }        else        {            gl.clearColor(0, 0, 0, 1);        }        gl.clear(gl.COLOR_BUFFER_BIT);        gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);        gl.drawArrays(gl.TRIANGLES, 0, 6);        gl.bindFramebuffer(gl.FRAMEBUFFER, null);        gl.bindTexture(gl.TEXTURE_2D, null);    },    blendFramesAdditive: function (source1, source2, target, strength, clearAlpha)    {        this.blendFrames(source1, source2, target, strength, clearAlpha, this.addShader);    },    clearFrame: function (target, clearAlpha)    {        if (clearAlpha === undefined) { clearAlpha = true; }        var gl = this.gl;        gl.viewport(0, 0, target.width, target.height);        gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);        if (clearAlpha)        {            gl.clearColor(0, 0, 0, 0);        }        else        {            gl.clearColor(0, 0, 0, 1);        }        gl.clear(gl.COLOR_BUFFER_BIT);        var fbo = this.renderer.currentFramebuffer;        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.webGLFramebuffer);    },    setUVs: function (uA, vA, uB, vB, uC, vC, uD, vD)    {        var vertexViewF32 = this.vertexViewF32;        vertexViewF32[2] = uA;        vertexViewF32[3] = vA;        vertexViewF32[6] = uB;        vertexViewF32[7] = vB;        vertexViewF32[10] = uC;        vertexViewF32[11] = vC;        vertexViewF32[14] = uA;        vertexViewF32[15] = vA;        vertexViewF32[18] = uC;        vertexViewF32[19] = vC;        vertexViewF32[22] = uD;        vertexViewF32[23] = vD;    },    setTargetUVs: function (source, target)    {        var diff = (target.height / source.height);        if (diff > 0.5)        {            diff = 0.5 - (diff - 0.5);        }        else        {            diff = 0.5 + (0.5 - diff);        }        this.setUVs(0, diff, 0, 1 + diff, 1, 1 + diff, 1, diff);    },    flipX: function ()    {        this.setUVs(1, 0, 1, 1, 0, 1, 0, 0);    },    flipY: function ()    {        this.setUVs(0, 1, 0, 0, 1, 0, 1, 1);    },    resetUVs: function ()    {        this.setUVs(0, 0, 0, 1, 1, 1, 1, 0);    }});module.exports = UtilityPipeline;

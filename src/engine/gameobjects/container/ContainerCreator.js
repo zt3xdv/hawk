@@ -1,25 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var Container = require('./Container');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var GetFastValue = require('../../utils/object/GetFastValue');
-
-GameObjectCreator.register('container', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var x = GetAdvancedValue(config, 'x', 0);
-    var y = GetAdvancedValue(config, 'y', 0);
-    var children = GetFastValue(config, 'children', null);
-
-    var container = new Container(this.scene, x, y, children);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, container, config);
-
-    return container;
-});
+var BuildGameObject = require('../BuildGameObject');var Container = require('./Container');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var GetFastValue = require('../../utils/object/GetFastValue');GameObjectCreator.register('container', function (config, addToScene){    if (config === undefined) { config = {}; }    var x = GetAdvancedValue(config, 'x', 0);    var y = GetAdvancedValue(config, 'y', 0);    var children = GetFastValue(config, 'children', null);    var container = new Container(this.scene, x, y, children);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, container, config);    return container;});

@@ -1,66 +1,1 @@
-var Class = require('../../utils/Class');
-var CONST = require('../const/ORIENTATION_CONST');
-var GetFastValue = require('../../utils/object/GetFastValue');
-
-var LayerData = new Class({
-
-    initialize:
-
-    function LayerData (config)
-    {
-        if (config === undefined) { config = {}; }
-
-        this.name = GetFastValue(config, 'name', 'layer');
-
-        this.id = GetFastValue(config, 'id', 0);
-
-        this.x = GetFastValue(config, 'x', 0);
-
-        this.y = GetFastValue(config, 'y', 0);
-
-        this.width = GetFastValue(config, 'width', 0);
-
-        this.height = GetFastValue(config, 'height', 0);
-
-        this.tileWidth = GetFastValue(config, 'tileWidth', 0);
-
-        this.tileHeight = GetFastValue(config, 'tileHeight', 0);
-
-        this.baseTileWidth = GetFastValue(config, 'baseTileWidth', this.tileWidth);
-
-        this.baseTileHeight = GetFastValue(config, 'baseTileHeight', this.tileHeight);
-
-        this.orientation = GetFastValue(config, 'orientation', CONST.ORTHOGONAL);
-
-        this.widthInPixels = GetFastValue(config, 'widthInPixels', this.width * this.baseTileWidth);
-
-        this.heightInPixels = GetFastValue(config, 'heightInPixels', this.height * this.baseTileHeight);
-
-        this.alpha = GetFastValue(config, 'alpha', 1);
-
-        this.visible = GetFastValue(config, 'visible', true);
-
-        this.properties = GetFastValue(config, 'properties', []);
-
-        this.indexes = GetFastValue(config, 'indexes', []);
-
-        this.collideIndexes = GetFastValue(config, 'collideIndexes', []);
-
-        this.callbacks = GetFastValue(config, 'callbacks', []);
-
-        this.bodies = GetFastValue(config, 'bodies', []);
-
-        this.data = GetFastValue(config, 'data', []);
-
-        this.tilemapLayer = GetFastValue(config, 'tilemapLayer', null);
-
-        this.hexSideLength = GetFastValue(config, 'hexSideLength', 0);
-
-        this.staggerAxis = GetFastValue(config, 'staggerAxis', 'y');
-
-        this.staggerIndex = GetFastValue(config, 'staggerIndex', 'odd');
-    }
-
-});
-
-module.exports = LayerData;
+var Class = require('../../utils/Class');var CONST = require('../const/ORIENTATION_CONST');var GetFastValue = require('../../utils/object/GetFastValue');var LayerData = new Class({    initialize:    function LayerData (config)    {        if (config === undefined) { config = {}; }        this.name = GetFastValue(config, 'name', 'layer');        this.id = GetFastValue(config, 'id', 0);        this.x = GetFastValue(config, 'x', 0);        this.y = GetFastValue(config, 'y', 0);        this.width = GetFastValue(config, 'width', 0);        this.height = GetFastValue(config, 'height', 0);        this.tileWidth = GetFastValue(config, 'tileWidth', 0);        this.tileHeight = GetFastValue(config, 'tileHeight', 0);        this.baseTileWidth = GetFastValue(config, 'baseTileWidth', this.tileWidth);        this.baseTileHeight = GetFastValue(config, 'baseTileHeight', this.tileHeight);        this.orientation = GetFastValue(config, 'orientation', CONST.ORTHOGONAL);        this.widthInPixels = GetFastValue(config, 'widthInPixels', this.width * this.baseTileWidth);        this.heightInPixels = GetFastValue(config, 'heightInPixels', this.height * this.baseTileHeight);        this.alpha = GetFastValue(config, 'alpha', 1);        this.visible = GetFastValue(config, 'visible', true);        this.properties = GetFastValue(config, 'properties', []);        this.indexes = GetFastValue(config, 'indexes', []);        this.collideIndexes = GetFastValue(config, 'collideIndexes', []);        this.callbacks = GetFastValue(config, 'callbacks', []);        this.bodies = GetFastValue(config, 'bodies', []);        this.data = GetFastValue(config, 'data', []);        this.tilemapLayer = GetFastValue(config, 'tilemapLayer', null);        this.hexSideLength = GetFastValue(config, 'hexSideLength', 0);        this.staggerAxis = GetFastValue(config, 'staggerAxis', 'y');        this.staggerIndex = GetFastValue(config, 'staggerIndex', 'odd');    }});module.exports = LayerData;

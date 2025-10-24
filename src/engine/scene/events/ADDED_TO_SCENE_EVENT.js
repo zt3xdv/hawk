@@ -1,1 +1,1 @@
-module.exports = 'addedtoscene';
+module.exports = 'addedtoscene';

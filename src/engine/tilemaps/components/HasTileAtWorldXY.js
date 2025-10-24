@@ -1,16 +1,1 @@
-var HasTileAt = require('./HasTileAt');
-var Vector2 = require('../../math/Vector2');
-
-var point = new Vector2();
-
-var HasTileAtWorldXY = function (worldX, worldY, camera, layer)
-{
-    layer.tilemapLayer.worldToTileXY(worldX, worldY, true, point, camera);
-
-    var tileX = point.x;
-    var tileY = point.y;
-
-    return HasTileAt(tileX, tileY, layer);
-};
-
-module.exports = HasTileAtWorldXY;
+var HasTileAt = require('./HasTileAt');var Vector2 = require('../../math/Vector2');var point = new Vector2();var HasTileAtWorldXY = function (worldX, worldY, camera, layer){    layer.tilemapLayer.worldToTileXY(worldX, worldY, true, point, camera);    var tileX = point.x;    var tileY = point.y;    return HasTileAt(tileX, tileY, layer);};module.exports = HasTileAtWorldXY;

@@ -1,1 +1,1 @@
-module.exports = 'transitioninit';
+module.exports = 'transitioninit';

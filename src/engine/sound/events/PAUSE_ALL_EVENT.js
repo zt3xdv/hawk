@@ -1,1 +1,1 @@
-module.exports = 'pauseall';
+module.exports = 'pauseall';

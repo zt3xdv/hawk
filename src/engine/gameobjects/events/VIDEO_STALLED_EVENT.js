@@ -1,1 +1,1 @@
-module.exports = 'stalled';
+module.exports = 'stalled';

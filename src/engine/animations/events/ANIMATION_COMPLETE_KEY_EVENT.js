@@ -1,1 +1,1 @@
-module.exports = 'animationcomplete-';
+module.exports = 'animationcomplete-';

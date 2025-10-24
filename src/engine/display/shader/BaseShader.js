@@ -1,60 +1,1 @@
-var Class = require('../../utils/Class');
-
-var BaseShader = new Class({
-
-    initialize:
-
-    function BaseShader (key, fragmentSrc, vertexSrc, uniforms)
-    {
-        if (!fragmentSrc || fragmentSrc === '')
-        {
-            fragmentSrc = [
-                'precision mediump float;',
-
-                'uniform vec2 resolution;',
-
-                'varying vec2 fragCoord;',
-
-                'void main () {',
-                '    vec2 uv = fragCoord / resolution.xy;',
-                '    gl_FragColor = vec4(uv.xyx, 1.0);',
-                '}'
-            ].join('\n');
-        }
-
-        if (!vertexSrc || vertexSrc === '')
-        {
-            vertexSrc = [
-                'precision mediump float;',
-
-                'uniform mat4 uProjectionMatrix;',
-                'uniform mat4 uViewMatrix;',
-                'uniform vec2 uResolution;',
-
-                'attribute vec2 inPosition;',
-
-                'varying vec2 fragCoord;',
-                'varying vec2 outTexCoord;',
-
-                'void main () {',
-                '   gl_Position = uProjectionMatrix * uViewMatrix * vec4(inPosition, 1.0, 1.0);',
-                '   fragCoord = vec2(inPosition.x, uResolution.y - inPosition.y);',
-                '   outTexCoord = vec2(inPosition.x / uResolution.x, fragCoord.y / uResolution.y);',
-                '}'
-            ].join('\n');
-        }
-
-        if (uniforms === undefined) { uniforms = null; }
-
-        this.key = key;
-
-        this.fragmentSrc = fragmentSrc;
-
-        this.vertexSrc = vertexSrc;
-
-        this.uniforms = uniforms;
-    }
-
-});
-
-module.exports = BaseShader;
+var Class = require('../../utils/Class');var BaseShader = new Class({    initialize:    function BaseShader (key, fragmentSrc, vertexSrc, uniforms)    {        if (!fragmentSrc || fragmentSrc === '')        {            fragmentSrc = [                'precision mediump float;',                'uniform vec2 resolution;',                'varying vec2 fragCoord;',                'void main () {',                '    vec2 uv = fragCoord / resolution.xy;',                '    gl_FragColor = vec4(uv.xyx, 1.0);',                '}'            ].join('\n');        }        if (!vertexSrc || vertexSrc === '')        {            vertexSrc = [                'precision mediump float;',                'uniform mat4 uProjectionMatrix;',                'uniform mat4 uViewMatrix;',                'uniform vec2 uResolution;',                'attribute vec2 inPosition;',                'varying vec2 fragCoord;',                'varying vec2 outTexCoord;',                'void main () {',                '   gl_Position = uProjectionMatrix * uViewMatrix * vec4(inPosition, 1.0, 1.0);',                '   fragCoord = vec2(inPosition.x, uResolution.y - inPosition.y);',                '   outTexCoord = vec2(inPosition.x / uResolution.x, fragCoord.y / uResolution.y);',                '}'            ].join('\n');        }        if (uniforms === undefined) { uniforms = null; }        this.key = key;        this.fragmentSrc = fragmentSrc;        this.vertexSrc = vertexSrc;        this.uniforms = uniforms;    }});module.exports = BaseShader;

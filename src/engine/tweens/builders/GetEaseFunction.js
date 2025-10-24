@@ -1,74 +1,1 @@
-var EaseMap = require('../../math/easing/EaseMap');
-var UppercaseFirst = require('../../utils/string/UppercaseFirst');
-
-var GetEaseFunction = function (ease, easeParams)
-{
-
-    var easeFunction = EaseMap.Power0;
-
-    if (typeof ease === 'string')
-    {
-
-        if (EaseMap.hasOwnProperty(ease))
-        {
-            easeFunction = EaseMap[ease];
-        }
-        else
-        {
-
-            var direction = '';
-
-            if (ease.indexOf('.'))
-            {
-
-                direction = ease.substring(ease.indexOf('.') + 1);
-
-                var directionLower = direction.toLowerCase();
-
-                if (directionLower === 'in')
-                {
-                    direction = 'easeIn';
-                }
-                else if (directionLower === 'out')
-                {
-                    direction = 'easeOut';
-                }
-                else if (directionLower === 'inout')
-                {
-                    direction = 'easeInOut';
-                }
-            }
-
-            ease = UppercaseFirst(ease.substring(0, ease.indexOf('.') + 1) + direction);
-
-            if (EaseMap.hasOwnProperty(ease))
-            {
-                easeFunction = EaseMap[ease];
-            }
-        }
-    }
-    else if (typeof ease === 'function')
-    {
-
-        easeFunction = ease;
-    }
-
-    if (!easeParams)
-    {
-
-        return easeFunction;
-    }
-
-    var cloneParams = easeParams.slice(0);
-
-    cloneParams.unshift(0);
-
-    return function (v)
-    {
-        cloneParams[0] = v;
-
-        return easeFunction.apply(this, cloneParams);
-    };
-};
-
-module.exports = GetEaseFunction;
+var EaseMap = require('../../math/easing/EaseMap');var UppercaseFirst = require('../../utils/string/UppercaseFirst');var GetEaseFunction = function (ease, easeParams){    var easeFunction = EaseMap.Power0;    if (typeof ease === 'string')    {        if (EaseMap.hasOwnProperty(ease))        {            easeFunction = EaseMap[ease];        }        else        {            var direction = '';            if (ease.indexOf('.'))            {                direction = ease.substring(ease.indexOf('.') + 1);                var directionLower = direction.toLowerCase();                if (directionLower === 'in')                {                    direction = 'easeIn';                }                else if (directionLower === 'out')                {                    direction = 'easeOut';                }                else if (directionLower === 'inout')                {                    direction = 'easeInOut';                }            }            ease = UppercaseFirst(ease.substring(0, ease.indexOf('.') + 1) + direction);            if (EaseMap.hasOwnProperty(ease))            {                easeFunction = EaseMap[ease];            }        }    }    else if (typeof ease === 'function')    {        easeFunction = ease;    }    if (!easeParams)    {        return easeFunction;    }    var cloneParams = easeParams.slice(0);    cloneParams.unshift(0);    return function (v)    {        cloneParams[0] = v;        return easeFunction.apply(this, cloneParams);    };};module.exports = GetEaseFunction;

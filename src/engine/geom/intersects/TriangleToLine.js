@@ -1,29 +1,1 @@
-var LineToLine = require('./LineToLine');
-
-var TriangleToLine = function (triangle, line)
-{
-
-    if (triangle.contains(line.x1, line.y1) || triangle.contains(line.x2, line.y2))
-    {
-        return true;
-    }
-
-    if (LineToLine(triangle.getLineA(), line))
-    {
-        return true;
-    }
-
-    if (LineToLine(triangle.getLineB(), line))
-    {
-        return true;
-    }
-
-    if (LineToLine(triangle.getLineC(), line))
-    {
-        return true;
-    }
-
-    return false;
-};
-
-module.exports = TriangleToLine;
+var LineToLine = require('./LineToLine');var TriangleToLine = function (triangle, line){    if (triangle.contains(line.x1, line.y1) || triangle.contains(line.x2, line.y2))    {        return true;    }    if (LineToLine(triangle.getLineA(), line))    {        return true;    }    if (LineToLine(triangle.getLineB(), line))    {        return true;    }    if (LineToLine(triangle.getLineC(), line))    {        return true;    }    return false;};module.exports = TriangleToLine;

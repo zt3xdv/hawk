@@ -1,16 +1,1 @@
-var Point = require('../point/Point');
-
-var CircumferencePoint = function (ellipse, angle, out)
-{
-    if (out === undefined) { out = new Point(); }
-
-    var halfWidth = ellipse.width / 2;
-    var halfHeight = ellipse.height / 2;
-
-    out.x = ellipse.x + halfWidth * Math.cos(angle);
-    out.y = ellipse.y + halfHeight * Math.sin(angle);
-
-    return out;
-};
-
-module.exports = CircumferencePoint;
+var Point = require('../point/Point');var CircumferencePoint = function (ellipse, angle, out){    if (out === undefined) { out = new Point(); }    var halfWidth = ellipse.width / 2;    var halfHeight = ellipse.height / 2;    out.x = ellipse.x + halfWidth * Math.cos(angle);    out.y = ellipse.y + halfHeight * Math.sin(angle);    return out;};module.exports = CircumferencePoint;

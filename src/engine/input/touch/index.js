@@ -1,5 +1,1 @@
-module.exports = {
-
-    TouchManager: require('./TouchManager')
-
-};
+module.exports = {    TouchManager: require('./TouchManager')};

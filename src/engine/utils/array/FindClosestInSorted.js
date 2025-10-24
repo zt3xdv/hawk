@@ -1,57 +1,1 @@
-var FindClosestInSorted = function (value, array, key)
-{
-    if (!array.length)
-    {
-        return NaN;
-    }
-    else if (array.length === 1)
-    {
-        return array[0];
-    }
-
-    var i = 1;
-    var low;
-    var high;
-
-    if (key)
-    {
-        if (value < array[0][key])
-        {
-            return array[0];
-        }
-
-        while (array[i][key] < value)
-        {
-            i++;
-        }
-    }
-    else
-    {
-        while (array[i] < value)
-        {
-            i++;
-        }
-    }
-
-    if (i > array.length)
-    {
-        i = array.length;
-    }
-
-    if (key)
-    {
-        low = array[i - 1][key];
-        high = array[i][key];
-
-        return ((high - value) <= (value - low)) ? array[i] : array[i - 1];
-    }
-    else
-    {
-        low = array[i - 1];
-        high = array[i];
-
-        return ((high - value) <= (value - low)) ? high : low;
-    }
-};
-
-module.exports = FindClosestInSorted;
+var FindClosestInSorted = function (value, array, key){    if (!array.length)    {        return NaN;    }    else if (array.length === 1)    {        return array[0];    }    var i = 1;    var low;    var high;    if (key)    {        if (value < array[0][key])        {            return array[0];        }        while (array[i][key] < value)        {            i++;        }    }    else    {        while (array[i] < value)        {            i++;        }    }    if (i > array.length)    {        i = array.length;    }    if (key)    {        low = array[i - 1][key];        high = array[i][key];        return ((high - value) <= (value - low)) ? array[i] : array[i - 1];    }    else    {        low = array[i - 1];        high = array[i];        return ((high - value) <= (value - low)) ? high : low;    }};module.exports = FindClosestInSorted;

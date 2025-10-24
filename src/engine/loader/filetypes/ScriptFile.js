@@ -1,86 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var CONST = require('../const');
-var File = require('../File');
-var FileTypesManager = require('../FileTypesManager');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-
-
-var ScriptFile = new Class({
-
-    Extends: File,
-
-    initialize:
-
-    function ScriptFile (loader, key, url, type, xhrSettings)
-    {
-        var extension = 'js';
-
-        if (IsPlainObject(key))
-        {
-            var config = key;
-
-            key = GetFastValue(config, 'key');
-            url = GetFastValue(config, 'url');
-            type = GetFastValue(config, 'type', 'script');
-            xhrSettings = GetFastValue(config, 'xhrSettings');
-            extension = GetFastValue(config, 'extension', extension);
-        }
-        else if (type === undefined)
-        {
-            type = 'script';
-        }
-
-        var fileConfig = {
-            type: type,
-            cache: false,
-            extension: extension,
-            responseType: 'text',
-            key: key,
-            url: url,
-            xhrSettings: xhrSettings
-        };
-
-        File.call(this, loader, fileConfig);
-    },
-
-    
-    onProcess: function ()
-    {
-        this.state = CONST.FILE_PROCESSING;
-
-        this.data = document.createElement('script');
-        this.data.language = 'javascript';
-        this.data.type = 'text/javascript';
-        this.data.defer = false;
-        this.data.text = this.xhrLoader.responseText;
-
-        document.head.appendChild(this.data);
-
-        this.onProcessComplete();
-    }
-
-});
-
-
-FileTypesManager.register('script', function (key, url, type, xhrSettings)
-{
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object
-            this.addFile(new ScriptFile(this, key[i]));
-        }
-    }
-    else
-    {
-        this.addFile(new ScriptFile(this, key, url, type, xhrSettings));
-    }
-
-    return this;
-});
-
-module.exports = ScriptFile;
+var Class = require('../../utils/Class');var CONST = require('../const');var File = require('../File');var FileTypesManager = require('../FileTypesManager');var GetFastValue = require('../../utils/object/GetFastValue');var IsPlainObject = require('../../utils/object/IsPlainObject');var ScriptFile = new Class({    Extends: File,    initialize:    function ScriptFile (loader, key, url, type, xhrSettings)    {        var extension = 'js';        if (IsPlainObject(key))        {            var config = key;            key = GetFastValue(config, 'key');            url = GetFastValue(config, 'url');            type = GetFastValue(config, 'type', 'script');            xhrSettings = GetFastValue(config, 'xhrSettings');            extension = GetFastValue(config, 'extension', extension);        }        else if (type === undefined)        {            type = 'script';        }        var fileConfig = {            type: type,            cache: false,            extension: extension,            responseType: 'text',            key: key,            url: url,            xhrSettings: xhrSettings        };        File.call(this, loader, fileConfig);    },        onProcess: function ()    {        this.state = CONST.FILE_PROCESSING;        this.data = document.createElement('script');        this.data.language = 'javascript';        this.data.type = 'text/javascript';        this.data.defer = false;        this.data.text = this.xhrLoader.responseText;        document.head.appendChild(this.data);        this.onProcessComplete();    }});FileTypesManager.register('script', function (key, url, type, xhrSettings){    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object            this.addFile(new ScriptFile(this, key[i]));        }    }    else    {        this.addFile(new ScriptFile(this, key, url, type, xhrSettings));    }    return this;});module.exports = ScriptFile;

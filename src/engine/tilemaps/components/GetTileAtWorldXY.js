@@ -1,13 +1,1 @@
-var GetTileAt = require('./GetTileAt');
-var Vector2 = require('../../math/Vector2');
-
-var point = new Vector2();
-
-var GetTileAtWorldXY = function (worldX, worldY, nonNull, camera, layer)
-{
-    layer.tilemapLayer.worldToTileXY(worldX, worldY, true, point, camera);
-
-    return GetTileAt(point.x, point.y, nonNull, layer);
-};
-
-module.exports = GetTileAtWorldXY;
+var GetTileAt = require('./GetTileAt');var Vector2 = require('../../math/Vector2');var point = new Vector2();var GetTileAtWorldXY = function (worldX, worldY, nonNull, camera, layer){    layer.tilemapLayer.worldToTileXY(worldX, worldY, true, point, camera);    return GetTileAt(point.x, point.y, nonNull, layer);};module.exports = GetTileAtWorldXY;

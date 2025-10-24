@@ -1,1 +1,1 @@
-module.exports = 'pan';
+module.exports = 'pan';

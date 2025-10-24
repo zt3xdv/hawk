@@ -1,29 +1,1 @@
-var Rectangle = require('../../geom/rectangle/Rectangle');
-var SnapCeil = require('../../math/snap/SnapCeil');
-var SnapFloor = require('../../math/snap/SnapFloor');
-
-var bounds = new Rectangle();
-
-var CullBounds = function (layer, camera)
-{
-    var tilemap = layer.tilemapLayer.tilemap;
-    var tilemapLayer = layer.tilemapLayer;
-
-    var tileW = Math.floor(tilemap.tileWidth * tilemapLayer.scaleX);
-    var tileH = Math.floor(tilemap.tileHeight * tilemapLayer.scaleY);
-
-    var boundsLeft = SnapFloor(camera.worldView.x - tilemapLayer.x, tileW, 0, true) - tilemapLayer.cullPaddingX;
-    var boundsRight = SnapCeil(camera.worldView.right - tilemapLayer.x, tileW, 0, true) + tilemapLayer.cullPaddingX;
-
-    var boundsTop = SnapFloor(camera.worldView.y - tilemapLayer.y, tileH, 0, true) - tilemapLayer.cullPaddingY;
-    var boundsBottom = SnapCeil(camera.worldView.bottom - tilemapLayer.y, tileH, 0, true) + tilemapLayer.cullPaddingY;
-
-    return bounds.setTo(
-        boundsLeft,
-        boundsTop,
-        (boundsRight - boundsLeft),
-        (boundsBottom - boundsTop)
-    );
-};
-
-module.exports = CullBounds;
+var Rectangle = require('../../geom/rectangle/Rectangle');var SnapCeil = require('../../math/snap/SnapCeil');var SnapFloor = require('../../math/snap/SnapFloor');var bounds = new Rectangle();var CullBounds = function (layer, camera){    var tilemap = layer.tilemapLayer.tilemap;    var tilemapLayer = layer.tilemapLayer;    var tileW = Math.floor(tilemap.tileWidth * tilemapLayer.scaleX);    var tileH = Math.floor(tilemap.tileHeight * tilemapLayer.scaleY);    var boundsLeft = SnapFloor(camera.worldView.x - tilemapLayer.x, tileW, 0, true) - tilemapLayer.cullPaddingX;    var boundsRight = SnapCeil(camera.worldView.right - tilemapLayer.x, tileW, 0, true) + tilemapLayer.cullPaddingX;    var boundsTop = SnapFloor(camera.worldView.y - tilemapLayer.y, tileH, 0, true) - tilemapLayer.cullPaddingY;    var boundsBottom = SnapCeil(camera.worldView.bottom - tilemapLayer.y, tileH, 0, true) + tilemapLayer.cullPaddingY;    return bounds.setTo(        boundsLeft,        boundsTop,        (boundsRight - boundsLeft),        (boundsBottom - boundsTop)    );};module.exports = CullBounds;

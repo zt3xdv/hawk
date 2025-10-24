@@ -1,97 +1,1 @@
-var Clone = require('../../utils/object/Clone');
-
-var JSONHash = function (texture, sourceIndex, json)
-{
-
-    if (!json['frames'])
-    {
-        console.warn('Invalid Texture Atlas JSON Hash given, missing \'frames\' Object');
-        return;
-    }
-
-    var source = texture.source[sourceIndex];
-
-    texture.add('__BASE', sourceIndex, 0, 0, source.width, source.height);
-
-    var frames = json.frames;
-    var newFrame;
-
-    for (var key in frames)
-    {
-        if (!frames.hasOwnProperty(key))
-        {
-            continue;
-        }
-
-        var src = frames[key];
-
-        newFrame = texture.add(key, sourceIndex, src.frame.x, src.frame.y, src.frame.w, src.frame.h);
-
-        if (!newFrame)
-        {
-            console.warn('Invalid atlas json, frame already exists: ' + key);
-
-            continue;
-        }
-
-        if (src.trimmed)
-        {
-            newFrame.setTrim(
-                src.sourceSize.w,
-                src.sourceSize.h,
-                src.spriteSourceSize.x,
-                src.spriteSourceSize.y,
-                src.spriteSourceSize.w,
-                src.spriteSourceSize.h
-            );
-        }
-
-        if (src.rotated)
-        {
-            newFrame.rotated = true;
-            newFrame.updateUVsInverted();
-        }
-
-        var pivot = src.anchor || src.pivot;
-
-        if (pivot)
-        {
-            newFrame.customPivot = true;
-            newFrame.pivotX = pivot.x;
-            newFrame.pivotY = pivot.y;
-        }
-
-        if (src.scale9Borders)
-        {
-            newFrame.setScale9(
-                src.scale9Borders.x,
-                src.scale9Borders.y,
-                src.scale9Borders.w,
-                src.scale9Borders.h
-            );
-        }
-
-        newFrame.customData = Clone(src);
-    }
-
-    for (var dataKey in json)
-    {
-        if (dataKey === 'frames')
-        {
-            continue;
-        }
-
-        if (Array.isArray(json[dataKey]))
-        {
-            texture.customData[dataKey] = json[dataKey].slice(0);
-        }
-        else
-        {
-            texture.customData[dataKey] = json[dataKey];
-        }
-    }
-
-    return texture;
-};
-
-module.exports = JSONHash;
+var Clone = require('../../utils/object/Clone');var JSONHash = function (texture, sourceIndex, json){    if (!json['frames'])    {        console.warn('Invalid Texture Atlas JSON Hash given, missing \'frames\' Object');        return;    }    var source = texture.source[sourceIndex];    texture.add('__BASE', sourceIndex, 0, 0, source.width, source.height);    var frames = json.frames;    var newFrame;    for (var key in frames)    {        if (!frames.hasOwnProperty(key))        {            continue;        }        var src = frames[key];        newFrame = texture.add(key, sourceIndex, src.frame.x, src.frame.y, src.frame.w, src.frame.h);        if (!newFrame)        {            console.warn('Invalid atlas json, frame already exists: ' + key);            continue;        }        if (src.trimmed)        {            newFrame.setTrim(                src.sourceSize.w,                src.sourceSize.h,                src.spriteSourceSize.x,                src.spriteSourceSize.y,                src.spriteSourceSize.w,                src.spriteSourceSize.h            );        }        if (src.rotated)        {            newFrame.rotated = true;            newFrame.updateUVsInverted();        }        var pivot = src.anchor || src.pivot;        if (pivot)        {            newFrame.customPivot = true;            newFrame.pivotX = pivot.x;            newFrame.pivotY = pivot.y;        }        if (src.scale9Borders)        {            newFrame.setScale9(                src.scale9Borders.x,                src.scale9Borders.y,                src.scale9Borders.w,                src.scale9Borders.h            );        }        newFrame.customData = Clone(src);    }    for (var dataKey in json)    {        if (dataKey === 'frames')        {            continue;        }        if (Array.isArray(json[dataKey]))        {            texture.customData[dataKey] = json[dataKey].slice(0);        }        else        {            texture.customData[dataKey] = json[dataKey];        }    }    return texture;};module.exports = JSONHash;

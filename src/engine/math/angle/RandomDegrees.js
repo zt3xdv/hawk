@@ -1,8 +1,1 @@
-var FloatBetween = require('../FloatBetween');
-
-var RandomDegrees = function ()
-{
-    return FloatBetween(-180, 180);
-};
-
-module.exports = RandomDegrees;
+var FloatBetween = require('../FloatBetween');var RandomDegrees = function (){    return FloatBetween(-180, 180);};module.exports = RandomDegrees;

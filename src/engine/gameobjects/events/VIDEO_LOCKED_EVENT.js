@@ -1,1 +1,1 @@
-module.exports = 'locked';
+module.exports = 'locked';

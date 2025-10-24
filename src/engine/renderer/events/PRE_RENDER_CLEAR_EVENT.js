@@ -1,1 +1,1 @@
-module.exports = 'prerenderclear';
+module.exports = 'prerenderclear';

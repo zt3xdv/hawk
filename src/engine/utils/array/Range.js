@@ -1,85 +1,1 @@
-var GetValue = require('../object/GetValue');
-var Shuffle = require('./Shuffle');
-
-var BuildChunk = function (a, b, qty)
-{
-    var out = [];
-
-    for (var aIndex = 0; aIndex < a.length; aIndex++)
-    {
-        for (var bIndex = 0; bIndex < b.length; bIndex++)
-        {
-            for (var i = 0; i < qty; i++)
-            {
-                out.push({ a: a[aIndex], b: b[bIndex] });
-            }
-        }
-    }
-
-    return out;
-};
-
-var Range = function (a, b, options)
-{
-    var max = GetValue(options, 'max', 0);
-    var qty = GetValue(options, 'qty', 1);
-    var random = GetValue(options, 'random', false);
-    var randomB = GetValue(options, 'randomB', false);
-    var repeat = GetValue(options, 'repeat', 0);
-    var yoyo = GetValue(options, 'yoyo', false);
-
-    var out = [];
-
-    if (randomB)
-    {
-        Shuffle(b);
-    }
-
-    if (repeat === -1)
-    {
-        if (max === 0)
-        {
-            repeat = 0;
-        }
-        else
-        {
-
-            var total = (a.length * b.length) * qty;
-
-            if (yoyo)
-            {
-                total *= 2;
-            }
-
-            repeat = Math.ceil(max / total);
-        }
-    }
-
-    for (var i = 0; i <= repeat; i++)
-    {
-        var chunk = BuildChunk(a, b, qty);
-
-        if (random)
-        {
-            Shuffle(chunk);
-        }
-
-        out = out.concat(chunk);
-
-        if (yoyo)
-        {
-            chunk.reverse();
-
-            out = out.concat(chunk);
-        }
-    }
-
-    if (max)
-    {
-        out.splice(max);
-    }
-
-    return out;
-};
-
-module.exports = Range;
+var GetValue = require('../object/GetValue');var Shuffle = require('./Shuffle');var BuildChunk = function (a, b, qty){    var out = [];    for (var aIndex = 0; aIndex < a.length; aIndex++)    {        for (var bIndex = 0; bIndex < b.length; bIndex++)        {            for (var i = 0; i < qty; i++)            {                out.push({ a: a[aIndex], b: b[bIndex] });            }        }    }    return out;};var Range = function (a, b, options){    var max = GetValue(options, 'max', 0);    var qty = GetValue(options, 'qty', 1);    var random = GetValue(options, 'random', false);    var randomB = GetValue(options, 'randomB', false);    var repeat = GetValue(options, 'repeat', 0);    var yoyo = GetValue(options, 'yoyo', false);    var out = [];    if (randomB)    {        Shuffle(b);    }    if (repeat === -1)    {        if (max === 0)        {            repeat = 0;        }        else        {            var total = (a.length * b.length) * qty;            if (yoyo)            {                total *= 2;            }            repeat = Math.ceil(max / total);        }    }    for (var i = 0; i <= repeat; i++)    {        var chunk = BuildChunk(a, b, qty);        if (random)        {            Shuffle(chunk);        }        out = out.concat(chunk);        if (yoyo)        {            chunk.reverse();            out = out.concat(chunk);        }    }    if (max)    {        out.splice(max);    }    return out;};module.exports = Range;

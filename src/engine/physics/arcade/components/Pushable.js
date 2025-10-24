@@ -1,14 +1,1 @@
-var Pushable = {
-
-    setPushable: function (value)
-    {
-        if (value === undefined) { value = true; }
-
-        this.body.pushable = value;
-
-        return this;
-    }
-
-};
-
-module.exports = Pushable;
+var Pushable = {    setPushable: function (value)    {        if (value === undefined) { value = true; }        this.body.pushable = value;        return this;    }};module.exports = Pushable;

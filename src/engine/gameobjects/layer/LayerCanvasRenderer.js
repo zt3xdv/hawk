@@ -1,57 +1,1 @@
-var LayerCanvasRenderer = function (renderer, layer, camera)
-{
-    var children = layer.list;
-
-    if (children.length === 0)
-    {
-        return;
-    }
-
-    layer.depthSort();
-
-    var layerHasBlendMode = (layer.blendMode !== -1);
-
-    if (!layerHasBlendMode)
-    {
-
-        renderer.setBlendMode(0);
-    }
-
-    var alpha = layer._alpha;
-
-    if (layer.mask)
-    {
-        layer.mask.preRenderCanvas(renderer, null, camera);
-    }
-
-    for (var i = 0; i < children.length; i++)
-    {
-        var child = children[i];
-
-        if (!child.willRender(camera))
-        {
-            continue;
-        }
-
-        var childAlpha = child.alpha;
-
-        if (!layerHasBlendMode && child.blendMode !== renderer.currentBlendMode)
-        {
-
-            renderer.setBlendMode(child.blendMode);
-        }
-
-        child.setAlpha(childAlpha * alpha);
-
-        child.renderCanvas(renderer, child, camera);
-
-        child.setAlpha(childAlpha);
-    }
-
-    if (layer.mask)
-    {
-        layer.mask.postRenderCanvas(renderer);
-    }
-};
-
-module.exports = LayerCanvasRenderer;
+var LayerCanvasRenderer = function (renderer, layer, camera){    var children = layer.list;    if (children.length === 0)    {        return;    }    layer.depthSort();    var layerHasBlendMode = (layer.blendMode !== -1);    if (!layerHasBlendMode)    {        renderer.setBlendMode(0);    }    var alpha = layer._alpha;    if (layer.mask)    {        layer.mask.preRenderCanvas(renderer, null, camera);    }    for (var i = 0; i < children.length; i++)    {        var child = children[i];        if (!child.willRender(camera))        {            continue;        }        var childAlpha = child.alpha;        if (!layerHasBlendMode && child.blendMode !== renderer.currentBlendMode)        {            renderer.setBlendMode(child.blendMode);        }        child.setAlpha(childAlpha * alpha);        child.renderCanvas(renderer, child, camera);        child.setAlpha(childAlpha);    }    if (layer.mask)    {        layer.mask.postRenderCanvas(renderer);    }};module.exports = LayerCanvasRenderer;

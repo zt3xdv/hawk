@@ -1,12 +1,1 @@
-var Arc = require('./Arc');
-var GameObjectFactory = require('../../GameObjectFactory');
-
-GameObjectFactory.register('arc', function (x, y, radius, startAngle, endAngle, anticlockwise, fillColor, fillAlpha)
-{
-    return this.displayList.add(new Arc(this.scene, x, y, radius, startAngle, endAngle, anticlockwise, fillColor, fillAlpha));
-});
-
-GameObjectFactory.register('circle', function (x, y, radius, fillColor, fillAlpha)
-{
-    return this.displayList.add(new Arc(this.scene, x, y, radius, 0, 360, false, fillColor, fillAlpha));
-});
+var Arc = require('./Arc');var GameObjectFactory = require('../../GameObjectFactory');GameObjectFactory.register('arc', function (x, y, radius, startAngle, endAngle, anticlockwise, fillColor, fillAlpha){    return this.displayList.add(new Arc(this.scene, x, y, radius, startAngle, endAngle, anticlockwise, fillColor, fillAlpha));});GameObjectFactory.register('circle', function (x, y, radius, fillColor, fillAlpha){    return this.displayList.add(new Arc(this.scene, x, y, radius, 0, 360, false, fillColor, fillAlpha));});

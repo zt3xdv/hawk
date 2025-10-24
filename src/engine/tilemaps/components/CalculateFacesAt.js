@@ -1,68 +1,1 @@
-var GetTileAt = require('./GetTileAt');
-
-var CalculateFacesAt = function (tileX, tileY, layer)
-{
-    var tile = GetTileAt(tileX, tileY, true, layer);
-    var above = GetTileAt(tileX, tileY - 1, true, layer);
-    var below = GetTileAt(tileX, tileY + 1, true, layer);
-    var left = GetTileAt(tileX - 1, tileY, true, layer);
-    var right = GetTileAt(tileX + 1, tileY, true, layer);
-    var tileCollides = tile && tile.collides;
-
-    if (tileCollides)
-    {
-        tile.faceTop = true;
-        tile.faceBottom = true;
-        tile.faceLeft = true;
-        tile.faceRight = true;
-    }
-
-    if (above && above.collides)
-    {
-        if (tileCollides)
-        {
-            tile.faceTop = false;
-        }
-
-        above.faceBottom = !tileCollides;
-    }
-
-    if (below && below.collides)
-    {
-        if (tileCollides)
-        {
-            tile.faceBottom = false;
-        }
-
-        below.faceTop = !tileCollides;
-    }
-
-    if (left && left.collides)
-    {
-        if (tileCollides)
-        {
-            tile.faceLeft = false;
-        }
-
-        left.faceRight = !tileCollides;
-    }
-
-    if (right && right.collides)
-    {
-        if (tileCollides)
-        {
-            tile.faceRight = false;
-        }
-
-        right.faceLeft = !tileCollides;
-    }
-
-    if (tile && !tile.collides)
-    {
-        tile.resetFaces();
-    }
-
-    return tile;
-};
-
-module.exports = CalculateFacesAt;
+var GetTileAt = require('./GetTileAt');var CalculateFacesAt = function (tileX, tileY, layer){    var tile = GetTileAt(tileX, tileY, true, layer);    var above = GetTileAt(tileX, tileY - 1, true, layer);    var below = GetTileAt(tileX, tileY + 1, true, layer);    var left = GetTileAt(tileX - 1, tileY, true, layer);    var right = GetTileAt(tileX + 1, tileY, true, layer);    var tileCollides = tile && tile.collides;    if (tileCollides)    {        tile.faceTop = true;        tile.faceBottom = true;        tile.faceLeft = true;        tile.faceRight = true;    }    if (above && above.collides)    {        if (tileCollides)        {            tile.faceTop = false;        }        above.faceBottom = !tileCollides;    }    if (below && below.collides)    {        if (tileCollides)        {            tile.faceBottom = false;        }        below.faceTop = !tileCollides;    }    if (left && left.collides)    {        if (tileCollides)        {            tile.faceLeft = false;        }        left.faceRight = !tileCollides;    }    if (right && right.collides)    {        if (tileCollides)        {            tile.faceRight = false;        }        right.faceLeft = !tileCollides;    }    if (tile && !tile.collides)    {        tile.resetFaces();    }    return tile;};module.exports = CalculateFacesAt;

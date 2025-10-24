@@ -1,183 +1,1 @@
-var Rectangle = require('../../geom/rectangle/Rectangle');
-var RotateAround = require('../../math/RotateAround');
-var Vector2 = require('../../math/Vector2');
-
-var GetBounds = {
-
-    prepareBoundsOutput: function (output, includeParent)
-    {
-        if (includeParent === undefined) { includeParent = false; }
-
-        if (this.rotation !== 0)
-        {
-            RotateAround(output, this.x, this.y, this.rotation);
-        }
-
-        if (includeParent && this.parentContainer)
-        {
-            var parentMatrix = this.parentContainer.getBoundsTransformMatrix();
-
-            parentMatrix.transformPoint(output.x, output.y, output);
-        }
-
-        return output;
-    },
-
-    getCenter: function (output, includeParent)
-    {
-        if (output === undefined) { output = new Vector2(); }
-
-        output.x = this.x - (this.displayWidth * this.originX) + (this.displayWidth / 2);
-        output.y = this.y - (this.displayHeight * this.originY) + (this.displayHeight / 2);
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getTopLeft: function (output, includeParent)
-    {
-        if (!output) { output = new Vector2(); }
-
-        output.x = this.x - (this.displayWidth * this.originX);
-        output.y = this.y - (this.displayHeight * this.originY);
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getTopCenter: function (output, includeParent)
-    {
-        if (!output) { output = new Vector2(); }
-
-        output.x = (this.x - (this.displayWidth * this.originX)) + (this.displayWidth / 2);
-        output.y = this.y - (this.displayHeight * this.originY);
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getTopRight: function (output, includeParent)
-    {
-        if (!output) { output = new Vector2(); }
-
-        output.x = (this.x - (this.displayWidth * this.originX)) + this.displayWidth;
-        output.y = this.y - (this.displayHeight * this.originY);
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getLeftCenter: function (output, includeParent)
-    {
-        if (!output) { output = new Vector2(); }
-
-        output.x = this.x - (this.displayWidth * this.originX);
-        output.y = (this.y - (this.displayHeight * this.originY)) + (this.displayHeight / 2);
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getRightCenter: function (output, includeParent)
-    {
-        if (!output) { output = new Vector2(); }
-
-        output.x = (this.x - (this.displayWidth * this.originX)) + this.displayWidth;
-        output.y = (this.y - (this.displayHeight * this.originY)) + (this.displayHeight / 2);
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getBottomLeft: function (output, includeParent)
-    {
-        if (!output) { output = new Vector2(); }
-
-        output.x = this.x - (this.displayWidth * this.originX);
-        output.y = (this.y - (this.displayHeight * this.originY)) + this.displayHeight;
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getBottomCenter: function (output, includeParent)
-    {
-        if (!output) { output = new Vector2(); }
-
-        output.x = (this.x - (this.displayWidth * this.originX)) + (this.displayWidth / 2);
-        output.y = (this.y - (this.displayHeight * this.originY)) + this.displayHeight;
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getBottomRight: function (output, includeParent)
-    {
-        if (!output) { output = new Vector2(); }
-
-        output.x = (this.x - (this.displayWidth * this.originX)) + this.displayWidth;
-        output.y = (this.y - (this.displayHeight * this.originY)) + this.displayHeight;
-
-        return this.prepareBoundsOutput(output, includeParent);
-    },
-
-    getBounds: function (output)
-    {
-        if (output === undefined) { output = new Rectangle(); }
-
-        var TLx, TLy, TRx, TRy, BLx, BLy, BRx, BRy;
-
-        if (this.parentContainer)
-        {
-            var parentMatrix = this.parentContainer.getBoundsTransformMatrix();
-
-            this.getTopLeft(output);
-            parentMatrix.transformPoint(output.x, output.y, output);
-
-            TLx = output.x;
-            TLy = output.y;
-
-            this.getTopRight(output);
-            parentMatrix.transformPoint(output.x, output.y, output);
-
-            TRx = output.x;
-            TRy = output.y;
-
-            this.getBottomLeft(output);
-            parentMatrix.transformPoint(output.x, output.y, output);
-
-            BLx = output.x;
-            BLy = output.y;
-
-            this.getBottomRight(output);
-            parentMatrix.transformPoint(output.x, output.y, output);
-
-            BRx = output.x;
-            BRy = output.y;
-        }
-        else
-        {
-            this.getTopLeft(output);
-
-            TLx = output.x;
-            TLy = output.y;
-
-            this.getTopRight(output);
-
-            TRx = output.x;
-            TRy = output.y;
-
-            this.getBottomLeft(output);
-
-            BLx = output.x;
-            BLy = output.y;
-
-            this.getBottomRight(output);
-
-            BRx = output.x;
-            BRy = output.y;
-        }
-
-        output.x = Math.min(TLx, TRx, BLx, BRx);
-        output.y = Math.min(TLy, TRy, BLy, BRy);
-        output.width = Math.max(TLx, TRx, BLx, BRx) - output.x;
-        output.height = Math.max(TLy, TRy, BLy, BRy) - output.y;
-
-        return output;
-    }
-
-};
-
-module.exports = GetBounds;
+var Rectangle = require('../../geom/rectangle/Rectangle');var RotateAround = require('../../math/RotateAround');var Vector2 = require('../../math/Vector2');var GetBounds = {    prepareBoundsOutput: function (output, includeParent)    {        if (includeParent === undefined) { includeParent = false; }        if (this.rotation !== 0)        {            RotateAround(output, this.x, this.y, this.rotation);        }        if (includeParent && this.parentContainer)        {            var parentMatrix = this.parentContainer.getBoundsTransformMatrix();            parentMatrix.transformPoint(output.x, output.y, output);        }        return output;    },    getCenter: function (output, includeParent)    {        if (output === undefined) { output = new Vector2(); }        output.x = this.x - (this.displayWidth * this.originX) + (this.displayWidth / 2);        output.y = this.y - (this.displayHeight * this.originY) + (this.displayHeight / 2);        return this.prepareBoundsOutput(output, includeParent);    },    getTopLeft: function (output, includeParent)    {        if (!output) { output = new Vector2(); }        output.x = this.x - (this.displayWidth * this.originX);        output.y = this.y - (this.displayHeight * this.originY);        return this.prepareBoundsOutput(output, includeParent);    },    getTopCenter: function (output, includeParent)    {        if (!output) { output = new Vector2(); }        output.x = (this.x - (this.displayWidth * this.originX)) + (this.displayWidth / 2);        output.y = this.y - (this.displayHeight * this.originY);        return this.prepareBoundsOutput(output, includeParent);    },    getTopRight: function (output, includeParent)    {        if (!output) { output = new Vector2(); }        output.x = (this.x - (this.displayWidth * this.originX)) + this.displayWidth;        output.y = this.y - (this.displayHeight * this.originY);        return this.prepareBoundsOutput(output, includeParent);    },    getLeftCenter: function (output, includeParent)    {        if (!output) { output = new Vector2(); }        output.x = this.x - (this.displayWidth * this.originX);        output.y = (this.y - (this.displayHeight * this.originY)) + (this.displayHeight / 2);        return this.prepareBoundsOutput(output, includeParent);    },    getRightCenter: function (output, includeParent)    {        if (!output) { output = new Vector2(); }        output.x = (this.x - (this.displayWidth * this.originX)) + this.displayWidth;        output.y = (this.y - (this.displayHeight * this.originY)) + (this.displayHeight / 2);        return this.prepareBoundsOutput(output, includeParent);    },    getBottomLeft: function (output, includeParent)    {        if (!output) { output = new Vector2(); }        output.x = this.x - (this.displayWidth * this.originX);        output.y = (this.y - (this.displayHeight * this.originY)) + this.displayHeight;        return this.prepareBoundsOutput(output, includeParent);    },    getBottomCenter: function (output, includeParent)    {        if (!output) { output = new Vector2(); }        output.x = (this.x - (this.displayWidth * this.originX)) + (this.displayWidth / 2);        output.y = (this.y - (this.displayHeight * this.originY)) + this.displayHeight;        return this.prepareBoundsOutput(output, includeParent);    },    getBottomRight: function (output, includeParent)    {        if (!output) { output = new Vector2(); }        output.x = (this.x - (this.displayWidth * this.originX)) + this.displayWidth;        output.y = (this.y - (this.displayHeight * this.originY)) + this.displayHeight;        return this.prepareBoundsOutput(output, includeParent);    },    getBounds: function (output)    {        if (output === undefined) { output = new Rectangle(); }        var TLx, TLy, TRx, TRy, BLx, BLy, BRx, BRy;        if (this.parentContainer)        {            var parentMatrix = this.parentContainer.getBoundsTransformMatrix();            this.getTopLeft(output);            parentMatrix.transformPoint(output.x, output.y, output);            TLx = output.x;            TLy = output.y;            this.getTopRight(output);            parentMatrix.transformPoint(output.x, output.y, output);            TRx = output.x;            TRy = output.y;            this.getBottomLeft(output);            parentMatrix.transformPoint(output.x, output.y, output);            BLx = output.x;            BLy = output.y;            this.getBottomRight(output);            parentMatrix.transformPoint(output.x, output.y, output);            BRx = output.x;            BRy = output.y;        }        else        {            this.getTopLeft(output);            TLx = output.x;            TLy = output.y;            this.getTopRight(output);            TRx = output.x;            TRy = output.y;            this.getBottomLeft(output);            BLx = output.x;            BLy = output.y;            this.getBottomRight(output);            BRx = output.x;            BRy = output.y;        }        output.x = Math.min(TLx, TRx, BLx, BRx);        output.y = Math.min(TLy, TRy, BLy, BRy);        output.width = Math.max(TLx, TRx, BLx, BRx) - output.x;        output.height = Math.max(TLy, TRy, BLy, BRy) - output.y;        return output;    }};module.exports = GetBounds;

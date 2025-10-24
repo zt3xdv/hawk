@@ -1,6 +1,1 @@
-var In = function (v)
-{
-    return v * v * v * v;
-};
-
-module.exports = In;
+var In = function (v){    return v * v * v * v;};module.exports = In;

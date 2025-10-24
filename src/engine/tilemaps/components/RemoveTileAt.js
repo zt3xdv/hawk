@@ -1,34 +1,1 @@
-var Tile = require('../Tile');
-var IsInLayerBounds = require('./IsInLayerBounds');
-var CalculateFacesAt = require('./CalculateFacesAt');
-
-var RemoveTileAt = function (tileX, tileY, replaceWithNull, recalculateFaces, layer)
-{
-    if (replaceWithNull === undefined) { replaceWithNull = true; }
-    if (recalculateFaces === undefined) { recalculateFaces = true; }
-
-    if (!IsInLayerBounds(tileX, tileY, layer))
-    {
-        return null;
-    }
-
-    var tile = layer.data[tileY][tileX];
-
-    if (!tile)
-    {
-        return null;
-    }
-    else
-    {
-        layer.data[tileY][tileX] = (replaceWithNull) ? null : new Tile(layer, -1, tileX, tileY, layer.tileWidth, layer.tileHeight);
-    }
-
-    if (recalculateFaces && tile && tile.collides)
-    {
-        CalculateFacesAt(tileX, tileY, layer);
-    }
-
-    return tile;
-};
-
-module.exports = RemoveTileAt;
+var Tile = require('../Tile');var IsInLayerBounds = require('./IsInLayerBounds');var CalculateFacesAt = require('./CalculateFacesAt');var RemoveTileAt = function (tileX, tileY, replaceWithNull, recalculateFaces, layer){    if (replaceWithNull === undefined) { replaceWithNull = true; }    if (recalculateFaces === undefined) { recalculateFaces = true; }    if (!IsInLayerBounds(tileX, tileY, layer))    {        return null;    }    var tile = layer.data[tileY][tileX];    if (!tile)    {        return null;    }    else    {        layer.data[tileY][tileX] = (replaceWithNull) ? null : new Tile(layer, -1, tileX, tileY, layer.tileWidth, layer.tileHeight);    }    if (recalculateFaces && tile && tile.collides)    {        CalculateFacesAt(tileX, tileY, layer);    }    return tile;};module.exports = RemoveTileAt;

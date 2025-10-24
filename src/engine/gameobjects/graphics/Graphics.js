@@ -1,787 +1,1 @@
-var BaseCamera = require('../../cameras/2d/BaseCamera');
-var Class = require('../../utils/Class');
-var Commands = require('./Commands');
-var Components = require('../components');
-var Ellipse = require('../../geom/ellipse/Ellipse');
-var GameObject = require('../GameObject');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var GetValue = require('../../utils/object/GetValue');
-var MATH_CONST = require('../../math/const');
-var Render = require('./GraphicsRender');
-
-var Graphics = new Class({
-
-    Extends: GameObject,
-
-    Mixins: [
-        Components.AlphaSingle,
-        Components.BlendMode,
-        Components.Depth,
-        Components.Mask,
-        Components.Pipeline,
-        Components.PostPipeline,
-        Components.Transform,
-        Components.Visible,
-        Components.ScrollFactor,
-        Render
-    ],
-
-    initialize:
-
-    function Graphics (scene, options)
-    {
-        var x = GetValue(options, 'x', 0);
-        var y = GetValue(options, 'y', 0);
-
-        GameObject.call(this, scene, 'Graphics');
-
-        this.setPosition(x, y);
-        this.initPipeline();
-        this.initPostPipeline();
-
-        this.displayOriginX = 0;
-
-        this.displayOriginY = 0;
-
-        this.commandBuffer = [];
-
-        this.defaultFillColor = -1;
-
-        this.defaultFillAlpha = 1;
-
-        this.defaultStrokeWidth = 1;
-
-        this.defaultStrokeColor = -1;
-
-        this.defaultStrokeAlpha = 1;
-
-        this._lineWidth = 1;
-
-        this.lineStyle(1, 0, 0);
-        this.fillStyle(0, 0);
-
-        this.setDefaultStyles(options);
-    },
-
-    setDefaultStyles: function (options)
-    {
-        if (GetValue(options, 'lineStyle', null))
-        {
-            this.defaultStrokeWidth = GetValue(options, 'lineStyle.width', 1);
-            this.defaultStrokeColor = GetValue(options, 'lineStyle.color', 0xffffff);
-            this.defaultStrokeAlpha = GetValue(options, 'lineStyle.alpha', 1);
-
-            this.lineStyle(this.defaultStrokeWidth, this.defaultStrokeColor, this.defaultStrokeAlpha);
-        }
-
-        if (GetValue(options, 'fillStyle', null))
-        {
-            this.defaultFillColor = GetValue(options, 'fillStyle.color', 0xffffff);
-            this.defaultFillAlpha = GetValue(options, 'fillStyle.alpha', 1);
-
-            this.fillStyle(this.defaultFillColor, this.defaultFillAlpha);
-        }
-
-        return this;
-    },
-
-    lineStyle: function (lineWidth, color, alpha)
-    {
-        if (alpha === undefined) { alpha = 1; }
-
-        this.commandBuffer.push(
-            Commands.LINE_STYLE,
-            lineWidth, color, alpha
-        );
-
-        this._lineWidth = lineWidth;
-
-        return this;
-    },
-
-    fillStyle: function (color, alpha)
-    {
-        if (alpha === undefined) { alpha = 1; }
-
-        this.commandBuffer.push(
-            Commands.FILL_STYLE,
-            color, alpha
-        );
-
-        return this;
-    },
-
-    fillGradientStyle: function (topLeft, topRight, bottomLeft, bottomRight, alphaTopLeft, alphaTopRight, alphaBottomLeft, alphaBottomRight)
-    {
-        if (alphaTopLeft === undefined) { alphaTopLeft = 1; }
-        if (alphaTopRight === undefined) { alphaTopRight = alphaTopLeft; }
-        if (alphaBottomLeft === undefined) { alphaBottomLeft = alphaTopLeft; }
-        if (alphaBottomRight === undefined) { alphaBottomRight = alphaTopLeft; }
-
-        this.commandBuffer.push(
-            Commands.GRADIENT_FILL_STYLE,
-            alphaTopLeft, alphaTopRight, alphaBottomLeft, alphaBottomRight,
-            topLeft, topRight, bottomLeft, bottomRight
-        );
-
-        return this;
-    },
-
-    lineGradientStyle: function (lineWidth, topLeft, topRight, bottomLeft, bottomRight, alpha)
-    {
-        if (alpha === undefined) { alpha = 1; }
-
-        this.commandBuffer.push(
-            Commands.GRADIENT_LINE_STYLE,
-            lineWidth, alpha, topLeft, topRight, bottomLeft, bottomRight
-        );
-
-        return this;
-    },
-
-    beginPath: function ()
-    {
-        this.commandBuffer.push(
-            Commands.BEGIN_PATH
-        );
-
-        return this;
-    },
-
-    closePath: function ()
-    {
-        this.commandBuffer.push(
-            Commands.CLOSE_PATH
-        );
-
-        return this;
-    },
-
-    fillPath: function ()
-    {
-        this.commandBuffer.push(
-            Commands.FILL_PATH
-        );
-
-        return this;
-    },
-
-    fill: function ()
-    {
-        this.commandBuffer.push(
-            Commands.FILL_PATH
-        );
-
-        return this;
-    },
-
-    strokePath: function ()
-    {
-        this.commandBuffer.push(
-            Commands.STROKE_PATH
-        );
-
-        return this;
-    },
-
-    stroke: function ()
-    {
-        this.commandBuffer.push(
-            Commands.STROKE_PATH
-        );
-
-        return this;
-    },
-
-    fillCircleShape: function (circle)
-    {
-        return this.fillCircle(circle.x, circle.y, circle.radius);
-    },
-
-    strokeCircleShape: function (circle)
-    {
-        return this.strokeCircle(circle.x, circle.y, circle.radius);
-    },
-
-    fillCircle: function (x, y, radius)
-    {
-        this.beginPath();
-        this.arc(x, y, radius, 0, MATH_CONST.PI2);
-        this.fillPath();
-
-        return this;
-    },
-
-    strokeCircle: function (x, y, radius)
-    {
-        this.beginPath();
-        this.arc(x, y, radius, 0, MATH_CONST.PI2);
-        this.strokePath();
-
-        return this;
-    },
-
-    fillRectShape: function (rect)
-    {
-        return this.fillRect(rect.x, rect.y, rect.width, rect.height);
-    },
-
-    strokeRectShape: function (rect)
-    {
-        return this.strokeRect(rect.x, rect.y, rect.width, rect.height);
-    },
-
-    fillRect: function (x, y, width, height)
-    {
-        this.commandBuffer.push(
-            Commands.FILL_RECT,
-            x, y, width, height
-        );
-
-        return this;
-    },
-
-    strokeRect: function (x, y, width, height)
-    {
-        var lineWidthHalf = this._lineWidth / 2;
-        var minx = x - lineWidthHalf;
-        var maxx = x + lineWidthHalf;
-
-        this.beginPath();
-        this.moveTo(x, y);
-        this.lineTo(x, y + height);
-        this.strokePath();
-
-        this.beginPath();
-        this.moveTo(x + width, y);
-        this.lineTo(x + width, y + height);
-        this.strokePath();
-
-        this.beginPath();
-        this.moveTo(minx, y);
-        this.lineTo(maxx + width, y);
-        this.strokePath();
-
-        this.beginPath();
-        this.moveTo(minx, y + height);
-        this.lineTo(maxx + width, y + height);
-        this.strokePath();
-
-        return this;
-    },
-
-    fillRoundedRect: function (x, y, width, height, radius)
-    {
-        if (radius === undefined) { radius = 20; }
-
-        var tl = radius;
-        var tr = radius;
-        var bl = radius;
-        var br = radius;
-
-        if (typeof radius !== 'number')
-        {
-            tl = GetFastValue(radius, 'tl', 20);
-            tr = GetFastValue(radius, 'tr', 20);
-            bl = GetFastValue(radius, 'bl', 20);
-            br = GetFastValue(radius, 'br', 20);
-        }
-
-        var convexTL = (tl >= 0);
-        var convexTR = (tr >= 0);
-        var convexBL = (bl >= 0);
-        var convexBR = (br >= 0);
-
-        tl = Math.abs(tl);
-        tr = Math.abs(tr);
-        bl = Math.abs(bl);
-        br = Math.abs(br);
-
-        this.beginPath();
-        this.moveTo(x + tl, y);
-        this.lineTo(x + width - tr, y);
-
-        if (convexTR)
-        {
-            this.arc(x + width - tr, y + tr, tr, -MATH_CONST.TAU, 0);
-        }
-        else
-        {
-            this.arc(x + width, y, tr, Math.PI, MATH_CONST.TAU, true);
-        }
-
-        this.lineTo(x + width, y + height - br);
-
-        if (convexBR)
-        {
-            this.arc(x + width - br, y + height - br, br, 0, MATH_CONST.TAU);
-        }
-        else
-        {
-            this.arc(x + width, y + height, br, -MATH_CONST.TAU, Math.PI, true);
-        }
-
-        this.lineTo(x + bl, y + height);
-
-        if (convexBL)
-        {
-            this.arc(x + bl, y + height - bl, bl, MATH_CONST.TAU, Math.PI);
-        }
-        else
-        {
-            this.arc(x, y + height, bl, 0, -MATH_CONST.TAU, true);
-        }
-
-        this.lineTo(x, y + tl);
-
-        if (convexTL)
-        {
-            this.arc(x + tl, y + tl, tl, -Math.PI, -MATH_CONST.TAU);
-        }
-        else
-        {
-            this.arc(x, y, tl, MATH_CONST.TAU, 0, true);
-        }
-
-        this.fillPath();
-
-        return this;
-    },
-
-    strokeRoundedRect: function (x, y, width, height, radius)
-    {
-        if (radius === undefined) { radius = 20; }
-
-        var tl = radius;
-        var tr = radius;
-        var bl = radius;
-        var br = radius;
-
-        var maxRadius = Math.min(width, height) / 2;
-
-        if (typeof radius !== 'number')
-        {
-            tl = GetFastValue(radius, 'tl', 20);
-            tr = GetFastValue(radius, 'tr', 20);
-            bl = GetFastValue(radius, 'bl', 20);
-            br = GetFastValue(radius, 'br', 20);
-        }
-
-        var convexTL = (tl >= 0);
-        var convexTR = (tr >= 0);
-        var convexBL = (bl >= 0);
-        var convexBR = (br >= 0);
-
-        tl = Math.min(Math.abs(tl), maxRadius);
-        tr = Math.min(Math.abs(tr), maxRadius);
-        bl = Math.min(Math.abs(bl), maxRadius);
-        br = Math.min(Math.abs(br), maxRadius);
-
-        this.beginPath();
-        this.moveTo(x + tl, y);
-        this.lineTo(x + width - tr, y);
-        this.moveTo(x + width - tr, y);
-
-        if (convexTR)
-        {
-            this.arc(x + width - tr, y + tr, tr, -MATH_CONST.TAU, 0);
-        }
-        else
-        {
-            this.arc(x + width, y, tr, Math.PI, MATH_CONST.TAU, true);
-        }
-
-        this.lineTo(x + width, y + height - br);
-        this.moveTo(x + width, y + height - br);
-
-        if (convexBR)
-        {
-            this.arc(x + width - br, y + height - br, br, 0, MATH_CONST.TAU);
-        }
-        else
-        {
-            this.arc(x + width, y + height, br, -MATH_CONST.TAU, Math.PI, true);
-        }
-
-        this.lineTo(x + bl, y + height);
-        this.moveTo(x + bl, y + height);
-
-        if (convexBL)
-        {
-            this.arc(x + bl, y + height - bl, bl, MATH_CONST.TAU, Math.PI);
-        }
-        else
-        {
-            this.arc(x, y + height, bl, 0, -MATH_CONST.TAU, true);
-        }
-
-        this.lineTo(x, y + tl);
-        this.moveTo(x, y + tl);
-
-        if (convexTL)
-        {
-            this.arc(x + tl, y + tl, tl, -Math.PI, -MATH_CONST.TAU);
-        }
-        else
-        {
-            this.arc(x, y, tl, MATH_CONST.TAU, 0, true);
-        }
-
-        this.strokePath();
-
-        return this;
-    },
-
-    fillPointShape: function (point, size)
-    {
-        return this.fillPoint(point.x, point.y, size);
-    },
-
-    fillPoint: function (x, y, size)
-    {
-        if (!size || size < 1)
-        {
-            size = 1;
-        }
-        else
-        {
-            x -= (size / 2);
-            y -= (size / 2);
-        }
-
-        this.commandBuffer.push(
-            Commands.FILL_RECT,
-            x, y, size, size
-        );
-
-        return this;
-    },
-
-    fillTriangleShape: function (triangle)
-    {
-        return this.fillTriangle(triangle.x1, triangle.y1, triangle.x2, triangle.y2, triangle.x3, triangle.y3);
-    },
-
-    strokeTriangleShape: function (triangle)
-    {
-        return this.strokeTriangle(triangle.x1, triangle.y1, triangle.x2, triangle.y2, triangle.x3, triangle.y3);
-    },
-
-    fillTriangle: function (x0, y0, x1, y1, x2, y2)
-    {
-        this.commandBuffer.push(
-            Commands.FILL_TRIANGLE,
-            x0, y0, x1, y1, x2, y2
-        );
-
-        return this;
-    },
-
-    strokeTriangle: function (x0, y0, x1, y1, x2, y2)
-    {
-        this.commandBuffer.push(
-            Commands.STROKE_TRIANGLE,
-            x0, y0, x1, y1, x2, y2
-        );
-
-        return this;
-    },
-
-    strokeLineShape: function (line)
-    {
-        return this.lineBetween(line.x1, line.y1, line.x2, line.y2);
-    },
-
-    lineBetween: function (x1, y1, x2, y2)
-    {
-        this.beginPath();
-        this.moveTo(x1, y1);
-        this.lineTo(x2, y2);
-        this.strokePath();
-
-        return this;
-    },
-
-    lineTo: function (x, y)
-    {
-        this.commandBuffer.push(
-            Commands.LINE_TO,
-            x, y
-        );
-
-        return this;
-    },
-
-    moveTo: function (x, y)
-    {
-        this.commandBuffer.push(
-            Commands.MOVE_TO,
-            x, y
-        );
-
-        return this;
-    },
-
-    strokePoints: function (points, closeShape, closePath, endIndex)
-    {
-        if (closeShape === undefined) { closeShape = false; }
-        if (closePath === undefined) { closePath = false; }
-        if (endIndex === undefined) { endIndex = points.length; }
-
-        this.beginPath();
-
-        this.moveTo(points[0].x, points[0].y);
-
-        for (var i = 1; i < endIndex; i++)
-        {
-            this.lineTo(points[i].x, points[i].y);
-        }
-
-        if (closeShape)
-        {
-            this.lineTo(points[0].x, points[0].y);
-        }
-
-        if (closePath)
-        {
-            this.closePath();
-        }
-
-        this.strokePath();
-
-        return this;
-    },
-
-    fillPoints: function (points, closeShape, closePath, endIndex)
-    {
-        if (closeShape === undefined) { closeShape = false; }
-        if (closePath === undefined) { closePath = false; }
-        if (endIndex === undefined) { endIndex = points.length; }
-
-        this.beginPath();
-
-        this.moveTo(points[0].x, points[0].y);
-
-        for (var i = 1; i < endIndex; i++)
-        {
-            this.lineTo(points[i].x, points[i].y);
-        }
-
-        if (closeShape)
-        {
-            this.lineTo(points[0].x, points[0].y);
-        }
-
-        if (closePath)
-        {
-            this.closePath();
-        }
-
-        this.fillPath();
-
-        return this;
-    },
-
-    strokeEllipseShape: function (ellipse, smoothness)
-    {
-        if (smoothness === undefined) { smoothness = 32; }
-
-        var points = ellipse.getPoints(smoothness);
-
-        return this.strokePoints(points, true);
-    },
-
-    strokeEllipse: function (x, y, width, height, smoothness)
-    {
-        if (smoothness === undefined) { smoothness = 32; }
-
-        var ellipse = new Ellipse(x, y, width, height);
-
-        var points = ellipse.getPoints(smoothness);
-
-        return this.strokePoints(points, true);
-    },
-
-    fillEllipseShape: function (ellipse, smoothness)
-    {
-        if (smoothness === undefined) { smoothness = 32; }
-
-        var points = ellipse.getPoints(smoothness);
-
-        return this.fillPoints(points, true);
-    },
-
-    fillEllipse: function (x, y, width, height, smoothness)
-    {
-        if (smoothness === undefined) { smoothness = 32; }
-
-        var ellipse = new Ellipse(x, y, width, height);
-
-        var points = ellipse.getPoints(smoothness);
-
-        return this.fillPoints(points, true);
-    },
-
-    arc: function (x, y, radius, startAngle, endAngle, anticlockwise, overshoot)
-    {
-        if (anticlockwise === undefined) { anticlockwise = false; }
-        if (overshoot === undefined) { overshoot = 0; }
-
-        this.commandBuffer.push(
-            Commands.ARC,
-            x, y, radius, startAngle, endAngle, anticlockwise, overshoot
-        );
-
-        return this;
-    },
-
-    slice: function (x, y, radius, startAngle, endAngle, anticlockwise, overshoot)
-    {
-        if (anticlockwise === undefined) { anticlockwise = false; }
-        if (overshoot === undefined) { overshoot = 0; }
-
-        this.commandBuffer.push(Commands.BEGIN_PATH);
-
-        this.commandBuffer.push(Commands.MOVE_TO, x, y);
-
-        this.commandBuffer.push(Commands.ARC, x, y, radius, startAngle, endAngle, anticlockwise, overshoot);
-
-        this.commandBuffer.push(Commands.CLOSE_PATH);
-
-        return this;
-    },
-
-    save: function ()
-    {
-        this.commandBuffer.push(
-            Commands.SAVE
-        );
-
-        return this;
-    },
-
-    restore: function ()
-    {
-        this.commandBuffer.push(
-            Commands.RESTORE
-        );
-
-        return this;
-    },
-
-    translateCanvas: function (x, y)
-    {
-        this.commandBuffer.push(
-            Commands.TRANSLATE,
-            x, y
-        );
-
-        return this;
-    },
-
-    scaleCanvas: function (x, y)
-    {
-        this.commandBuffer.push(
-            Commands.SCALE,
-            x, y
-        );
-
-        return this;
-    },
-
-    rotateCanvas: function (radians)
-    {
-        this.commandBuffer.push(
-            Commands.ROTATE,
-            radians
-        );
-
-        return this;
-    },
-
-    clear: function ()
-    {
-        this.commandBuffer.length = 0;
-
-        if (this.defaultFillColor > -1)
-        {
-            this.fillStyle(this.defaultFillColor, this.defaultFillAlpha);
-        }
-
-        if (this.defaultStrokeColor > -1)
-        {
-            this.lineStyle(this.defaultStrokeWidth, this.defaultStrokeColor, this.defaultStrokeAlpha);
-        }
-
-        return this;
-    },
-
-    generateTexture: function (key, width, height)
-    {
-        var sys = this.scene.sys;
-        var renderer = sys.game.renderer;
-
-        if (width === undefined) { width = sys.scale.width; }
-        if (height === undefined) { height = sys.scale.height; }
-
-        Graphics.TargetCamera.setScene(this.scene);
-        Graphics.TargetCamera.setViewport(0, 0, width, height);
-        Graphics.TargetCamera.scrollX = this.x;
-        Graphics.TargetCamera.scrollY = this.y;
-
-        var texture;
-        var ctx;
-        var willRead = { willReadFrequently: true };
-
-        if (typeof key === 'string')
-        {
-            if (sys.textures.exists(key))
-            {
-
-                texture = sys.textures.get(key);
-
-                var src = texture.getSourceImage();
-
-                if (src instanceof HTMLCanvasElement)
-                {
-                    ctx = src.getContext('2d', willRead);
-                }
-            }
-            else
-            {
-
-                texture = sys.textures.createCanvas(key, width, height);
-
-                ctx = texture.getSourceImage().getContext('2d', willRead);
-            }
-        }
-        else if (key instanceof HTMLCanvasElement)
-        {
-
-            ctx = key.getContext('2d', willRead);
-        }
-
-        if (ctx)
-        {
-
-            this.renderCanvas(renderer, this, Graphics.TargetCamera, null, ctx, false);
-
-            if (texture)
-            {
-                texture.refresh();
-            }
-        }
-
-        return this;
-    },
-
-    preDestroy: function ()
-    {
-        this.commandBuffer = [];
-    }
-
-});
-
-Graphics.TargetCamera = new BaseCamera();
-
-module.exports = Graphics;
+var BaseCamera = require('../../cameras/2d/BaseCamera');var Class = require('../../utils/Class');var Commands = require('./Commands');var Components = require('../components');var Ellipse = require('../../geom/ellipse/Ellipse');var GameObject = require('../GameObject');var GetFastValue = require('../../utils/object/GetFastValue');var GetValue = require('../../utils/object/GetValue');var MATH_CONST = require('../../math/const');var Render = require('./GraphicsRender');var Graphics = new Class({    Extends: GameObject,    Mixins: [        Components.AlphaSingle,        Components.BlendMode,        Components.Depth,        Components.Mask,        Components.Pipeline,        Components.PostPipeline,        Components.Transform,        Components.Visible,        Components.ScrollFactor,        Render    ],    initialize:    function Graphics (scene, options)    {        var x = GetValue(options, 'x', 0);        var y = GetValue(options, 'y', 0);        GameObject.call(this, scene, 'Graphics');        this.setPosition(x, y);        this.initPipeline();        this.initPostPipeline();        this.displayOriginX = 0;        this.displayOriginY = 0;        this.commandBuffer = [];        this.defaultFillColor = -1;        this.defaultFillAlpha = 1;        this.defaultStrokeWidth = 1;        this.defaultStrokeColor = -1;        this.defaultStrokeAlpha = 1;        this._lineWidth = 1;        this.lineStyle(1, 0, 0);        this.fillStyle(0, 0);        this.setDefaultStyles(options);    },    setDefaultStyles: function (options)    {        if (GetValue(options, 'lineStyle', null))        {            this.defaultStrokeWidth = GetValue(options, 'lineStyle.width', 1);            this.defaultStrokeColor = GetValue(options, 'lineStyle.color', 0xffffff);            this.defaultStrokeAlpha = GetValue(options, 'lineStyle.alpha', 1);            this.lineStyle(this.defaultStrokeWidth, this.defaultStrokeColor, this.defaultStrokeAlpha);        }        if (GetValue(options, 'fillStyle', null))        {            this.defaultFillColor = GetValue(options, 'fillStyle.color', 0xffffff);            this.defaultFillAlpha = GetValue(options, 'fillStyle.alpha', 1);            this.fillStyle(this.defaultFillColor, this.defaultFillAlpha);        }        return this;    },    lineStyle: function (lineWidth, color, alpha)    {        if (alpha === undefined) { alpha = 1; }        this.commandBuffer.push(            Commands.LINE_STYLE,            lineWidth, color, alpha        );        this._lineWidth = lineWidth;        return this;    },    fillStyle: function (color, alpha)    {        if (alpha === undefined) { alpha = 1; }        this.commandBuffer.push(            Commands.FILL_STYLE,            color, alpha        );        return this;    },    fillGradientStyle: function (topLeft, topRight, bottomLeft, bottomRight, alphaTopLeft, alphaTopRight, alphaBottomLeft, alphaBottomRight)    {        if (alphaTopLeft === undefined) { alphaTopLeft = 1; }        if (alphaTopRight === undefined) { alphaTopRight = alphaTopLeft; }        if (alphaBottomLeft === undefined) { alphaBottomLeft = alphaTopLeft; }        if (alphaBottomRight === undefined) { alphaBottomRight = alphaTopLeft; }        this.commandBuffer.push(            Commands.GRADIENT_FILL_STYLE,            alphaTopLeft, alphaTopRight, alphaBottomLeft, alphaBottomRight,            topLeft, topRight, bottomLeft, bottomRight        );        return this;    },    lineGradientStyle: function (lineWidth, topLeft, topRight, bottomLeft, bottomRight, alpha)    {        if (alpha === undefined) { alpha = 1; }        this.commandBuffer.push(            Commands.GRADIENT_LINE_STYLE,            lineWidth, alpha, topLeft, topRight, bottomLeft, bottomRight        );        return this;    },    beginPath: function ()    {        this.commandBuffer.push(            Commands.BEGIN_PATH        );        return this;    },    closePath: function ()    {        this.commandBuffer.push(            Commands.CLOSE_PATH        );        return this;    },    fillPath: function ()    {        this.commandBuffer.push(            Commands.FILL_PATH        );        return this;    },    fill: function ()    {        this.commandBuffer.push(            Commands.FILL_PATH        );        return this;    },    strokePath: function ()    {        this.commandBuffer.push(            Commands.STROKE_PATH        );        return this;    },    stroke: function ()    {        this.commandBuffer.push(            Commands.STROKE_PATH        );        return this;    },    fillCircleShape: function (circle)    {        return this.fillCircle(circle.x, circle.y, circle.radius);    },    strokeCircleShape: function (circle)    {        return this.strokeCircle(circle.x, circle.y, circle.radius);    },    fillCircle: function (x, y, radius)    {        this.beginPath();        this.arc(x, y, radius, 0, MATH_CONST.PI2);        this.fillPath();        return this;    },    strokeCircle: function (x, y, radius)    {        this.beginPath();        this.arc(x, y, radius, 0, MATH_CONST.PI2);        this.strokePath();        return this;    },    fillRectShape: function (rect)    {        return this.fillRect(rect.x, rect.y, rect.width, rect.height);    },    strokeRectShape: function (rect)    {        return this.strokeRect(rect.x, rect.y, rect.width, rect.height);    },    fillRect: function (x, y, width, height)    {        this.commandBuffer.push(            Commands.FILL_RECT,            x, y, width, height        );        return this;    },    strokeRect: function (x, y, width, height)    {        var lineWidthHalf = this._lineWidth / 2;        var minx = x - lineWidthHalf;        var maxx = x + lineWidthHalf;        this.beginPath();        this.moveTo(x, y);        this.lineTo(x, y + height);        this.strokePath();        this.beginPath();        this.moveTo(x + width, y);        this.lineTo(x + width, y + height);        this.strokePath();        this.beginPath();        this.moveTo(minx, y);        this.lineTo(maxx + width, y);        this.strokePath();        this.beginPath();        this.moveTo(minx, y + height);        this.lineTo(maxx + width, y + height);        this.strokePath();        return this;    },    fillRoundedRect: function (x, y, width, height, radius)    {        if (radius === undefined) { radius = 20; }        var tl = radius;        var tr = radius;        var bl = radius;        var br = radius;        if (typeof radius !== 'number')        {            tl = GetFastValue(radius, 'tl', 20);            tr = GetFastValue(radius, 'tr', 20);            bl = GetFastValue(radius, 'bl', 20);            br = GetFastValue(radius, 'br', 20);        }        var convexTL = (tl >= 0);        var convexTR = (tr >= 0);        var convexBL = (bl >= 0);        var convexBR = (br >= 0);        tl = Math.abs(tl);        tr = Math.abs(tr);        bl = Math.abs(bl);        br = Math.abs(br);        this.beginPath();        this.moveTo(x + tl, y);        this.lineTo(x + width - tr, y);        if (convexTR)        {            this.arc(x + width - tr, y + tr, tr, -MATH_CONST.TAU, 0);        }        else        {            this.arc(x + width, y, tr, Math.PI, MATH_CONST.TAU, true);        }        this.lineTo(x + width, y + height - br);        if (convexBR)        {            this.arc(x + width - br, y + height - br, br, 0, MATH_CONST.TAU);        }        else        {            this.arc(x + width, y + height, br, -MATH_CONST.TAU, Math.PI, true);        }        this.lineTo(x + bl, y + height);        if (convexBL)        {            this.arc(x + bl, y + height - bl, bl, MATH_CONST.TAU, Math.PI);        }        else        {            this.arc(x, y + height, bl, 0, -MATH_CONST.TAU, true);        }        this.lineTo(x, y + tl);        if (convexTL)        {            this.arc(x + tl, y + tl, tl, -Math.PI, -MATH_CONST.TAU);        }        else        {            this.arc(x, y, tl, MATH_CONST.TAU, 0, true);        }        this.fillPath();        return this;    },    strokeRoundedRect: function (x, y, width, height, radius)    {        if (radius === undefined) { radius = 20; }        var tl = radius;        var tr = radius;        var bl = radius;        var br = radius;        var maxRadius = Math.min(width, height) / 2;        if (typeof radius !== 'number')        {            tl = GetFastValue(radius, 'tl', 20);            tr = GetFastValue(radius, 'tr', 20);            bl = GetFastValue(radius, 'bl', 20);            br = GetFastValue(radius, 'br', 20);        }        var convexTL = (tl >= 0);        var convexTR = (tr >= 0);        var convexBL = (bl >= 0);        var convexBR = (br >= 0);        tl = Math.min(Math.abs(tl), maxRadius);        tr = Math.min(Math.abs(tr), maxRadius);        bl = Math.min(Math.abs(bl), maxRadius);        br = Math.min(Math.abs(br), maxRadius);        this.beginPath();        this.moveTo(x + tl, y);        this.lineTo(x + width - tr, y);        this.moveTo(x + width - tr, y);        if (convexTR)        {            this.arc(x + width - tr, y + tr, tr, -MATH_CONST.TAU, 0);        }        else        {            this.arc(x + width, y, tr, Math.PI, MATH_CONST.TAU, true);        }        this.lineTo(x + width, y + height - br);        this.moveTo(x + width, y + height - br);        if (convexBR)        {            this.arc(x + width - br, y + height - br, br, 0, MATH_CONST.TAU);        }        else        {            this.arc(x + width, y + height, br, -MATH_CONST.TAU, Math.PI, true);        }        this.lineTo(x + bl, y + height);        this.moveTo(x + bl, y + height);        if (convexBL)        {            this.arc(x + bl, y + height - bl, bl, MATH_CONST.TAU, Math.PI);        }        else        {            this.arc(x, y + height, bl, 0, -MATH_CONST.TAU, true);        }        this.lineTo(x, y + tl);        this.moveTo(x, y + tl);        if (convexTL)        {            this.arc(x + tl, y + tl, tl, -Math.PI, -MATH_CONST.TAU);        }        else        {            this.arc(x, y, tl, MATH_CONST.TAU, 0, true);        }        this.strokePath();        return this;    },    fillPointShape: function (point, size)    {        return this.fillPoint(point.x, point.y, size);    },    fillPoint: function (x, y, size)    {        if (!size || size < 1)        {            size = 1;        }        else        {            x -= (size / 2);            y -= (size / 2);        }        this.commandBuffer.push(            Commands.FILL_RECT,            x, y, size, size        );        return this;    },    fillTriangleShape: function (triangle)    {        return this.fillTriangle(triangle.x1, triangle.y1, triangle.x2, triangle.y2, triangle.x3, triangle.y3);    },    strokeTriangleShape: function (triangle)    {        return this.strokeTriangle(triangle.x1, triangle.y1, triangle.x2, triangle.y2, triangle.x3, triangle.y3);    },    fillTriangle: function (x0, y0, x1, y1, x2, y2)    {        this.commandBuffer.push(            Commands.FILL_TRIANGLE,            x0, y0, x1, y1, x2, y2        );        return this;    },    strokeTriangle: function (x0, y0, x1, y1, x2, y2)    {        this.commandBuffer.push(            Commands.STROKE_TRIANGLE,            x0, y0, x1, y1, x2, y2        );        return this;    },    strokeLineShape: function (line)    {        return this.lineBetween(line.x1, line.y1, line.x2, line.y2);    },    lineBetween: function (x1, y1, x2, y2)    {        this.beginPath();        this.moveTo(x1, y1);        this.lineTo(x2, y2);        this.strokePath();        return this;    },    lineTo: function (x, y)    {        this.commandBuffer.push(            Commands.LINE_TO,            x, y        );        return this;    },    moveTo: function (x, y)    {        this.commandBuffer.push(            Commands.MOVE_TO,            x, y        );        return this;    },    strokePoints: function (points, closeShape, closePath, endIndex)    {        if (closeShape === undefined) { closeShape = false; }        if (closePath === undefined) { closePath = false; }        if (endIndex === undefined) { endIndex = points.length; }        this.beginPath();        this.moveTo(points[0].x, points[0].y);        for (var i = 1; i < endIndex; i++)        {            this.lineTo(points[i].x, points[i].y);        }        if (closeShape)        {            this.lineTo(points[0].x, points[0].y);        }        if (closePath)        {            this.closePath();        }        this.strokePath();        return this;    },    fillPoints: function (points, closeShape, closePath, endIndex)    {        if (closeShape === undefined) { closeShape = false; }        if (closePath === undefined) { closePath = false; }        if (endIndex === undefined) { endIndex = points.length; }        this.beginPath();        this.moveTo(points[0].x, points[0].y);        for (var i = 1; i < endIndex; i++)        {            this.lineTo(points[i].x, points[i].y);        }        if (closeShape)        {            this.lineTo(points[0].x, points[0].y);        }        if (closePath)        {            this.closePath();        }        this.fillPath();        return this;    },    strokeEllipseShape: function (ellipse, smoothness)    {        if (smoothness === undefined) { smoothness = 32; }        var points = ellipse.getPoints(smoothness);        return this.strokePoints(points, true);    },    strokeEllipse: function (x, y, width, height, smoothness)    {        if (smoothness === undefined) { smoothness = 32; }        var ellipse = new Ellipse(x, y, width, height);        var points = ellipse.getPoints(smoothness);        return this.strokePoints(points, true);    },    fillEllipseShape: function (ellipse, smoothness)    {        if (smoothness === undefined) { smoothness = 32; }        var points = ellipse.getPoints(smoothness);        return this.fillPoints(points, true);    },    fillEllipse: function (x, y, width, height, smoothness)    {        if (smoothness === undefined) { smoothness = 32; }        var ellipse = new Ellipse(x, y, width, height);        var points = ellipse.getPoints(smoothness);        return this.fillPoints(points, true);    },    arc: function (x, y, radius, startAngle, endAngle, anticlockwise, overshoot)    {        if (anticlockwise === undefined) { anticlockwise = false; }        if (overshoot === undefined) { overshoot = 0; }        this.commandBuffer.push(            Commands.ARC,            x, y, radius, startAngle, endAngle, anticlockwise, overshoot        );        return this;    },    slice: function (x, y, radius, startAngle, endAngle, anticlockwise, overshoot)    {        if (anticlockwise === undefined) { anticlockwise = false; }        if (overshoot === undefined) { overshoot = 0; }        this.commandBuffer.push(Commands.BEGIN_PATH);        this.commandBuffer.push(Commands.MOVE_TO, x, y);        this.commandBuffer.push(Commands.ARC, x, y, radius, startAngle, endAngle, anticlockwise, overshoot);        this.commandBuffer.push(Commands.CLOSE_PATH);        return this;    },    save: function ()    {        this.commandBuffer.push(            Commands.SAVE        );        return this;    },    restore: function ()    {        this.commandBuffer.push(            Commands.RESTORE        );        return this;    },    translateCanvas: function (x, y)    {        this.commandBuffer.push(            Commands.TRANSLATE,            x, y        );        return this;    },    scaleCanvas: function (x, y)    {        this.commandBuffer.push(            Commands.SCALE,            x, y        );        return this;    },    rotateCanvas: function (radians)    {        this.commandBuffer.push(            Commands.ROTATE,            radians        );        return this;    },    clear: function ()    {        this.commandBuffer.length = 0;        if (this.defaultFillColor > -1)        {            this.fillStyle(this.defaultFillColor, this.defaultFillAlpha);        }        if (this.defaultStrokeColor > -1)        {            this.lineStyle(this.defaultStrokeWidth, this.defaultStrokeColor, this.defaultStrokeAlpha);        }        return this;    },    generateTexture: function (key, width, height)    {        var sys = this.scene.sys;        var renderer = sys.game.renderer;        if (width === undefined) { width = sys.scale.width; }        if (height === undefined) { height = sys.scale.height; }        Graphics.TargetCamera.setScene(this.scene);        Graphics.TargetCamera.setViewport(0, 0, width, height);        Graphics.TargetCamera.scrollX = this.x;        Graphics.TargetCamera.scrollY = this.y;        var texture;        var ctx;        var willRead = { willReadFrequently: true };        if (typeof key === 'string')        {            if (sys.textures.exists(key))            {                texture = sys.textures.get(key);                var src = texture.getSourceImage();                if (src instanceof HTMLCanvasElement)                {                    ctx = src.getContext('2d', willRead);                }            }            else            {                texture = sys.textures.createCanvas(key, width, height);                ctx = texture.getSourceImage().getContext('2d', willRead);            }        }        else if (key instanceof HTMLCanvasElement)        {            ctx = key.getContext('2d', willRead);        }        if (ctx)        {            this.renderCanvas(renderer, this, Graphics.TargetCamera, null, ctx, false);            if (texture)            {                texture.refresh();            }        }        return this;    },    preDestroy: function ()    {        this.commandBuffer = [];    }});Graphics.TargetCamera = new BaseCamera();module.exports = Graphics;

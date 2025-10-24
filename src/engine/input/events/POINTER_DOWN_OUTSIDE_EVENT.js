@@ -1,1 +1,1 @@
-module.exports = 'pointerdownoutside';
+module.exports = 'pointerdownoutside';

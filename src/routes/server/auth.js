@@ -1,9 +1,11 @@
 import Router from './router.js';
 import UserModel from '../../models/UserModel.js';
 import bcrypt from 'bcryptjs';
-import { DISPLAY_NAME, USERNAME, PASSWORD, BIO } from '../../utils/Constants.js';
+import { DISPLAY_NAME, USERNAME, PASSWORD, BIO, TURNSTILE } from '../../utils/Constants.js';
+import { verifyTurnstile } from '../../utils/Utils.js';
 import fs from 'fs';
 import path from 'path';
+import config from '../../../config.json' with { type: 'json' };
 
 const router = new Router();
 
@@ -24,9 +26,17 @@ function validUsername(value = '') {
 
 router.post('/api/auth/register', async (req, res) => {
     await router.parse(req, res);
-    const { display_name, username, password } = req.body;
-    if (!display_name || !username || !password) {
+    let { display_name, username, password, turnstile } = req.body;
+    if (!TURNSTILE) turnstile = "TOKK853";
+    if (!display_name || !username || !password || !turnstile) {
         return res.status(400).json({ error: 'Please fill all fields.' });
+    }
+    
+    if (TURNSTILE) {
+      const turnstileVerify = await verifyTurnstile(turnstile, config.turnstile.private);
+      if (!turnstileVerify.ok) {
+        return res.status(400).json({ error: `Invalid captcha, Try again.` });
+      }
     }
 
     if (!inRange(display_name.trim(), DISPLAY_NAME.MIN, DISPLAY_NAME.MAX)) {
@@ -52,9 +62,17 @@ router.post('/api/auth/register', async (req, res) => {
     res.status(201).json({ message: 'Successfully registered.' });
 }).post('/api/auth/login', async (req, res) => {
     await router.parse(req, res);
-    const { username, password } = req.body;
-    if (!username || !password) {
+    let { username, password, turnstile } = req.body;
+    if (!TURNSTILE) turnstile = "TOKK853";
+    if (!username || !password || !turnstile) {
         return res.status(400).json({ error: 'Please fill all fields.' });
+    }
+    
+    if (TURNSTILE) {
+      const turnstileVerify = await verifyTurnstile(turnstile, config.turnstile.private);
+      if (!turnstileVerify.ok) {
+        return res.status(400).json({ error: `Invalid captcha, Try again.` });
+      }
     }
 
     if (!validUsername(username) || !inRange(password, PASSWORD.MIN, PASSWORD.MAX)) {
@@ -181,7 +199,7 @@ router.post('/api/auth/register', async (req, res) => {
   const user = UserModel.getUserById(id);
   if (!user || !user.avatar) {
     try {
-      const genericAvatarPath = path.join('public/assets/generic-profile.png');
+      const genericAvatarPath = path.join('assets/assets/generic-profile.png');
       const genericAvatarBuffer = fs.readFileSync(genericAvatarPath);
       res.writeHead(200, {
         'Content-Type': 'image/png',

@@ -1,190 +1,1 @@
-var BaseTweenData = require('./BaseTweenData');
-var Clamp = require('../../math/Clamp');
-var Class = require('../../utils/Class');
-var Events = require('../events');
-
-var TweenFrameData = new Class({
-
-    Extends: BaseTweenData,
-
-    initialize:
-
-    function TweenFrameData (tween, targetIndex, texture, frame, delay, duration, hold, repeat, repeatDelay, flipX, flipY)
-    {
-        BaseTweenData.call(this, tween, targetIndex, delay, duration, false, hold, repeat, repeatDelay, flipX, flipY);
-
-        this.key = 'texture';
-
-        this.startTexture = null;
-
-        this.endTexture = texture;
-
-        this.startFrame = null;
-
-        this.endFrame = frame;
-
-        this.yoyo = (repeat !== 0) ? true : false;
-    },
-
-    reset: function (isSeeking)
-    {
-        BaseTweenData.prototype.reset.call(this);
-
-        var target = this.tween.targets[this.targetIndex];
-
-        if (!this.startTexture)
-        {
-            this.startTexture = target.texture.key;
-            this.startFrame = target.frame.name;
-        }
-
-        if (isSeeking)
-        {
-            target.setTexture(this.startTexture, this.startFrame);
-        }
-    },
-
-    update: function (delta)
-    {
-        var tween = this.tween;
-        var targetIndex = this.targetIndex;
-        var target = tween.targets[targetIndex];
-
-        if (!target)
-        {
-            this.setCompleteState();
-
-            return false;
-        }
-
-        if (this.isCountdown)
-        {
-            this.elapsed -= delta;
-
-            if (this.elapsed <= 0)
-            {
-                this.elapsed = 0;
-
-                delta = 0;
-
-                if (this.isDelayed())
-                {
-                    this.setPendingRenderState();
-                }
-                else if (this.isRepeating())
-                {
-                    this.setPlayingForwardState();
-
-                    this.dispatchEvent(Events.TWEEN_REPEAT, 'onRepeat');
-                }
-                else if (this.isHolding())
-                {
-                    this.setStateFromEnd(0);
-                }
-            }
-        }
-
-        if (this.isPendingRender())
-        {
-            if (this.startTexture)
-            {
-                target.setTexture(this.startTexture, this.startFrame);
-            }
-
-            this.setPlayingForwardState();
-
-            return true;
-        }
-
-        var forward = this.isPlayingForward();
-        var backward = this.isPlayingBackward();
-
-        if (forward || backward)
-        {
-            var elapsed = this.elapsed;
-            var duration = this.duration;
-            var diff = 0;
-            var complete = false;
-
-            elapsed += delta;
-
-            if (elapsed >= duration)
-            {
-                diff = elapsed - duration;
-                elapsed = duration;
-                complete = true;
-            }
-            else if (elapsed < 0)
-            {
-                elapsed = 0;
-            }
-
-            var progress = Clamp(elapsed / duration, 0, 1);
-
-            this.elapsed = elapsed;
-            this.progress = progress;
-
-            if (complete)
-            {
-                if (forward)
-                {
-                    target.setTexture(this.endTexture, this.endFrame);
-
-                    if (this.hold > 0)
-                    {
-                        this.elapsed = this.hold;
-
-                        this.setHoldState();
-                    }
-                    else
-                    {
-                        this.setStateFromEnd(diff);
-                    }
-                }
-                else
-                {
-                    target.setTexture(this.startTexture, this.startFrame);
-
-                    this.setStateFromStart(diff);
-                }
-            }
-
-            this.dispatchEvent(Events.TWEEN_UPDATE, 'onUpdate');
-        }
-
-        return !this.isComplete();
-    },
-
-    dispatchEvent: function (event, callback)
-    {
-        var tween = this.tween;
-
-        if (!tween.isSeeking)
-        {
-            var target = tween.targets[this.targetIndex];
-            var key = this.key;
-
-            tween.emit(event, tween, key, target);
-
-            var handler = tween.callbacks[callback];
-
-            if (handler)
-            {
-                handler.func.apply(tween.callbackScope, [ tween, target, key ].concat(handler.params));
-            }
-        }
-    },
-
-    destroy: function ()
-    {
-        BaseTweenData.prototype.destroy.call(this);
-
-        this.startTexture = null;
-        this.endTexture = null;
-        this.startFrame = null;
-        this.endFrame = null;
-    }
-
-});
-
-module.exports = TweenFrameData;
+var BaseTweenData = require('./BaseTweenData');var Clamp = require('../../math/Clamp');var Class = require('../../utils/Class');var Events = require('../events');var TweenFrameData = new Class({    Extends: BaseTweenData,    initialize:    function TweenFrameData (tween, targetIndex, texture, frame, delay, duration, hold, repeat, repeatDelay, flipX, flipY)    {        BaseTweenData.call(this, tween, targetIndex, delay, duration, false, hold, repeat, repeatDelay, flipX, flipY);        this.key = 'texture';        this.startTexture = null;        this.endTexture = texture;        this.startFrame = null;        this.endFrame = frame;        this.yoyo = (repeat !== 0) ? true : false;    },    reset: function (isSeeking)    {        BaseTweenData.prototype.reset.call(this);        var target = this.tween.targets[this.targetIndex];        if (!this.startTexture)        {            this.startTexture = target.texture.key;            this.startFrame = target.frame.name;        }        if (isSeeking)        {            target.setTexture(this.startTexture, this.startFrame);        }    },    update: function (delta)    {        var tween = this.tween;        var targetIndex = this.targetIndex;        var target = tween.targets[targetIndex];        if (!target)        {            this.setCompleteState();            return false;        }        if (this.isCountdown)        {            this.elapsed -= delta;            if (this.elapsed <= 0)            {                this.elapsed = 0;                delta = 0;                if (this.isDelayed())                {                    this.setPendingRenderState();                }                else if (this.isRepeating())                {                    this.setPlayingForwardState();                    this.dispatchEvent(Events.TWEEN_REPEAT, 'onRepeat');                }                else if (this.isHolding())                {                    this.setStateFromEnd(0);                }            }        }        if (this.isPendingRender())        {            if (this.startTexture)            {                target.setTexture(this.startTexture, this.startFrame);            }            this.setPlayingForwardState();            return true;        }        var forward = this.isPlayingForward();        var backward = this.isPlayingBackward();        if (forward || backward)        {            var elapsed = this.elapsed;            var duration = this.duration;            var diff = 0;            var complete = false;            elapsed += delta;            if (elapsed >= duration)            {                diff = elapsed - duration;                elapsed = duration;                complete = true;            }            else if (elapsed < 0)            {                elapsed = 0;            }            var progress = Clamp(elapsed / duration, 0, 1);            this.elapsed = elapsed;            this.progress = progress;            if (complete)            {                if (forward)                {                    target.setTexture(this.endTexture, this.endFrame);                    if (this.hold > 0)                    {                        this.elapsed = this.hold;                        this.setHoldState();                    }                    else                    {                        this.setStateFromEnd(diff);                    }                }                else                {                    target.setTexture(this.startTexture, this.startFrame);                    this.setStateFromStart(diff);                }            }            this.dispatchEvent(Events.TWEEN_UPDATE, 'onUpdate');        }        return !this.isComplete();    },    dispatchEvent: function (event, callback)    {        var tween = this.tween;        if (!tween.isSeeking)        {            var target = tween.targets[this.targetIndex];            var key = this.key;            tween.emit(event, tween, key, target);            var handler = tween.callbacks[callback];            if (handler)            {                handler.func.apply(tween.callbackScope, [ tween, target, key ].concat(handler.params));            }        }    },    destroy: function ()    {        BaseTweenData.prototype.destroy.call(this);        this.startTexture = null;        this.endTexture = null;        this.startFrame = null;        this.endFrame = null;    }});module.exports = TweenFrameData;

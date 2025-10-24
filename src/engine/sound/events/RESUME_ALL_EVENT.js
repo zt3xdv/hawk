@@ -1,1 +1,1 @@
-module.exports = 'resumeall';
+module.exports = 'resumeall';

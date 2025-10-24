@@ -24,7 +24,6 @@
   "description": "Hangout game created using Hawk engine.",
   "dependencies": {
     "bcryptjs": "^3.0.2",
-    "eventemitter2": "^6.4.9",
     "eventemitter3": "^4.0.7",
     "express": "^5.1.0",
     "mime-types": "^3.0.1",

@@ -1,310 +1,1 @@
-var Class = require('../../utils/Class');
-var DegToRad = require('../../math/DegToRad');
-var DistanceBetween = require('../../math/distance/DistanceBetween');
-var DistanceSquared = require('../../math/distance/DistanceSquared');
-var Factory = require('./Factory');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var Merge = require('../../utils/object/Merge');
-var OverlapCirc = require('./components/OverlapCirc');
-var OverlapRect = require('./components/OverlapRect');
-var PluginCache = require('../../plugins/PluginCache');
-var SceneEvents = require('../../scene/events');
-var Vector2 = require('../../math/Vector2');
-var World = require('./World');
-
-var ArcadePhysics = new Class({
-
-    initialize:
-
-    function ArcadePhysics (scene)
-    {
-
-        this.scene = scene;
-
-        this.systems = scene.sys;
-
-        this.config = this.getConfig();
-
-        this.world;
-
-        this.add;
-
-        this._category = 0x0001;
-
-        scene.sys.events.once(SceneEvents.BOOT, this.boot, this);
-        scene.sys.events.on(SceneEvents.START, this.start, this);
-    },
-
-    boot: function ()
-    {
-        this.world = new World(this.scene, this.config);
-        this.add = new Factory(this.world);
-
-        this.systems.events.once(SceneEvents.DESTROY, this.destroy, this);
-    },
-
-    start: function ()
-    {
-        if (!this.world)
-        {
-            this.world = new World(this.scene, this.config);
-            this.add = new Factory(this.world);
-        }
-
-        var eventEmitter = this.systems.events;
-
-        if (!GetFastValue(this.config, 'customUpdate', false))
-        {
-            eventEmitter.on(SceneEvents.UPDATE, this.world.update, this.world);
-        }
-
-        eventEmitter.on(SceneEvents.POST_UPDATE, this.world.postUpdate, this.world);
-        eventEmitter.once(SceneEvents.SHUTDOWN, this.shutdown, this);
-    },
-
-    enableUpdate: function ()
-    {
-        this.systems.events.on(SceneEvents.UPDATE, this.world.update, this.world);
-    },
-
-    disableUpdate: function ()
-    {
-        this.systems.events.off(SceneEvents.UPDATE, this.world.update, this.world);
-    },
-
-    getConfig: function ()
-    {
-        var gameConfig = this.systems.game.config.physics;
-        var sceneConfig = this.systems.settings.physics;
-
-        var config = Merge(
-            GetFastValue(sceneConfig, 'arcade', {}),
-            GetFastValue(gameConfig, 'arcade', {})
-        );
-
-        return config;
-    },
-
-    nextCategory: function ()
-    {
-        this._category = this._category << 1;
-
-        return this._category;
-    },
-
-    overlap: function (object1, object2, overlapCallback, processCallback, callbackContext)
-    {
-        if (overlapCallback === undefined) { overlapCallback = null; }
-        if (processCallback === undefined) { processCallback = null; }
-        if (callbackContext === undefined) { callbackContext = overlapCallback; }
-
-        return this.world.collideObjects(object1, object2, overlapCallback, processCallback, callbackContext, true);
-    },
-
-    collide: function (object1, object2, collideCallback, processCallback, callbackContext)
-    {
-        if (collideCallback === undefined) { collideCallback = null; }
-        if (processCallback === undefined) { processCallback = null; }
-        if (callbackContext === undefined) { callbackContext = collideCallback; }
-
-        return this.world.collideObjects(object1, object2, collideCallback, processCallback, callbackContext, false);
-    },
-
-    collideTiles: function (sprite, tiles, collideCallback, processCallback, callbackContext)
-    {
-        return this.world.collideTiles(sprite, tiles, collideCallback, processCallback, callbackContext);
-    },
-
-    overlapTiles: function (sprite, tiles, overlapCallback, processCallback, callbackContext)
-    {
-        return this.world.overlapTiles(sprite, tiles, overlapCallback, processCallback, callbackContext);
-    },
-
-    pause: function ()
-    {
-        return this.world.pause();
-    },
-
-    resume: function ()
-    {
-        return this.world.resume();
-    },
-
-    accelerateTo: function (gameObject, x, y, speed, xSpeedMax, ySpeedMax)
-    {
-        if (speed === undefined) { speed = 60; }
-
-        var angle = Math.atan2(y - gameObject.y, x - gameObject.x);
-
-        gameObject.body.acceleration.setToPolar(angle, speed);
-
-        if (xSpeedMax !== undefined && ySpeedMax !== undefined)
-        {
-            gameObject.body.maxVelocity.set(xSpeedMax, ySpeedMax);
-        }
-
-        return angle;
-    },
-
-    accelerateToObject: function (gameObject, destination, speed, xSpeedMax, ySpeedMax)
-    {
-        return this.accelerateTo(gameObject, destination.x, destination.y, speed, xSpeedMax, ySpeedMax);
-    },
-
-    closest: function (source, targets)
-    {
-        if (!targets)
-        {
-            targets = this.world.bodies.entries;
-        }
-
-        var min = Number.MAX_VALUE;
-        var closest = null;
-        var x = source.x;
-        var y = source.y;
-        var len = targets.length;
-
-        for (var i = 0; i < len; i++)
-        {
-            var target = targets[i];
-            var body = target.body || target;
-
-            if (source === target || source === body || source === body.gameObject || source === body.center)
-            {
-                continue;
-            }
-
-            var distance = DistanceSquared(x, y, body.center.x, body.center.y);
-
-            if (distance < min)
-            {
-                closest = target;
-                min = distance;
-            }
-        }
-
-        return closest;
-    },
-
-    furthest: function (source, targets)
-    {
-        if (!targets)
-        {
-            targets = this.world.bodies.entries;
-        }
-
-        var max = -1;
-        var farthest = null;
-        var x = source.x;
-        var y = source.y;
-        var len = targets.length;
-
-        for (var i = 0; i < len; i++)
-        {
-            var target = targets[i];
-            var body = target.body || target;
-
-            if (source === target || source === body || source === body.gameObject || source === body.center)
-            {
-                continue;
-            }
-
-            var distance = DistanceSquared(x, y, body.center.x, body.center.y);
-
-            if (distance > max)
-            {
-                farthest = target;
-                max = distance;
-            }
-
-        }
-
-        return farthest;
-    },
-
-    moveTo: function (gameObject, x, y, speed, maxTime)
-    {
-        if (speed === undefined) { speed = 60; }
-        if (maxTime === undefined) { maxTime = 0; }
-
-        var angle = Math.atan2(y - gameObject.y, x - gameObject.x);
-
-        if (maxTime > 0)
-        {
-
-            speed = DistanceBetween(gameObject.x, gameObject.y, x, y) / (maxTime / 1000);
-        }
-
-        gameObject.body.velocity.setToPolar(angle, speed);
-
-        return angle;
-    },
-
-    moveToObject: function (gameObject, destination, speed, maxTime)
-    {
-        return this.moveTo(gameObject, destination.x, destination.y, speed, maxTime);
-    },
-
-    velocityFromAngle: function (angle, speed, vec2)
-    {
-        if (speed === undefined) { speed = 60; }
-        if (vec2 === undefined) { vec2 = new Vector2(); }
-
-        return vec2.setToPolar(DegToRad(angle), speed);
-    },
-
-    velocityFromRotation: function (rotation, speed, vec2)
-    {
-        if (speed === undefined) { speed = 60; }
-        if (vec2 === undefined) { vec2 = new Vector2(); }
-
-        return vec2.setToPolar(rotation, speed);
-    },
-
-    overlapRect: function (x, y, width, height, includeDynamic, includeStatic)
-    {
-        return OverlapRect(this.world, x, y, width, height, includeDynamic, includeStatic);
-    },
-
-    overlapCirc: function (x, y, radius, includeDynamic, includeStatic)
-    {
-        return OverlapCirc(this.world, x, y, radius, includeDynamic, includeStatic);
-    },
-
-    shutdown: function ()
-    {
-        if (!this.world)
-        {
-
-            return;
-        }
-
-        var eventEmitter = this.systems.events;
-
-        eventEmitter.off(SceneEvents.UPDATE, this.world.update, this.world);
-        eventEmitter.off(SceneEvents.POST_UPDATE, this.world.postUpdate, this.world);
-        eventEmitter.off(SceneEvents.SHUTDOWN, this.shutdown, this);
-
-        this.add.destroy();
-        this.world.destroy();
-
-        this.add = null;
-        this.world = null;
-        this._category = 1;
-    },
-
-    destroy: function ()
-    {
-        this.shutdown();
-
-        this.scene.sys.events.off(SceneEvents.START, this.start, this);
-
-        this.scene = null;
-        this.systems = null;
-    }
-
-});
-
-PluginCache.register('ArcadePhysics', ArcadePhysics, 'arcadePhysics');
-
-module.exports = ArcadePhysics;
+var Class = require('../../utils/Class');var DegToRad = require('../../math/DegToRad');var DistanceBetween = require('../../math/distance/DistanceBetween');var DistanceSquared = require('../../math/distance/DistanceSquared');var Factory = require('./Factory');var GetFastValue = require('../../utils/object/GetFastValue');var Merge = require('../../utils/object/Merge');var OverlapCirc = require('./components/OverlapCirc');var OverlapRect = require('./components/OverlapRect');var PluginCache = require('../../plugins/PluginCache');var SceneEvents = require('../../scene/events');var Vector2 = require('../../math/Vector2');var World = require('./World');var ArcadePhysics = new Class({    initialize:    function ArcadePhysics (scene)    {        this.scene = scene;        this.systems = scene.sys;        this.config = this.getConfig();        this.world;        this.add;        this._category = 0x0001;        scene.sys.events.once(SceneEvents.BOOT, this.boot, this);        scene.sys.events.on(SceneEvents.START, this.start, this);    },    boot: function ()    {        this.world = new World(this.scene, this.config);        this.add = new Factory(this.world);        this.systems.events.once(SceneEvents.DESTROY, this.destroy, this);    },    start: function ()    {        if (!this.world)        {            this.world = new World(this.scene, this.config);            this.add = new Factory(this.world);        }        var eventEmitter = this.systems.events;        if (!GetFastValue(this.config, 'customUpdate', false))        {            eventEmitter.on(SceneEvents.UPDATE, this.world.update, this.world);        }        eventEmitter.on(SceneEvents.POST_UPDATE, this.world.postUpdate, this.world);        eventEmitter.once(SceneEvents.SHUTDOWN, this.shutdown, this);    },    enableUpdate: function ()    {        this.systems.events.on(SceneEvents.UPDATE, this.world.update, this.world);    },    disableUpdate: function ()    {        this.systems.events.off(SceneEvents.UPDATE, this.world.update, this.world);    },    getConfig: function ()    {        var gameConfig = this.systems.game.config.physics;        var sceneConfig = this.systems.settings.physics;        var config = Merge(            GetFastValue(sceneConfig, 'arcade', {}),            GetFastValue(gameConfig, 'arcade', {})        );        return config;    },    nextCategory: function ()    {        this._category = this._category << 1;        return this._category;    },    overlap: function (object1, object2, overlapCallback, processCallback, callbackContext)    {        if (overlapCallback === undefined) { overlapCallback = null; }        if (processCallback === undefined) { processCallback = null; }        if (callbackContext === undefined) { callbackContext = overlapCallback; }        return this.world.collideObjects(object1, object2, overlapCallback, processCallback, callbackContext, true);    },    collide: function (object1, object2, collideCallback, processCallback, callbackContext)    {        if (collideCallback === undefined) { collideCallback = null; }        if (processCallback === undefined) { processCallback = null; }        if (callbackContext === undefined) { callbackContext = collideCallback; }        return this.world.collideObjects(object1, object2, collideCallback, processCallback, callbackContext, false);    },    collideTiles: function (sprite, tiles, collideCallback, processCallback, callbackContext)    {        return this.world.collideTiles(sprite, tiles, collideCallback, processCallback, callbackContext);    },    overlapTiles: function (sprite, tiles, overlapCallback, processCallback, callbackContext)    {        return this.world.overlapTiles(sprite, tiles, overlapCallback, processCallback, callbackContext);    },    pause: function ()    {        return this.world.pause();    },    resume: function ()    {        return this.world.resume();    },    accelerateTo: function (gameObject, x, y, speed, xSpeedMax, ySpeedMax)    {        if (speed === undefined) { speed = 60; }        var angle = Math.atan2(y - gameObject.y, x - gameObject.x);        gameObject.body.acceleration.setToPolar(angle, speed);        if (xSpeedMax !== undefined && ySpeedMax !== undefined)        {            gameObject.body.maxVelocity.set(xSpeedMax, ySpeedMax);        }        return angle;    },    accelerateToObject: function (gameObject, destination, speed, xSpeedMax, ySpeedMax)    {        return this.accelerateTo(gameObject, destination.x, destination.y, speed, xSpeedMax, ySpeedMax);    },    closest: function (source, targets)    {        if (!targets)        {            targets = this.world.bodies.entries;        }        var min = Number.MAX_VALUE;        var closest = null;        var x = source.x;        var y = source.y;        var len = targets.length;        for (var i = 0; i < len; i++)        {            var target = targets[i];            var body = target.body || target;            if (source === target || source === body || source === body.gameObject || source === body.center)            {                continue;            }            var distance = DistanceSquared(x, y, body.center.x, body.center.y);            if (distance < min)            {                closest = target;                min = distance;            }        }        return closest;    },    furthest: function (source, targets)    {        if (!targets)        {            targets = this.world.bodies.entries;        }        var max = -1;        var farthest = null;        var x = source.x;        var y = source.y;        var len = targets.length;        for (var i = 0; i < len; i++)        {            var target = targets[i];            var body = target.body || target;            if (source === target || source === body || source === body.gameObject || source === body.center)            {                continue;            }            var distance = DistanceSquared(x, y, body.center.x, body.center.y);            if (distance > max)            {                farthest = target;                max = distance;            }        }        return farthest;    },    moveTo: function (gameObject, x, y, speed, maxTime)    {        if (speed === undefined) { speed = 60; }        if (maxTime === undefined) { maxTime = 0; }        var angle = Math.atan2(y - gameObject.y, x - gameObject.x);        if (maxTime > 0)        {            speed = DistanceBetween(gameObject.x, gameObject.y, x, y) / (maxTime / 1000);        }        gameObject.body.velocity.setToPolar(angle, speed);        return angle;    },    moveToObject: function (gameObject, destination, speed, maxTime)    {        return this.moveTo(gameObject, destination.x, destination.y, speed, maxTime);    },    velocityFromAngle: function (angle, speed, vec2)    {        if (speed === undefined) { speed = 60; }        if (vec2 === undefined) { vec2 = new Vector2(); }        return vec2.setToPolar(DegToRad(angle), speed);    },    velocityFromRotation: function (rotation, speed, vec2)    {        if (speed === undefined) { speed = 60; }        if (vec2 === undefined) { vec2 = new Vector2(); }        return vec2.setToPolar(rotation, speed);    },    overlapRect: function (x, y, width, height, includeDynamic, includeStatic)    {        return OverlapRect(this.world, x, y, width, height, includeDynamic, includeStatic);    },    overlapCirc: function (x, y, radius, includeDynamic, includeStatic)    {        return OverlapCirc(this.world, x, y, radius, includeDynamic, includeStatic);    },    shutdown: function ()    {        if (!this.world)        {            return;        }        var eventEmitter = this.systems.events;        eventEmitter.off(SceneEvents.UPDATE, this.world.update, this.world);        eventEmitter.off(SceneEvents.POST_UPDATE, this.world.postUpdate, this.world);        eventEmitter.off(SceneEvents.SHUTDOWN, this.shutdown, this);        this.add.destroy();        this.world.destroy();        this.add = null;        this.world = null;        this._category = 1;    },    destroy: function ()    {        this.shutdown();        this.scene.sys.events.off(SceneEvents.START, this.start, this);        this.scene = null;        this.systems = null;    }});PluginCache.register('ArcadePhysics', ArcadePhysics, 'arcadePhysics');module.exports = ArcadePhysics;

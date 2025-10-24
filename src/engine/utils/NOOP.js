@@ -1,6 +1,2 @@
-var NOOP = function ()
-{
-
-};
-
+var NOOP = function () {};
 module.exports = NOOP;

@@ -1,1 +1,1 @@
-module.exports = 'metadata';
+module.exports = 'metadata';

@@ -1,1 +1,1 @@
-module.exports = 'pipelineboot';
+module.exports = 'pipelineboot';

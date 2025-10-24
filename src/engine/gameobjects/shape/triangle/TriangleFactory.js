@@ -1,7 +1,1 @@
-var GameObjectFactory = require('../../GameObjectFactory');
-var Triangle = require('./Triangle');
-
-GameObjectFactory.register('triangle', function (x, y, x1, y1, x2, y2, x3, y3, fillColor, fillAlpha)
-{
-    return this.displayList.add(new Triangle(this.scene, x, y, x1, y1, x2, y2, x3, y3, fillColor, fillAlpha));
-});
+var GameObjectFactory = require('../../GameObjectFactory');var Triangle = require('./Triangle');GameObjectFactory.register('triangle', function (x, y, x1, y1, x2, y2, x3, y3, fillColor, fillAlpha){    return this.displayList.add(new Triangle(this.scene, x, y, x1, y1, x2, y2, x3, y3, fillColor, fillAlpha));});

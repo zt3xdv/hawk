@@ -1,1 +1,1 @@
-module.exports = 'removedfromscene';
+module.exports = 'removedfromscene';

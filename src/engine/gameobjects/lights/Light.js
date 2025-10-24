@@ -1,124 +1,1 @@
-var Circle = require('../../geom/circle/Circle');
-var Class = require('../../utils/Class');
-var Components = require('../components');
-var RGB = require('../../display/RGB');
-var Utils = require('../../renderer/webgl/Utils');
-
-var Light = new Class({
-
-    Extends: Circle,
-
-    Mixins: [
-        Components.Origin,
-        Components.ScrollFactor,
-        Components.Visible
-    ],
-
-    initialize:
-
-    function Light (x, y, radius, r, g, b, intensity)
-    {
-        Circle.call(this, x, y, radius);
-
-        this.color = new RGB(r, g, b);
-
-        this.intensity = intensity;
-
-        this.renderFlags = 15;
-
-        this.cameraFilter = 0;
-
-        this.setScrollFactor(1, 1);
-        this.setOrigin();
-        this.setDisplayOrigin(radius);
-    },
-
-    displayWidth: {
-
-        get: function ()
-        {
-            return this.diameter;
-        },
-
-        set: function (value)
-        {
-            this.diameter = value;
-        }
-
-    },
-
-    displayHeight: {
-
-        get: function ()
-        {
-            return this.diameter;
-        },
-
-        set: function (value)
-        {
-            this.diameter = value;
-        }
-
-    },
-
-    width: {
-
-        get: function ()
-        {
-            return this.diameter;
-        },
-
-        set: function (value)
-        {
-            this.diameter = value;
-        }
-
-    },
-
-    height: {
-
-        get: function ()
-        {
-            return this.diameter;
-        },
-
-        set: function (value)
-        {
-            this.diameter = value;
-        }
-
-    },
-
-    willRender: function (camera)
-    {
-        return !(Light.RENDER_MASK !== this.renderFlags || (this.cameraFilter !== 0 && (this.cameraFilter & camera.id)));
-    },
-
-    setColor: function (rgb)
-    {
-        var color = Utils.getFloatsFromUintRGB(rgb);
-
-        this.color.set(color[0], color[1], color[2]);
-
-        return this;
-    },
-
-    setIntensity: function (intensity)
-    {
-        this.intensity = intensity;
-
-        return this;
-    },
-
-    setRadius: function (radius)
-    {
-        this.radius = radius;
-
-        return this;
-    }
-
-});
-
-Light.RENDER_MASK = 15;
-
-module.exports = Light;
+var Circle = require('../../geom/circle/Circle');var Class = require('../../utils/Class');var Components = require('../components');var RGB = require('../../display/RGB');var Utils = require('../../renderer/webgl/Utils');var Light = new Class({    Extends: Circle,    Mixins: [        Components.Origin,        Components.ScrollFactor,        Components.Visible    ],    initialize:    function Light (x, y, radius, r, g, b, intensity)    {        Circle.call(this, x, y, radius);        this.color = new RGB(r, g, b);        this.intensity = intensity;        this.renderFlags = 15;        this.cameraFilter = 0;        this.setScrollFactor(1, 1);        this.setOrigin();        this.setDisplayOrigin(radius);    },    displayWidth: {        get: function ()        {            return this.diameter;        },        set: function (value)        {            this.diameter = value;        }    },    displayHeight: {        get: function ()        {            return this.diameter;        },        set: function (value)        {            this.diameter = value;        }    },    width: {        get: function ()        {            return this.diameter;        },        set: function (value)        {            this.diameter = value;        }    },    height: {        get: function ()        {            return this.diameter;        },        set: function (value)        {            this.diameter = value;        }    },    willRender: function (camera)    {        return !(Light.RENDER_MASK !== this.renderFlags || (this.cameraFilter !== 0 && (this.cameraFilter & camera.id)));    },    setColor: function (rgb)    {        var color = Utils.getFloatsFromUintRGB(rgb);        this.color.set(color[0], color[1], color[2]);        return this;    },    setIntensity: function (intensity)    {        this.intensity = intensity;        return this;    },    setRadius: function (radius)    {        this.radius = radius;        return this;    }});Light.RENDER_MASK = 15;module.exports = Light;

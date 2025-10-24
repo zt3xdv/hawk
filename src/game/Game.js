@@ -30,16 +30,15 @@ export default class Game {
     };
 
     this.game = new HawkEngine.Game(config);
-
+    
     window.addEventListener('resize', () => {
       this._onResize();
     });
   }
   
   _onResize() {
-    const newWidth = window.innerWidth;
-    const newHeight = window.innerHeight;
-
+    const newWidth = (window.innerWidth * window.devicePixelRatio) / 2;
+    const newHeight = (window.innerHeight * window.devicePixelRatio) / 2;
     this.game.scale.resize(newWidth, newHeight);
     this.game.renderer.resize(newWidth, newHeight);
   }

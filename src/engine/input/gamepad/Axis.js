@@ -1,39 +1,1 @@
-var Class = require('../../utils/Class');
-
-var Axis = new Class({
-
-    initialize:
-
-    function Axis (pad, index)
-    {
-
-        this.pad = pad;
-
-        this.events = pad.events;
-
-        this.index = index;
-
-        this.value = 0;
-
-        this.threshold = 0.1;
-    },
-
-    update: function (value)
-    {
-        this.value = value;
-    },
-
-    getValue: function ()
-    {
-        return (Math.abs(this.value) < this.threshold) ? 0 : this.value;
-    },
-
-    destroy: function ()
-    {
-        this.pad = null;
-        this.events = null;
-    }
-
-});
-
-module.exports = Axis;
+var Class = require('../../utils/Class');var Axis = new Class({    initialize:    function Axis (pad, index)    {        this.pad = pad;        this.events = pad.events;        this.index = index;        this.value = 0;        this.threshold = 0.1;    },    update: function (value)    {        this.value = value;    },    getValue: function ()    {        return (Math.abs(this.value) < this.threshold) ? 0 : this.value;    },    destroy: function ()    {        this.pad = null;        this.events = null;    }});module.exports = Axis;

@@ -1,43 +1,1 @@
-var MATH_CONST = require('../const');
-
-var RotateTo = function (currentAngle, targetAngle, lerp)
-{
-    if (lerp === undefined) { lerp = 0.05; }
-
-    if (currentAngle === targetAngle)
-    {
-        return currentAngle;
-    }
-
-    if (Math.abs(targetAngle - currentAngle) <= lerp || Math.abs(targetAngle - currentAngle) >= (MATH_CONST.PI2 - lerp))
-    {
-        currentAngle = targetAngle;
-    }
-    else
-    {
-        if (Math.abs(targetAngle - currentAngle) > Math.PI)
-        {
-            if (targetAngle < currentAngle)
-            {
-                targetAngle += MATH_CONST.PI2;
-            }
-            else
-            {
-                targetAngle -= MATH_CONST.PI2;
-            }
-        }
-
-        if (targetAngle > currentAngle)
-        {
-            currentAngle += lerp;
-        }
-        else if (targetAngle < currentAngle)
-        {
-            currentAngle -= lerp;
-        }
-    }
-
-    return currentAngle;
-};
-
-module.exports = RotateTo;
+var MATH_CONST = require('../const');var RotateTo = function (currentAngle, targetAngle, lerp){    if (lerp === undefined) { lerp = 0.05; }    if (currentAngle === targetAngle)    {        return currentAngle;    }    if (Math.abs(targetAngle - currentAngle) <= lerp || Math.abs(targetAngle - currentAngle) >= (MATH_CONST.PI2 - lerp))    {        currentAngle = targetAngle;    }    else    {        if (Math.abs(targetAngle - currentAngle) > Math.PI)        {            if (targetAngle < currentAngle)            {                targetAngle += MATH_CONST.PI2;            }            else            {                targetAngle -= MATH_CONST.PI2;            }        }        if (targetAngle > currentAngle)        {            currentAngle += lerp;        }        else if (targetAngle < currentAngle)        {            currentAngle -= lerp;        }    }    return currentAngle;};module.exports = RotateTo;

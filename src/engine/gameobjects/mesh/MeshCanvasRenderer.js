@@ -1,5 +1,1 @@
-var MeshCanvasRenderer = function ()
-{
-};
-
-module.exports = MeshCanvasRenderer;
+var MeshCanvasRenderer = function (){};module.exports = MeshCanvasRenderer;

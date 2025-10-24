@@ -1,168 +1,1 @@
-var DeepCopy = require('../../utils/object/DeepCopy');
-var FX = require('../components/FX');
-var SpliceOne = require('../../utils/array/SpliceOne');
-
-var PostPipeline = {
-
-    hasPostPipeline: false,
-
-    postPipelines: null,
-
-    postPipelineData: null,
-
-    preFX: null,
-
-    postFX: null,
-
-    initPostPipeline: function (preFX)
-    {
-        this.postPipelines = [];
-        this.postPipelineData = {};
-
-        this.postFX = new FX(this, true);
-
-        if (preFX)
-        {
-            this.preFX = new FX(this, false);
-        }
-    },
-
-    setPostPipeline: function (pipelines, pipelineData, copyData)
-    {
-        var renderer = this.scene.sys.renderer;
-
-        if (!renderer)
-        {
-            return this;
-        }
-
-        var pipelineManager = renderer.pipelines;
-
-        if (pipelineManager)
-        {
-            if (!Array.isArray(pipelines))
-            {
-                pipelines = [ pipelines ];
-            }
-
-            for (var i = 0; i < pipelines.length; i++)
-            {
-                var instance = pipelineManager.getPostPipeline(pipelines[i], this, pipelineData);
-
-                if (instance)
-                {
-                    this.postPipelines.push(instance);
-                }
-            }
-
-            if (pipelineData)
-            {
-                this.postPipelineData = (copyData) ? DeepCopy(pipelineData) : pipelineData;
-            }
-        }
-
-        this.hasPostPipeline = (this.postPipelines.length > 0);
-
-        return this;
-    },
-
-    setPostPipelineData: function (key, value)
-    {
-        var data = this.postPipelineData;
-
-        if (value === undefined)
-        {
-            delete data[key];
-        }
-        else
-        {
-            data[key] = value;
-        }
-
-        return this;
-    },
-
-    getPostPipeline: function (pipeline)
-    {
-        var isString = (typeof pipeline === 'string');
-
-        var pipelines = this.postPipelines;
-
-        var results = [];
-
-        for (var i = 0; i < pipelines.length; i++)
-        {
-            var instance = pipelines[i];
-
-            if ((isString && instance.name === pipeline) || (!isString && instance instanceof pipeline))
-            {
-                results.push(instance);
-            }
-        }
-
-        return (results.length === 1) ? results[0] : results;
-    },
-
-    resetPostPipeline: function (resetData)
-    {
-        if (resetData === undefined) { resetData = false; }
-
-        var pipelines = this.postPipelines;
-
-        for (var i = 0; i < pipelines.length; i++)
-        {
-            pipelines[i].destroy();
-        }
-
-        this.postPipelines = [];
-        this.hasPostPipeline = false;
-
-        if (resetData)
-        {
-            this.postPipelineData = {};
-        }
-    },
-
-    removePostPipeline: function (pipeline)
-    {
-        var isString = (typeof pipeline === 'string');
-
-        var pipelines = this.postPipelines;
-
-        for (var i = pipelines.length - 1; i >= 0; i--)
-        {
-            var instance = pipelines[i];
-
-            if (
-                (isString && instance.name === pipeline) ||
-                (!isString && instance === pipeline))
-            {
-                instance.destroy();
-
-                SpliceOne(pipelines, i);
-            }
-        }
-
-        this.hasPostPipeline = (this.postPipelines.length > 0);
-
-        return this;
-    },
-
-    clearFX: function ()
-    {
-        if (this.preFX)
-        {
-            this.preFX.clear();
-        }
-
-        if (this.postFX)
-        {
-            this.postFX.clear();
-        }
-
-        return this;
-    }
-
-};
-
-module.exports = PostPipeline;
+var DeepCopy = require('../../utils/object/DeepCopy');var FX = require('../components/FX');var SpliceOne = require('../../utils/array/SpliceOne');var PostPipeline = {    hasPostPipeline: false,    postPipelines: null,    postPipelineData: null,    preFX: null,    postFX: null,    initPostPipeline: function (preFX)    {        this.postPipelines = [];        this.postPipelineData = {};        this.postFX = new FX(this, true);        if (preFX)        {            this.preFX = new FX(this, false);        }    },    setPostPipeline: function (pipelines, pipelineData, copyData)    {        var renderer = this.scene.sys.renderer;        if (!renderer)        {            return this;        }        var pipelineManager = renderer.pipelines;        if (pipelineManager)        {            if (!Array.isArray(pipelines))            {                pipelines = [ pipelines ];            }            for (var i = 0; i < pipelines.length; i++)            {                var instance = pipelineManager.getPostPipeline(pipelines[i], this, pipelineData);                if (instance)                {                    this.postPipelines.push(instance);                }            }            if (pipelineData)            {                this.postPipelineData = (copyData) ? DeepCopy(pipelineData) : pipelineData;            }        }        this.hasPostPipeline = (this.postPipelines.length > 0);        return this;    },    setPostPipelineData: function (key, value)    {        var data = this.postPipelineData;        if (value === undefined)        {            delete data[key];        }        else        {            data[key] = value;        }        return this;    },    getPostPipeline: function (pipeline)    {        var isString = (typeof pipeline === 'string');        var pipelines = this.postPipelines;        var results = [];        for (var i = 0; i < pipelines.length; i++)        {            var instance = pipelines[i];            if ((isString && instance.name === pipeline) || (!isString && instance instanceof pipeline))            {                results.push(instance);            }        }        return (results.length === 1) ? results[0] : results;    },    resetPostPipeline: function (resetData)    {        if (resetData === undefined) { resetData = false; }        var pipelines = this.postPipelines;        for (var i = 0; i < pipelines.length; i++)        {            pipelines[i].destroy();        }        this.postPipelines = [];        this.hasPostPipeline = false;        if (resetData)        {            this.postPipelineData = {};        }    },    removePostPipeline: function (pipeline)    {        var isString = (typeof pipeline === 'string');        var pipelines = this.postPipelines;        for (var i = pipelines.length - 1; i >= 0; i--)        {            var instance = pipelines[i];            if (                (isString && instance.name === pipeline) ||                (!isString && instance === pipeline))            {                instance.destroy();                SpliceOne(pipelines, i);            }        }        this.hasPostPipeline = (this.postPipelines.length > 0);        return this;    },    clearFX: function ()    {        if (this.preFX)        {            this.preFX.clear();        }        if (this.postFX)        {            this.postFX.clear();        }        return this;    }};module.exports = PostPipeline;

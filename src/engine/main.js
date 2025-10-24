@@ -1,46 +1,1 @@
-require('./polyfills/requestVideoFrame');
-
-var CONST = require('./const');
-var Extend = require('./utils/object/Extend');
-
-var HawkEngine = {
-
-    Actions: require('./actions'),
-    Animations: require('./animations'),
-    BlendModes: require('./renderer/BlendModes'),
-    Cache: require('./cache'),
-    Cameras: require('./cameras'),
-    Core: require('./core'),
-    Class: require('./utils/Class'),
-    Create: require('./create'),
-    Curves: require('./curves'),
-    Data: require('./data'),
-    Display: require('./display'),
-    DOM: require('./dom'),
-    Events: require('./events'),
-    FX: require('./fx'),
-    Game: require('./core/Game'),
-    GameObjects: require('./gameobjects'),
-    Geom: require('./geom'),
-    Input: require('./input'),
-    Loader: require('./loader'),
-    Math: require('./math'),
-    Physics: require('./physics'),
-    Plugins: require('./plugins'),
-    Renderer: require('./renderer'),
-    Scale: require('./scale'),
-    ScaleModes: require('./renderer/ScaleModes'),
-    Scene: require('./scene/Scene'),
-    Scenes: require('./scene'),
-    Structs: require('./structs'),
-    Textures: require('./textures'),
-    Tilemaps: require('./tilemaps'),
-    Time: require('./time'),
-    Tweens: require('./tweens'),
-    Utils: require('./utils')
-
-};
-
-HawkEngine = Extend(false, HawkEngine, CONST);
-module.exports = HawkEngine;
-global.HawkEngine = HawkEngine;
+require('./polyfills/requestVideoFrame');var CONST = require('./const');var Extend = require('./utils/object/Extend');var HawkEngine = {    Actions: require('./actions'),    Animations: require('./animations'),    BlendModes: require('./renderer/BlendModes'),    Cache: require('./cache'),    Cameras: require('./cameras'),    Core: require('./core'),    Class: require('./utils/Class'),    Create: require('./create'),    Curves: require('./curves'),    Data: require('./data'),    Display: require('./display'),    DOM: require('./dom'),    Events: require('./events'),    FX: require('./fx'),    Game: require('./core/Game'),    GameObjects: require('./gameobjects'),    Geom: require('./geom'),    Input: require('./input'),    Loader: require('./loader'),    Math: require('./math'),    Physics: require('./physics'),    Plugins: require('./plugins'),    Renderer: require('./renderer'),    Scale: require('./scale'),    ScaleModes: require('./renderer/ScaleModes'),    Scene: require('./scene/Scene'),    Scenes: require('./scene'),    Structs: require('./structs'),    Textures: require('./textures'),    Tilemaps: require('./tilemaps'),    Time: require('./time'),    Tweens: require('./tweens'),    Utils: require('./utils')};HawkEngine = Extend(false, HawkEngine, CONST);module.exports = HawkEngine;global.HawkEngine = HawkEngine;

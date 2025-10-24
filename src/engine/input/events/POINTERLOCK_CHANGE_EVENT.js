@@ -1,1 +1,1 @@
-module.exports = 'pointerlockchange';
+module.exports = 'pointerlockchange';

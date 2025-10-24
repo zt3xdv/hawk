@@ -1,23 +1,1 @@
-var ALIGN_CONST = require('../const');
-
-var AlignToMap = [];
-
-AlignToMap[ALIGN_CONST.BOTTOM_CENTER] = require('./BottomCenter');
-AlignToMap[ALIGN_CONST.BOTTOM_LEFT] = require('./BottomLeft');
-AlignToMap[ALIGN_CONST.BOTTOM_RIGHT] = require('./BottomRight');
-AlignToMap[ALIGN_CONST.LEFT_BOTTOM] = require('./LeftBottom');
-AlignToMap[ALIGN_CONST.LEFT_CENTER] = require('./LeftCenter');
-AlignToMap[ALIGN_CONST.LEFT_TOP] = require('./LeftTop');
-AlignToMap[ALIGN_CONST.RIGHT_BOTTOM] = require('./RightBottom');
-AlignToMap[ALIGN_CONST.RIGHT_CENTER] = require('./RightCenter');
-AlignToMap[ALIGN_CONST.RIGHT_TOP] = require('./RightTop');
-AlignToMap[ALIGN_CONST.TOP_CENTER] = require('./TopCenter');
-AlignToMap[ALIGN_CONST.TOP_LEFT] = require('./TopLeft');
-AlignToMap[ALIGN_CONST.TOP_RIGHT] = require('./TopRight');
-
-var QuickSet = function (child, alignTo, position, offsetX, offsetY)
-{
-    return AlignToMap[position](child, alignTo, offsetX, offsetY);
-};
-
-module.exports = QuickSet;
+var ALIGN_CONST = require('../const');var AlignToMap = [];AlignToMap[ALIGN_CONST.BOTTOM_CENTER] = require('./BottomCenter');AlignToMap[ALIGN_CONST.BOTTOM_LEFT] = require('./BottomLeft');AlignToMap[ALIGN_CONST.BOTTOM_RIGHT] = require('./BottomRight');AlignToMap[ALIGN_CONST.LEFT_BOTTOM] = require('./LeftBottom');AlignToMap[ALIGN_CONST.LEFT_CENTER] = require('./LeftCenter');AlignToMap[ALIGN_CONST.LEFT_TOP] = require('./LeftTop');AlignToMap[ALIGN_CONST.RIGHT_BOTTOM] = require('./RightBottom');AlignToMap[ALIGN_CONST.RIGHT_CENTER] = require('./RightCenter');AlignToMap[ALIGN_CONST.RIGHT_TOP] = require('./RightTop');AlignToMap[ALIGN_CONST.TOP_CENTER] = require('./TopCenter');AlignToMap[ALIGN_CONST.TOP_LEFT] = require('./TopLeft');AlignToMap[ALIGN_CONST.TOP_RIGHT] = require('./TopRight');var QuickSet = function (child, alignTo, position, offsetX, offsetY){    return AlignToMap[position](child, alignTo, offsetX, offsetY);};module.exports = QuickSet;

@@ -1,28 +1,1 @@
-var RoundAwayFromZero = require('../../math/RoundAwayFromZero');
-
-var NumberArrayStep = function (start, end, step)
-{
-    if (start === undefined) { start = 0; }
-    if (end === undefined) { end = null; }
-    if (step === undefined) { step = 1; }
-
-    if (end === null)
-    {
-        end = start;
-        start = 0;
-    }
-
-    var result = [];
-
-    var total = Math.max(RoundAwayFromZero((end - start) / (step || 1)), 0);
-
-    for (var i = 0; i < total; i++)
-    {
-        result.push(start);
-        start += step;
-    }
-
-    return result;
-};
-
-module.exports = NumberArrayStep;
+var RoundAwayFromZero = require('../../math/RoundAwayFromZero');var NumberArrayStep = function (start, end, step){    if (start === undefined) { start = 0; }    if (end === undefined) { end = null; }    if (step === undefined) { step = 1; }    if (end === null)    {        end = start;        start = 0;    }    var result = [];    var total = Math.max(RoundAwayFromZero((end - start) / (step || 1)), 0);    for (var i = 0; i < total; i++)    {        result.push(start);        start += step;    }    return result;};module.exports = NumberArrayStep;

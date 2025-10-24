@@ -1,1 +1,1 @@
-module.exports = 'wheel';
+module.exports = 'wheel';

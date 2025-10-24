@@ -97,6 +97,7 @@ export function renderDashboard() {
           document.body.removeChild(child);
         }
       }
+      game._onResize();
     });
   }
 

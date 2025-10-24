@@ -1,7 +1,1 @@
-var GameObjectFactory = require('../../GameObjectFactory');
-var Line = require('./Line');
-
-GameObjectFactory.register('line', function (x, y, x1, y1, x2, y2, strokeColor, strokeAlpha)
-{
-    return this.displayList.add(new Line(this.scene, x, y, x1, y1, x2, y2, strokeColor, strokeAlpha));
-});
+var GameObjectFactory = require('../../GameObjectFactory');var Line = require('./Line');GameObjectFactory.register('line', function (x, y, x1, y1, x2, y2, strokeColor, strokeAlpha){    return this.displayList.add(new Line(this.scene, x, y, x1, y1, x2, y2, strokeColor, strokeAlpha));});

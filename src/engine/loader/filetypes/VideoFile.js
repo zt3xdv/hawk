@@ -1,96 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var CONST = require('../const');
-var File = require('../File');
-var FileTypesManager = require('../FileTypesManager');
-var GetURL = require('../GetURL');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-
-
-var VideoFile = new Class({
-
-    Extends: File,
-
-    initialize:
-
-    function VideoFile (loader, key, url, noAudio)
-    {
-        if (noAudio === undefined) { noAudio = false; }
-
-        if (IsPlainObject(key))
-        {
-            var config = key;
-
-            key = GetFastValue(config, 'key');
-            url = GetFastValue(config, 'url', []);
-            noAudio = GetFastValue(config, 'noAudio', false);
-        }
-
-        var urlConfig = loader.systems.game.device.video.getVideoURL(url);
-
-        if (!urlConfig)
-        {
-            console.warn('VideoFile: No supported format for ' + key);
-        }
-
-        var fileConfig = {
-            type: 'video',
-            cache: loader.cacheManager.video,
-            extension: urlConfig.type,
-            key: key,
-            url: urlConfig.url,
-            config: {
-                noAudio: noAudio
-            }
-        };
-
-        File.call(this, loader, fileConfig);
-    },
-
-    
-    onProcess: function ()
-    {
-        this.data = {
-            url: this.src,
-            noAudio: this.config.noAudio,
-            crossOrigin: this.crossOrigin
-        };
-
-        this.onProcessComplete();
-    },
-
-    
-    load: function ()
-    {
-        //  We set these, but we don't actually load anything (the Video Game Object does that)
-
-        this.src = GetURL(this, this.loader.baseURL);
-
-        this.state = CONST.FILE_LOADED;
-
-        this.loader.nextFile(this, true);
-    }
-
-});
-
-
-FileTypesManager.register('video', function (key, urls, noAudio)
-{
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            this.addFile(new VideoFile(this, key[i]));
-        }
-    }
-    else
-    {
-        this.addFile(new VideoFile(this, key, urls, noAudio));
-    }
-
-    return this;
-});
-
-module.exports = VideoFile;
+var Class = require('../../utils/Class');var CONST = require('../const');var File = require('../File');var FileTypesManager = require('../FileTypesManager');var GetURL = require('../GetURL');var GetFastValue = require('../../utils/object/GetFastValue');var IsPlainObject = require('../../utils/object/IsPlainObject');var VideoFile = new Class({    Extends: File,    initialize:    function VideoFile (loader, key, url, noAudio)    {        if (noAudio === undefined) { noAudio = false; }        if (IsPlainObject(key))        {            var config = key;            key = GetFastValue(config, 'key');            url = GetFastValue(config, 'url', []);            noAudio = GetFastValue(config, 'noAudio', false);        }        var urlConfig = loader.systems.game.device.video.getVideoURL(url);        if (!urlConfig)        {            console.warn('VideoFile: No supported format for ' + key);        }        var fileConfig = {            type: 'video',            cache: loader.cacheManager.video,            extension: urlConfig.type,            key: key,            url: urlConfig.url,            config: {                noAudio: noAudio            }        };        File.call(this, loader, fileConfig);    },        onProcess: function ()    {        this.data = {            url: this.src,            noAudio: this.config.noAudio,            crossOrigin: this.crossOrigin        };        this.onProcessComplete();    },        load: function ()    {        //  We set these, but we don't actually load anything (the Video Game Object does that)        this.src = GetURL(this, this.loader.baseURL);        this.state = CONST.FILE_LOADED;        this.loader.nextFile(this, true);    }});FileTypesManager.register('video', function (key, urls, noAudio){    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            this.addFile(new VideoFile(this, key[i]));        }    }    else    {        this.addFile(new VideoFile(this, key, urls, noAudio));    }    return this;});module.exports = VideoFile;

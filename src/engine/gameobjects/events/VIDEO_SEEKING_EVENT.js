@@ -1,1 +1,1 @@
-module.exports = 'seeking';
+module.exports = 'seeking';

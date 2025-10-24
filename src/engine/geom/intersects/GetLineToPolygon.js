@@ -1,37 +1,1 @@
-var Vector3 = require('../../math/Vector3');
-var Vector4 = require('../../math/Vector4');
-var GetLineToPoints = require('./GetLineToPoints');
-
-var tempIntersect = new Vector3();
-
-var GetLineToPolygon = function (line, polygons, isRay, out)
-{
-    if (out === undefined) { out = new Vector4(); }
-
-    if (!Array.isArray(polygons))
-    {
-        polygons = [ polygons ];
-    }
-
-    var closestIntersect = false;
-
-    out.set();
-    tempIntersect.set();
-
-    for (var i = 0; i < polygons.length; i++)
-    {
-        if (GetLineToPoints(line, polygons[i].points, isRay, tempIntersect))
-        {
-            if (!closestIntersect || tempIntersect.z < out.z)
-            {
-                out.set(tempIntersect.x, tempIntersect.y, tempIntersect.z, i);
-
-                closestIntersect = true;
-            }
-        }
-    }
-
-    return (closestIntersect) ? out : null;
-};
-
-module.exports = GetLineToPolygon;
+var Vector3 = require('../../math/Vector3');var Vector4 = require('../../math/Vector4');var GetLineToPoints = require('./GetLineToPoints');var tempIntersect = new Vector3();var GetLineToPolygon = function (line, polygons, isRay, out){    if (out === undefined) { out = new Vector4(); }    if (!Array.isArray(polygons))    {        polygons = [ polygons ];    }    var closestIntersect = false;    out.set();    tempIntersect.set();    for (var i = 0; i < polygons.length; i++)    {        if (GetLineToPoints(line, polygons[i].points, isRay, tempIntersect))        {            if (!closestIntersect || tempIntersect.z < out.z)            {                out.set(tempIntersect.x, tempIntersect.y, tempIntersect.z, i);                closestIntersect = true;            }        }    }    return (closestIntersect) ? out : null;};module.exports = GetLineToPolygon;

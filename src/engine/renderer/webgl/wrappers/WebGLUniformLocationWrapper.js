@@ -1,49 +1,1 @@
-var Class = require('../../../utils/Class');
-
-var WebGLUniformLocationWrapper = new Class({
-
-    initialize:
-
-    function WebGLUniformLocationWrapper (gl, program, name)
-    {
-
-        this.webGLUniformLocation = null;
-
-        this.gl = gl;
-
-        this.program = program;
-
-        this.name = name;
-
-        this.createResource();
-    },
-
-    createResource: function ()
-    {
-        if (this.program.webGLProgram === null)
-        {
-            this.webGLUniformLocation = null;
-            return;
-        }
-
-        var gl = this.gl;
-
-        if (gl.isContextLost())
-        {
-
-            return;
-        }
-
-        this.webGLUniformLocation = gl.getUniformLocation(this.program.webGLProgram, this.name);
-    },
-
-    destroy: function ()
-    {
-        this.gl = null;
-        this.program = null;
-        this.name = null;
-        this.webGLUniformLocation = null;
-    }
-});
-
-module.exports = WebGLUniformLocationWrapper;
+var Class = require('../../../utils/Class');var WebGLUniformLocationWrapper = new Class({    initialize:    function WebGLUniformLocationWrapper (gl, program, name)    {        this.webGLUniformLocation = null;        this.gl = gl;        this.program = program;        this.name = name;        this.createResource();    },    createResource: function ()    {        if (this.program.webGLProgram === null)        {            this.webGLUniformLocation = null;            return;        }        var gl = this.gl;        if (gl.isContextLost())        {            return;        }        this.webGLUniformLocation = gl.getUniformLocation(this.program.webGLProgram, this.name);    },    destroy: function ()    {        this.gl = null;        this.program = null;        this.name = null;        this.webGLUniformLocation = null;    }});module.exports = WebGLUniformLocationWrapper;

@@ -1,30 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var GetValue = require('../../utils/object/GetValue');
-var NineSlice = require('./NineSlice');
-
-GameObjectCreator.register('nineslice', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var key = GetAdvancedValue(config, 'key', null);
-    var frame = GetAdvancedValue(config, 'frame', null);
-    var width = GetValue(config, 'width', 256);
-    var height = GetValue(config, 'height', 256);
-    var leftWidth = GetValue(config, 'leftWidth', 10);
-    var rightWidth = GetValue(config, 'rightWidth', 10);
-    var topHeight = GetValue(config, 'topHeight', 0);
-    var bottomHeight = GetValue(config, 'bottomHeight', 0);
-
-    var nineslice = new NineSlice(this.scene, 0, 0, key, frame, width, height, leftWidth, rightWidth, topHeight, bottomHeight);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, nineslice, config);
-
-    return nineslice;
-});
+var BuildGameObject = require('../BuildGameObject');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var GetValue = require('../../utils/object/GetValue');var NineSlice = require('./NineSlice');GameObjectCreator.register('nineslice', function (config, addToScene){    if (config === undefined) { config = {}; }    var key = GetAdvancedValue(config, 'key', null);    var frame = GetAdvancedValue(config, 'frame', null);    var width = GetValue(config, 'width', 256);    var height = GetValue(config, 'height', 256);    var leftWidth = GetValue(config, 'leftWidth', 10);    var rightWidth = GetValue(config, 'rightWidth', 10);    var topHeight = GetValue(config, 'topHeight', 0);    var bottomHeight = GetValue(config, 'bottomHeight', 0);    var nineslice = new NineSlice(this.scene, 0, 0, key, frame, width, height, leftWidth, rightWidth, topHeight, bottomHeight);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, nineslice, config);    return nineslice;});

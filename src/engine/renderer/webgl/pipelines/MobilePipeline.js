@@ -1,59 +1,1 @@
-var Class = require('../../../utils/Class');
-var GetFastValue = require('../../../utils/object/GetFastValue');
-var MultiPipeline = require('./MultiPipeline');
-var ShaderSourceFS = require('../shaders/Single-frag');
-var ShaderSourceVS = require('../shaders/Single-vert');
-var WEBGL_CONST = require('../const');
-var WebGLPipeline = require('../WebGLPipeline');
-
-var MobilePipeline = new Class({
-
-    Extends: MultiPipeline,
-
-    initialize:
-
-    function MobilePipeline (config)
-    {
-        config.fragShader = GetFastValue(config, 'fragShader', ShaderSourceFS);
-        config.vertShader = GetFastValue(config, 'vertShader', ShaderSourceVS);
-        config.attributes = GetFastValue(config, 'attributes', [
-            {
-                name: 'inPosition',
-                size: 2
-            },
-            {
-                name: 'inTexCoord',
-                size: 2
-            },
-            {
-                name: 'inTexId'
-            },
-            {
-                name: 'inTintEffect'
-            },
-            {
-                name: 'inTint',
-                size: 4,
-                type: WEBGL_CONST.UNSIGNED_BYTE,
-                normalized: true
-            }
-        ]);
-        config.forceZero = true;
-        config.resizeUniform = 'uResolution';
-
-        MultiPipeline.call(this, config);
-    },
-
-    boot: function ()
-    {
-        WebGLPipeline.prototype.boot.call(this);
-
-        var renderer = this.renderer;
-
-        this.set1i('uMainSampler', 0);
-        this.set2f('uResolution', renderer.width, renderer.height);
-    }
-
-});
-
-module.exports = MobilePipeline;
+var Class = require('../../../utils/Class');var GetFastValue = require('../../../utils/object/GetFastValue');var MultiPipeline = require('./MultiPipeline');var ShaderSourceFS = require('../shaders/Single-frag');var ShaderSourceVS = require('../shaders/Single-vert');var WEBGL_CONST = require('../const');var WebGLPipeline = require('../WebGLPipeline');var MobilePipeline = new Class({    Extends: MultiPipeline,    initialize:    function MobilePipeline (config)    {        config.fragShader = GetFastValue(config, 'fragShader', ShaderSourceFS);        config.vertShader = GetFastValue(config, 'vertShader', ShaderSourceVS);        config.attributes = GetFastValue(config, 'attributes', [            {                name: 'inPosition',                size: 2            },            {                name: 'inTexCoord',                size: 2            },            {                name: 'inTexId'            },            {                name: 'inTintEffect'            },            {                name: 'inTint',                size: 4,                type: WEBGL_CONST.UNSIGNED_BYTE,                normalized: true            }        ]);        config.forceZero = true;        config.resizeUniform = 'uResolution';        MultiPipeline.call(this, config);    },    boot: function ()    {        WebGLPipeline.prototype.boot.call(this);        var renderer = this.renderer;        this.set1i('uMainSampler', 0);        this.set2f('uResolution', renderer.width, renderer.height);    }});module.exports = MobilePipeline;

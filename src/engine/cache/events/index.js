@@ -1,6 +1,1 @@
-module.exports = {
-
-    ADD: require('./ADD_EVENT'),
-    REMOVE: require('./REMOVE_EVENT')
-
-};
+module.exports = {    ADD: require('./ADD_EVENT'),    REMOVE: require('./REMOVE_EVENT')};

@@ -1,13 +1,1 @@
-var SpliceOne = require('./SpliceOne');
-
-var RemoveRandomElement = function (array, start, length)
-{
-    if (start === undefined) { start = 0; }
-    if (length === undefined) { length = array.length; }
-
-    var randomIndex = start + Math.floor(Math.random() * length);
-
-    return SpliceOne(array, randomIndex);
-};
-
-module.exports = RemoveRandomElement;
+var SpliceOne = require('./SpliceOne');var RemoveRandomElement = function (array, start, length){    if (start === undefined) { start = 0; }    if (length === undefined) { length = array.length; }    var randomIndex = start + Math.floor(Math.random() * length);    return SpliceOne(array, randomIndex);};module.exports = RemoveRandomElement;

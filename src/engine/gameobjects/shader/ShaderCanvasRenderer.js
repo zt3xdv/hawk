@@ -1,5 +1,1 @@
-var ShaderCanvasRenderer = function ()
-{
-};
-
-module.exports = ShaderCanvasRenderer;
+var ShaderCanvasRenderer = function (){};module.exports = ShaderCanvasRenderer;

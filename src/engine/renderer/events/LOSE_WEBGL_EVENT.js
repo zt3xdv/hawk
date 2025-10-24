@@ -1,1 +1,1 @@
-module.exports = 'losewebgl';
+module.exports = 'losewebgl';

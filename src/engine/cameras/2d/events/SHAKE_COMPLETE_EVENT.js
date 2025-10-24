@@ -1,1 +1,1 @@
-module.exports = 'camerashakecomplete';
+module.exports = 'camerashakecomplete';

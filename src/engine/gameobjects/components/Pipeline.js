@@ -1,111 +1,1 @@
-var DeepCopy = require('../../utils/object/DeepCopy');
-
-var Pipeline = {
-
-    defaultPipeline: null,
-
-    pipeline: null,
-
-    pipelineData: null,
-
-    initPipeline: function (pipeline)
-    {
-        this.pipelineData = {};
-
-        var renderer = this.scene.sys.renderer;
-
-        if (!renderer)
-        {
-            return false;
-        }
-
-        var pipelines = renderer.pipelines;
-
-        if (pipelines)
-        {
-            if (pipeline === undefined)
-            {
-                pipeline = pipelines.default;
-            }
-
-            var instance = pipelines.get(pipeline);
-
-            if (instance)
-            {
-                this.defaultPipeline = instance;
-                this.pipeline = instance;
-
-                return true;
-            }
-        }
-
-        return false;
-    },
-
-    setPipeline: function (pipeline, pipelineData, copyData)
-    {
-        var renderer = this.scene.sys.renderer;
-
-        if (!renderer)
-        {
-            return this;
-        }
-
-        var pipelines = renderer.pipelines;
-
-        if (pipelines)
-        {
-            var instance = pipelines.get(pipeline);
-
-            if (instance)
-            {
-                this.pipeline = instance;
-            }
-
-            if (pipelineData)
-            {
-                this.pipelineData = (copyData) ? DeepCopy(pipelineData) : pipelineData;
-            }
-        }
-
-        return this;
-    },
-
-    setPipelineData: function (key, value)
-    {
-        var data = this.pipelineData;
-
-        if (value === undefined)
-        {
-            delete data[key];
-        }
-        else
-        {
-            data[key] = value;
-        }
-
-        return this;
-    },
-
-    resetPipeline: function (resetData)
-    {
-        if (resetData === undefined) { resetData = false; }
-
-        this.pipeline = this.defaultPipeline;
-
-        if (resetData)
-        {
-            this.pipelineData = {};
-        }
-
-        return (this.pipeline !== null);
-    },
-
-    getPipelineName: function ()
-    {
-        return (this.pipeline === null) ? null : this.pipeline.name;
-    }
-
-};
-
-module.exports = Pipeline;
+var DeepCopy = require('../../utils/object/DeepCopy');var Pipeline = {    defaultPipeline: null,    pipeline: null,    pipelineData: null,    initPipeline: function (pipeline)    {        this.pipelineData = {};        var renderer = this.scene.sys.renderer;        if (!renderer)        {            return false;        }        var pipelines = renderer.pipelines;        if (pipelines)        {            if (pipeline === undefined)            {                pipeline = pipelines.default;            }            var instance = pipelines.get(pipeline);            if (instance)            {                this.defaultPipeline = instance;                this.pipeline = instance;                return true;            }        }        return false;    },    setPipeline: function (pipeline, pipelineData, copyData)    {        var renderer = this.scene.sys.renderer;        if (!renderer)        {            return this;        }        var pipelines = renderer.pipelines;        if (pipelines)        {            var instance = pipelines.get(pipeline);            if (instance)            {                this.pipeline = instance;            }            if (pipelineData)            {                this.pipelineData = (copyData) ? DeepCopy(pipelineData) : pipelineData;            }        }        return this;    },    setPipelineData: function (key, value)    {        var data = this.pipelineData;        if (value === undefined)        {            delete data[key];        }        else        {            data[key] = value;        }        return this;    },    resetPipeline: function (resetData)    {        if (resetData === undefined) { resetData = false; }        this.pipeline = this.defaultPipeline;        if (resetData)        {            this.pipelineData = {};        }        return (this.pipeline !== null);    },    getPipelineName: function ()    {        return (this.pipeline === null) ? null : this.pipeline.name;    }};module.exports = Pipeline;

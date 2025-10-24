@@ -1,65 +1,1 @@
-var GetColor = require('./GetColor');
-
-var ColorSpectrum = function (limit)
-{
-    if (limit === undefined) { limit = 1024; }
-
-    var colors = [];
-
-    var range = 255;
-
-    var i;
-    var r = 255;
-    var g = 0;
-    var b = 0;
-
-    for (i = 0; i <= range; i++)
-    {
-        colors.push({ r: r, g: i, b: b, color: GetColor(r, i, b) });
-    }
-
-    g = 255;
-
-    for (i = range; i >= 0; i--)
-    {
-        colors.push({ r: i, g: g, b: b, color: GetColor(i, g, b) });
-    }
-
-    r = 0;
-
-    for (i = 0; i <= range; i++, g--)
-    {
-        colors.push({ r: r, g: g, b: i, color: GetColor(r, g, i) });
-    }
-
-    g = 0;
-    b = 255;
-
-    for (i = 0; i <= range; i++, b--, r++)
-    {
-        colors.push({ r: r, g: g, b: b, color: GetColor(r, g, b) });
-    }
-
-    if (limit === 1024)
-    {
-        return colors;
-    }
-    else
-    {
-        var out = [];
-
-        var t = 0;
-        var inc = 1024 / limit;
-
-        for (i = 0; i < limit; i++)
-        {
-            out.push(colors[Math.floor(t)]);
-
-            t += inc;
-        }
-
-        return out;
-    }
-};
-
-module.exports = ColorSpectrum;
+var GetColor = require('./GetColor');var ColorSpectrum = function (limit){    if (limit === undefined) { limit = 1024; }    var colors = [];    var range = 255;    var i;    var r = 255;    var g = 0;    var b = 0;    for (i = 0; i <= range; i++)    {        colors.push({ r: r, g: i, b: b, color: GetColor(r, i, b) });    }    g = 255;    for (i = range; i >= 0; i--)    {        colors.push({ r: i, g: g, b: b, color: GetColor(i, g, b) });    }    r = 0;    for (i = 0; i <= range; i++, g--)    {        colors.push({ r: r, g: g, b: i, color: GetColor(r, g, i) });    }    g = 0;    b = 255;    for (i = 0; i <= range; i++, b--, r++)    {        colors.push({ r: r, g: g, b: b, color: GetColor(r, g, b) });    }    if (limit === 1024)    {        return colors;    }    else    {        var out = [];        var t = 0;        var inc = 1024 / limit;        for (i = 0; i < limit; i++)        {            out.push(colors[Math.floor(t)]);            t += inc;        }        return out;    }};module.exports = ColorSpectrum;

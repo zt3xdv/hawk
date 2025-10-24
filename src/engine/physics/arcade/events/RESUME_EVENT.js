@@ -1,1 +1,1 @@
-module.exports = 'resume';
+module.exports = 'resume';

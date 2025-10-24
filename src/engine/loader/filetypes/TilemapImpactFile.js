@@ -1,53 +1,1 @@
-
-
-var Class = require('../../utils/Class');
-var FileTypesManager = require('../FileTypesManager');
-var JSONFile = require('./JSONFile');
-var TILEMAP_FORMATS = require('../../tilemaps/Formats');
-
-
-var TilemapImpactFile = new Class({
-
-    Extends: JSONFile,
-
-    initialize:
-
-    function TilemapImpactFile (loader, key, url, xhrSettings)
-    {
-        JSONFile.call(this, loader, key, url, xhrSettings);
-
-        this.type = 'tilemapJSON';
-
-        this.cache = loader.cacheManager.tilemap;
-    },
-
-    
-    addToCache: function ()
-    {
-        var tiledata = { format: TILEMAP_FORMATS.WELTMEISTER, data: this.data };
-
-        this.cache.add(this.key, tiledata);
-    }
-
-});
-
-
-FileTypesManager.register('tilemapImpact', function (key, url, xhrSettings)
-{
-    if (Array.isArray(key))
-    {
-        for (var i = 0; i < key.length; i++)
-        {
-            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object
-            this.addFile(new TilemapImpactFile(this, key[i]));
-        }
-    }
-    else
-    {
-        this.addFile(new TilemapImpactFile(this, key, url, xhrSettings));
-    }
-
-    return this;
-});
-
-module.exports = TilemapImpactFile;
+var Class = require('../../utils/Class');var FileTypesManager = require('../FileTypesManager');var JSONFile = require('./JSONFile');var TILEMAP_FORMATS = require('../../tilemaps/Formats');var TilemapImpactFile = new Class({    Extends: JSONFile,    initialize:    function TilemapImpactFile (loader, key, url, xhrSettings)    {        JSONFile.call(this, loader, key, url, xhrSettings);        this.type = 'tilemapJSON';        this.cache = loader.cacheManager.tilemap;    },        addToCache: function ()    {        var tiledata = { format: TILEMAP_FORMATS.WELTMEISTER, data: this.data };        this.cache.add(this.key, tiledata);    }});FileTypesManager.register('tilemapImpact', function (key, url, xhrSettings){    if (Array.isArray(key))    {        for (var i = 0; i < key.length; i++)        {            //  If it's an array it has to be an array of Objects, so we get everything out of the 'key' object            this.addFile(new TilemapImpactFile(this, key[i]));        }    }    else    {        this.addFile(new TilemapImpactFile(this, key, url, xhrSettings));    }    return this;});module.exports = TilemapImpactFile;

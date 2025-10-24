@@ -1,22 +1,1 @@
-var SetCollisionObject = function (noneFlip, data)
-{
-    if (data === undefined) { data = {}; }
-
-    data.none = noneFlip;
-    data.up = false;
-    data.down = false;
-    data.left = false;
-    data.right = false;
-
-    if (!noneFlip)
-    {
-        data.up = true;
-        data.down = true;
-        data.left = true;
-        data.right = true;
-    }
-
-    return data;
-};
-
-module.exports = SetCollisionObject;
+var SetCollisionObject = function (noneFlip, data){    if (data === undefined) { data = {}; }    data.none = noneFlip;    data.up = false;    data.down = false;    data.left = false;    data.right = false;    if (!noneFlip)    {        data.up = true;        data.down = true;        data.left = true;        data.right = true;    }    return data;};module.exports = SetCollisionObject;

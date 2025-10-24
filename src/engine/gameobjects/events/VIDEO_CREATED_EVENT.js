@@ -1,1 +1,1 @@
-module.exports = 'created';
+module.exports = 'created';

@@ -1,426 +1,1 @@
-var Camera = require('./Camera');
-var Class = require('../../utils/Class');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var PluginCache = require('../../plugins/PluginCache');
-var RectangleContains = require('../../geom/rectangle/Contains');
-var ScaleEvents = require('../../scale/events');
-var SceneEvents = require('../../scene/events');
-
-var CameraManager = new Class({
-
-    initialize:
-
-    function CameraManager (scene)
-    {
-
-        this.scene = scene;
-
-        this.systems = scene.sys;
-
-        this.roundPixels = scene.sys.game.config.roundPixels;
-
-        this.cameras = [];
-
-        this.main;
-
-        this.default;
-
-        scene.sys.events.once(SceneEvents.BOOT, this.boot, this);
-        scene.sys.events.on(SceneEvents.START, this.start, this);
-    },
-
-    boot: function ()
-    {
-        var sys = this.systems;
-
-        if (sys.settings.cameras)
-        {
-
-            this.fromJSON(sys.settings.cameras);
-        }
-        else
-        {
-
-            this.add();
-        }
-
-        this.main = this.cameras[0];
-
-        this.default = new Camera(0, 0, sys.scale.width, sys.scale.height).setScene(this.scene);
-
-        sys.game.scale.on(ScaleEvents.RESIZE, this.onResize, this);
-
-        this.systems.events.once(SceneEvents.DESTROY, this.destroy, this);
-    },
-
-    start: function ()
-    {
-        if (!this.main)
-        {
-            var sys = this.systems;
-
-            if (sys.settings.cameras)
-            {
-
-                this.fromJSON(sys.settings.cameras);
-            }
-            else
-            {
-
-                this.add();
-            }
-
-            this.main = this.cameras[0];
-        }
-
-        var eventEmitter = this.systems.events;
-
-        eventEmitter.on(SceneEvents.UPDATE, this.update, this);
-        eventEmitter.once(SceneEvents.SHUTDOWN, this.shutdown, this);
-    },
-
-    add: function (x, y, width, height, makeMain, name)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (width === undefined) { width = this.scene.sys.scale.width; }
-        if (height === undefined) { height = this.scene.sys.scale.height; }
-        if (makeMain === undefined) { makeMain = false; }
-        if (name === undefined) { name = ''; }
-
-        var camera = new Camera(x, y, width, height);
-
-        camera.setName(name);
-        camera.setScene(this.scene);
-        camera.setRoundPixels(this.roundPixels);
-
-        camera.id = this.getNextID();
-
-        this.cameras.push(camera);
-
-        if (makeMain)
-        {
-            this.main = camera;
-        }
-
-        return camera;
-    },
-
-    addExisting: function (camera, makeMain)
-    {
-        if (makeMain === undefined) { makeMain = false; }
-
-        var index = this.cameras.indexOf(camera);
-
-        if (index === -1)
-        {
-            camera.id = this.getNextID();
-
-            camera.setRoundPixels(this.roundPixels);
-
-            this.cameras.push(camera);
-
-            if (makeMain)
-            {
-                this.main = camera;
-            }
-
-            return camera;
-        }
-
-        return null;
-    },
-
-    getNextID: function ()
-    {
-        var cameras = this.cameras;
-
-        var testID = 1;
-
-        for (var t = 0; t < 32; t++)
-        {
-            var found = false;
-
-            for (var i = 0; i < cameras.length; i++)
-            {
-                var camera = cameras[i];
-
-                if (camera && camera.id === testID)
-                {
-                    found = true;
-                    continue;
-                }
-            }
-
-            if (found)
-            {
-                testID = testID << 1;
-            }
-            else
-            {
-                return testID;
-            }
-        }
-
-        return 0;
-    },
-
-    getTotal: function (isVisible)
-    {
-        if (isVisible === undefined) { isVisible = false; }
-
-        var total = 0;
-
-        var cameras = this.cameras;
-
-        for (var i = 0; i < cameras.length; i++)
-        {
-            var camera = cameras[i];
-
-            if (!isVisible || (isVisible && camera.visible))
-            {
-                total++;
-            }
-        }
-
-        return total;
-    },
-
-    fromJSON: function (config)
-    {
-        if (!Array.isArray(config))
-        {
-            config = [ config ];
-        }
-
-        var gameWidth = this.scene.sys.scale.width;
-        var gameHeight = this.scene.sys.scale.height;
-
-        for (var i = 0; i < config.length; i++)
-        {
-            var cameraConfig = config[i];
-
-            var x = GetFastValue(cameraConfig, 'x', 0);
-            var y = GetFastValue(cameraConfig, 'y', 0);
-            var width = GetFastValue(cameraConfig, 'width', gameWidth);
-            var height = GetFastValue(cameraConfig, 'height', gameHeight);
-
-            var camera = this.add(x, y, width, height);
-
-            camera.name = GetFastValue(cameraConfig, 'name', '');
-            camera.zoom = GetFastValue(cameraConfig, 'zoom', 1);
-            camera.rotation = GetFastValue(cameraConfig, 'rotation', 0);
-            camera.scrollX = GetFastValue(cameraConfig, 'scrollX', 0);
-            camera.scrollY = GetFastValue(cameraConfig, 'scrollY', 0);
-            camera.roundPixels = GetFastValue(cameraConfig, 'roundPixels', false);
-            camera.visible = GetFastValue(cameraConfig, 'visible', true);
-
-            var backgroundColor = GetFastValue(cameraConfig, 'backgroundColor', false);
-
-            if (backgroundColor)
-            {
-                camera.setBackgroundColor(backgroundColor);
-            }
-
-            var boundsConfig = GetFastValue(cameraConfig, 'bounds', null);
-
-            if (boundsConfig)
-            {
-                var bx = GetFastValue(boundsConfig, 'x', 0);
-                var by = GetFastValue(boundsConfig, 'y', 0);
-                var bwidth = GetFastValue(boundsConfig, 'width', gameWidth);
-                var bheight = GetFastValue(boundsConfig, 'height', gameHeight);
-
-                camera.setBounds(bx, by, bwidth, bheight);
-            }
-        }
-
-        return this;
-    },
-
-    getCamera: function (name)
-    {
-        var cameras = this.cameras;
-
-        for (var i = 0; i < cameras.length; i++)
-        {
-            if (cameras[i].name === name)
-            {
-                return cameras[i];
-            }
-        }
-
-        return null;
-    },
-
-    getCamerasBelowPointer: function (pointer)
-    {
-        var cameras = this.cameras;
-
-        var x = pointer.x;
-        var y = pointer.y;
-
-        var output = [];
-
-        for (var i = 0; i < cameras.length; i++)
-        {
-            var camera = cameras[i];
-
-            if (camera.visible && camera.inputEnabled && RectangleContains(camera, x, y))
-            {
-
-                output.unshift(camera);
-            }
-        }
-
-        return output;
-    },
-
-    remove: function (camera, runDestroy)
-    {
-        if (runDestroy === undefined) { runDestroy = true; }
-
-        if (!Array.isArray(camera))
-        {
-            camera = [ camera ];
-        }
-
-        var total = 0;
-        var cameras = this.cameras;
-
-        for (var i = 0; i < camera.length; i++)
-        {
-            var index = cameras.indexOf(camera[i]);
-
-            if (index !== -1)
-            {
-                if (runDestroy)
-                {
-                    cameras[index].destroy();
-                }
-                else
-                {
-                    cameras[index].renderList = [];
-                }
-
-                cameras.splice(index, 1);
-
-                total++;
-            }
-        }
-
-        if (!this.main && cameras[0])
-        {
-            this.main = cameras[0];
-        }
-
-        return total;
-    },
-
-    render: function (renderer, displayList)
-    {
-        var scene = this.scene;
-        var cameras = this.cameras;
-
-        for (var i = 0; i < cameras.length; i++)
-        {
-            var camera = cameras[i];
-
-            if (camera.visible && camera.alpha > 0)
-            {
-                camera.preRender();
-
-                var visibleChildren = this.getVisibleChildren(displayList.getChildren(), camera);
-
-                renderer.render(scene, visibleChildren, camera);
-            }
-        }
-    },
-
-    getVisibleChildren: function (children, camera)
-    {
-        return children.filter(function (child)
-        {
-            return child.willRender(camera);
-        });
-    },
-
-    resetAll: function ()
-    {
-        for (var i = 0; i < this.cameras.length; i++)
-        {
-            this.cameras[i].destroy();
-        }
-
-        this.cameras = [];
-
-        this.main = this.add();
-
-        return this.main;
-    },
-
-    update: function (time, delta)
-    {
-        for (var i = 0; i < this.cameras.length; i++)
-        {
-            this.cameras[i].update(time, delta);
-        }
-    },
-
-    onResize: function (gameSize, baseSize, displaySize, previousWidth, previousHeight)
-    {
-        for (var i = 0; i < this.cameras.length; i++)
-        {
-            var cam = this.cameras[i];
-
-            if (cam._x === 0 && cam._y === 0 && cam._width === previousWidth && cam._height === previousHeight)
-            {
-                cam.setSize(baseSize.width, baseSize.height);
-            }
-        }
-    },
-
-    resize: function (width, height)
-    {
-        for (var i = 0; i < this.cameras.length; i++)
-        {
-            this.cameras[i].setSize(width, height);
-        }
-    },
-
-    shutdown: function ()
-    {
-        this.main = undefined;
-
-        for (var i = 0; i < this.cameras.length; i++)
-        {
-            this.cameras[i].destroy();
-        }
-
-        this.cameras = [];
-
-        var eventEmitter = this.systems.events;
-
-        eventEmitter.off(SceneEvents.UPDATE, this.update, this);
-        eventEmitter.off(SceneEvents.SHUTDOWN, this.shutdown, this);
-    },
-
-    destroy: function ()
-    {
-        this.shutdown();
-
-        this.default.destroy();
-
-        this.systems.events.off(SceneEvents.START, this.start, this);
-        this.systems.events.off(SceneEvents.DESTROY, this.destroy, this);
-        this.systems.game.scale.off(ScaleEvents.RESIZE, this.onResize, this);
-
-        this.scene = null;
-        this.systems = null;
-    }
-
-});
-
-PluginCache.register('CameraManager', CameraManager, 'cameras');
-
-module.exports = CameraManager;
+var Camera = require('./Camera');var Class = require('../../utils/Class');var GetFastValue = require('../../utils/object/GetFastValue');var PluginCache = require('../../plugins/PluginCache');var RectangleContains = require('../../geom/rectangle/Contains');var ScaleEvents = require('../../scale/events');var SceneEvents = require('../../scene/events');var CameraManager = new Class({    initialize:    function CameraManager (scene)    {        this.scene = scene;        this.systems = scene.sys;        this.roundPixels = scene.sys.game.config.roundPixels;        this.cameras = [];        this.main;        this.default;        scene.sys.events.once(SceneEvents.BOOT, this.boot, this);        scene.sys.events.on(SceneEvents.START, this.start, this);    },    boot: function ()    {        var sys = this.systems;        if (sys.settings.cameras)        {            this.fromJSON(sys.settings.cameras);        }        else        {            this.add();        }        this.main = this.cameras[0];        this.default = new Camera(0, 0, sys.scale.width, sys.scale.height).setScene(this.scene);        sys.game.scale.on(ScaleEvents.RESIZE, this.onResize, this);        this.systems.events.once(SceneEvents.DESTROY, this.destroy, this);    },    start: function ()    {        if (!this.main)        {            var sys = this.systems;            if (sys.settings.cameras)            {                this.fromJSON(sys.settings.cameras);            }            else            {                this.add();            }            this.main = this.cameras[0];        }        var eventEmitter = this.systems.events;        eventEmitter.on(SceneEvents.UPDATE, this.update, this);        eventEmitter.once(SceneEvents.SHUTDOWN, this.shutdown, this);    },    add: function (x, y, width, height, makeMain, name)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (width === undefined) { width = this.scene.sys.scale.width; }        if (height === undefined) { height = this.scene.sys.scale.height; }        if (makeMain === undefined) { makeMain = false; }        if (name === undefined) { name = ''; }        var camera = new Camera(x, y, width, height);        camera.setName(name);        camera.setScene(this.scene);        camera.setRoundPixels(this.roundPixels);        camera.id = this.getNextID();        this.cameras.push(camera);        if (makeMain)        {            this.main = camera;        }        return camera;    },    addExisting: function (camera, makeMain)    {        if (makeMain === undefined) { makeMain = false; }        var index = this.cameras.indexOf(camera);        if (index === -1)        {            camera.id = this.getNextID();            camera.setRoundPixels(this.roundPixels);            this.cameras.push(camera);            if (makeMain)            {                this.main = camera;            }            return camera;        }        return null;    },    getNextID: function ()    {        var cameras = this.cameras;        var testID = 1;        for (var t = 0; t < 32; t++)        {            var found = false;            for (var i = 0; i < cameras.length; i++)            {                var camera = cameras[i];                if (camera && camera.id === testID)                {                    found = true;                    continue;                }            }            if (found)            {                testID = testID << 1;            }            else            {                return testID;            }        }        return 0;    },    getTotal: function (isVisible)    {        if (isVisible === undefined) { isVisible = false; }        var total = 0;        var cameras = this.cameras;        for (var i = 0; i < cameras.length; i++)        {            var camera = cameras[i];            if (!isVisible || (isVisible && camera.visible))            {                total++;            }        }        return total;    },    fromJSON: function (config)    {        if (!Array.isArray(config))        {            config = [ config ];        }        var gameWidth = this.scene.sys.scale.width;        var gameHeight = this.scene.sys.scale.height;        for (var i = 0; i < config.length; i++)        {            var cameraConfig = config[i];            var x = GetFastValue(cameraConfig, 'x', 0);            var y = GetFastValue(cameraConfig, 'y', 0);            var width = GetFastValue(cameraConfig, 'width', gameWidth);            var height = GetFastValue(cameraConfig, 'height', gameHeight);            var camera = this.add(x, y, width, height);            camera.name = GetFastValue(cameraConfig, 'name', '');            camera.zoom = GetFastValue(cameraConfig, 'zoom', 1);            camera.rotation = GetFastValue(cameraConfig, 'rotation', 0);            camera.scrollX = GetFastValue(cameraConfig, 'scrollX', 0);            camera.scrollY = GetFastValue(cameraConfig, 'scrollY', 0);            camera.roundPixels = GetFastValue(cameraConfig, 'roundPixels', false);            camera.visible = GetFastValue(cameraConfig, 'visible', true);            var backgroundColor = GetFastValue(cameraConfig, 'backgroundColor', false);            if (backgroundColor)            {                camera.setBackgroundColor(backgroundColor);            }            var boundsConfig = GetFastValue(cameraConfig, 'bounds', null);            if (boundsConfig)            {                var bx = GetFastValue(boundsConfig, 'x', 0);                var by = GetFastValue(boundsConfig, 'y', 0);                var bwidth = GetFastValue(boundsConfig, 'width', gameWidth);                var bheight = GetFastValue(boundsConfig, 'height', gameHeight);                camera.setBounds(bx, by, bwidth, bheight);            }        }        return this;    },    getCamera: function (name)    {        var cameras = this.cameras;        for (var i = 0; i < cameras.length; i++)        {            if (cameras[i].name === name)            {                return cameras[i];            }        }        return null;    },    getCamerasBelowPointer: function (pointer)    {        var cameras = this.cameras;        var x = pointer.x;        var y = pointer.y;        var output = [];        for (var i = 0; i < cameras.length; i++)        {            var camera = cameras[i];            if (camera.visible && camera.inputEnabled && RectangleContains(camera, x, y))            {                output.unshift(camera);            }        }        return output;    },    remove: function (camera, runDestroy)    {        if (runDestroy === undefined) { runDestroy = true; }        if (!Array.isArray(camera))        {            camera = [ camera ];        }        var total = 0;        var cameras = this.cameras;        for (var i = 0; i < camera.length; i++)        {            var index = cameras.indexOf(camera[i]);            if (index !== -1)            {                if (runDestroy)                {                    cameras[index].destroy();                }                else                {                    cameras[index].renderList = [];                }                cameras.splice(index, 1);                total++;            }        }        if (!this.main && cameras[0])        {            this.main = cameras[0];        }        return total;    },    render: function (renderer, displayList)    {        var scene = this.scene;        var cameras = this.cameras;        for (var i = 0; i < cameras.length; i++)        {            var camera = cameras[i];            if (camera.visible && camera.alpha > 0)            {                camera.preRender();                var visibleChildren = this.getVisibleChildren(displayList.getChildren(), camera);                renderer.render(scene, visibleChildren, camera);            }        }    },    getVisibleChildren: function (children, camera)    {        return children.filter(function (child)        {            return child.willRender(camera);        });    },    resetAll: function ()    {        for (var i = 0; i < this.cameras.length; i++)        {            this.cameras[i].destroy();        }        this.cameras = [];        this.main = this.add();        return this.main;    },    update: function (time, delta)    {        for (var i = 0; i < this.cameras.length; i++)        {            this.cameras[i].update(time, delta);        }    },    onResize: function (gameSize, baseSize, displaySize, previousWidth, previousHeight)    {        for (var i = 0; i < this.cameras.length; i++)        {            var cam = this.cameras[i];            if (cam._x === 0 && cam._y === 0 && cam._width === previousWidth && cam._height === previousHeight)            {                cam.setSize(baseSize.width, baseSize.height);            }        }    },    resize: function (width, height)    {        for (var i = 0; i < this.cameras.length; i++)        {            this.cameras[i].setSize(width, height);        }    },    shutdown: function ()    {        this.main = undefined;        for (var i = 0; i < this.cameras.length; i++)        {            this.cameras[i].destroy();        }        this.cameras = [];        var eventEmitter = this.systems.events;        eventEmitter.off(SceneEvents.UPDATE, this.update, this);        eventEmitter.off(SceneEvents.SHUTDOWN, this.shutdown, this);    },    destroy: function ()    {        this.shutdown();        this.default.destroy();        this.systems.events.off(SceneEvents.START, this.start, this);        this.systems.events.off(SceneEvents.DESTROY, this.destroy, this);        this.systems.game.scale.off(ScaleEvents.RESIZE, this.onResize, this);        this.scene = null;        this.systems = null;    }});PluginCache.register('CameraManager', CameraManager, 'cameras');module.exports = CameraManager;

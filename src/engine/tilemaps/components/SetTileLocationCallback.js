@@ -1,13 +1,1 @@
-var GetTilesWithin = require('./GetTilesWithin');
-
-var SetTileLocationCallback = function (tileX, tileY, width, height, callback, callbackContext, layer)
-{
-    var tiles = GetTilesWithin(tileX, tileY, width, height, null, layer);
-
-    for (var i = 0; i < tiles.length; i++)
-    {
-        tiles[i].setCollisionCallback(callback, callbackContext);
-    }
-};
-
-module.exports = SetTileLocationCallback;
+var GetTilesWithin = require('./GetTilesWithin');var SetTileLocationCallback = function (tileX, tileY, width, height, callback, callbackContext, layer){    var tiles = GetTilesWithin(tileX, tileY, width, height, null, layer);    for (var i = 0; i < tiles.length; i++)    {        tiles[i].setCollisionCallback(callback, callbackContext);    }};module.exports = SetTileLocationCallback;

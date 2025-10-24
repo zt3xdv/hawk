@@ -1,1 +1,1 @@
-module.exports = 'orientationchange';
+module.exports = 'orientationchange';

@@ -1,7 +1,1 @@
-var GameObjectFactory = require('../../GameObjectFactory');
-var Grid = require('./Grid');
-
-GameObjectFactory.register('grid', function (x, y, width, height, cellWidth, cellHeight, fillColor, fillAlpha, outlineFillColor, outlineFillAlpha)
-{
-    return this.displayList.add(new Grid(this.scene, x, y, width, height, cellWidth, cellHeight, fillColor, fillAlpha, outlineFillColor, outlineFillAlpha));
-});
+var GameObjectFactory = require('../../GameObjectFactory');var Grid = require('./Grid');GameObjectFactory.register('grid', function (x, y, width, height, cellWidth, cellHeight, fillColor, fillAlpha, outlineFillColor, outlineFillAlpha){    return this.displayList.add(new Grid(this.scene, x, y, width, height, cellWidth, cellHeight, fillColor, fillAlpha, outlineFillColor, outlineFillAlpha));});

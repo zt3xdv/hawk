@@ -1,508 +1,1 @@
-var Class = require('../../utils/Class');
-var CubicBezierCurve = require('../CubicBezierCurve');
-var EllipseCurve = require('../EllipseCurve');
-var GameObjectFactory = require('../../gameobjects/GameObjectFactory');
-var LineCurve = require('../LineCurve');
-var MovePathTo = require('./MoveTo');
-var QuadraticBezierCurve = require('../QuadraticBezierCurve');
-var Rectangle = require('../../geom/rectangle/Rectangle');
-var SplineCurve = require('../SplineCurve');
-var Vector2 = require('../../math/Vector2');
-var MATH_CONST = require('../../math/const');
-
-var Path = new Class({
-
-    initialize:
-
-    function Path (x, y)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-
-        this.name = '';
-
-        this.defaultDivisions = 12;
-
-        this.curves = [];
-
-        this.cacheLengths = [];
-
-        this.autoClose = false;
-
-        this.startPoint = new Vector2();
-
-        this._tmpVec2A = new Vector2();
-
-        this._tmpVec2B = new Vector2();
-
-        if (typeof x === 'object')
-        {
-            this.fromJSON(x);
-        }
-        else
-        {
-            this.startPoint.set(x, y);
-        }
-    },
-
-    add: function (curve)
-    {
-        this.curves.push(curve);
-
-        return this;
-    },
-
-    circleTo: function (radius, clockwise, rotation)
-    {
-        if (clockwise === undefined) { clockwise = false; }
-
-        return this.ellipseTo(radius, radius, 0, 360, clockwise, rotation);
-    },
-
-    closePath: function ()
-    {
-
-        var startPoint = this.curves[0].getPoint(0);
-        var endPoint = this.curves[this.curves.length - 1].getPoint(1);
-
-        if (!startPoint.equals(endPoint))
-        {
-
-            this.curves.push(new LineCurve(endPoint, startPoint));
-        }
-
-        return this;
-    },
-
-    cubicBezierTo: function (x, y, control1X, control1Y, control2X, control2Y)
-    {
-        var p0 = this.getEndPoint();
-        var p1;
-        var p2;
-        var p3;
-
-        if (x instanceof Vector2)
-        {
-            p1 = x;
-            p2 = y;
-            p3 = control1X;
-        }
-        else
-        {
-            p1 = new Vector2(control1X, control1Y);
-            p2 = new Vector2(control2X, control2Y);
-            p3 = new Vector2(x, y);
-        }
-
-        return this.add(new CubicBezierCurve(p0, p1, p2, p3));
-    },
-
-    quadraticBezierTo: function (x, y, controlX, controlY)
-    {
-        var p0 = this.getEndPoint();
-        var p1;
-        var p2;
-
-        if (x instanceof Vector2)
-        {
-            p1 = x;
-            p2 = y;
-        }
-        else
-        {
-            p1 = new Vector2(controlX, controlY);
-            p2 = new Vector2(x, y);
-        }
-
-        return this.add(new QuadraticBezierCurve(p0, p1, p2));
-    },
-
-    draw: function (graphics, pointsTotal)
-    {
-        for (var i = 0; i < this.curves.length; i++)
-        {
-            var curve = this.curves[i];
-
-            if (!curve.active)
-            {
-                continue;
-            }
-
-            curve.draw(graphics, pointsTotal);
-        }
-
-        return graphics;
-    },
-
-    ellipseTo: function (xRadius, yRadius, startAngle, endAngle, clockwise, rotation)
-    {
-        var ellipse = new EllipseCurve(0, 0, xRadius, yRadius, startAngle, endAngle, clockwise, rotation);
-
-        var end = this.getEndPoint(this._tmpVec2A);
-
-        var start = ellipse.getStartPoint(this._tmpVec2B);
-
-        end.subtract(start);
-
-        ellipse.x = end.x;
-        ellipse.y = end.y;
-
-        return this.add(ellipse);
-    },
-
-    fromJSON: function (data)
-    {
-
-        this.curves = [];
-        this.cacheLengths = [];
-
-        this.startPoint.set(data.x, data.y);
-
-        this.autoClose = data.autoClose;
-
-        for (var i = 0; i < data.curves.length; i++)
-        {
-            var curve = data.curves[i];
-
-            switch (curve.type)
-            {
-                case 'LineCurve':
-                    this.add(LineCurve.fromJSON(curve));
-                    break;
-
-                case 'EllipseCurve':
-                    this.add(EllipseCurve.fromJSON(curve));
-                    break;
-
-                case 'SplineCurve':
-                    this.add(SplineCurve.fromJSON(curve));
-                    break;
-
-                case 'CubicBezierCurve':
-                    this.add(CubicBezierCurve.fromJSON(curve));
-                    break;
-
-                case 'QuadraticBezierCurve':
-                    this.add(QuadraticBezierCurve.fromJSON(curve));
-                    break;
-            }
-        }
-
-        return this;
-    },
-
-    getBounds: function (out, accuracy)
-    {
-        if (out === undefined) { out = new Rectangle(); }
-        if (accuracy === undefined) { accuracy = 16; }
-
-        out.x = Number.MAX_VALUE;
-        out.y = Number.MAX_VALUE;
-
-        var bounds = new Rectangle();
-        var maxRight = MATH_CONST.MIN_SAFE_INTEGER;
-        var maxBottom = MATH_CONST.MIN_SAFE_INTEGER;
-
-        for (var i = 0; i < this.curves.length; i++)
-        {
-            var curve = this.curves[i];
-
-            if (!curve.active)
-            {
-                continue;
-            }
-
-            curve.getBounds(bounds, accuracy);
-
-            out.x = Math.min(out.x, bounds.x);
-            out.y = Math.min(out.y, bounds.y);
-
-            maxRight = Math.max(maxRight, bounds.right);
-            maxBottom = Math.max(maxBottom, bounds.bottom);
-        }
-
-        out.right = maxRight;
-        out.bottom = maxBottom;
-
-        return out;
-    },
-
-    getCurveLengths: function ()
-    {
-
-        if (this.cacheLengths.length === this.curves.length)
-        {
-            return this.cacheLengths;
-        }
-
-        var lengths = [];
-        var sums = 0;
-
-        for (var i = 0; i < this.curves.length; i++)
-        {
-            sums += this.curves[i].getLength();
-
-            lengths.push(sums);
-        }
-
-        this.cacheLengths = lengths;
-
-        return lengths;
-    },
-
-    getCurveAt: function (t)
-    {
-        var d = t * this.getLength();
-        var curveLengths = this.getCurveLengths();
-        var i = 0;
-
-        while (i < curveLengths.length)
-        {
-            if (curveLengths[i] >= d)
-            {
-                return this.curves[i];
-            }
-
-            i++;
-        }
-
-        return null;
-    },
-
-    getEndPoint: function (out)
-    {
-        if (out === undefined) { out = new Vector2(); }
-
-        if (this.curves.length > 0)
-        {
-            this.curves[this.curves.length - 1].getPoint(1, out);
-        }
-        else
-        {
-            out.copy(this.startPoint);
-        }
-
-        return out;
-    },
-
-    getLength: function ()
-    {
-        var lens = this.getCurveLengths();
-
-        return lens[lens.length - 1];
-    },
-
-    getPoint: function (t, out)
-    {
-        if (out === undefined) { out = new Vector2(); }
-
-        var d = t * this.getLength();
-        var curveLengths = this.getCurveLengths();
-        var i = 0;
-
-        while (i < curveLengths.length)
-        {
-            if (curveLengths[i] >= d)
-            {
-                var diff = curveLengths[i] - d;
-                var curve = this.curves[i];
-
-                var segmentLength = curve.getLength();
-                var u = (segmentLength === 0) ? 0 : 1 - diff / segmentLength;
-
-                return curve.getPointAt(u, out);
-            }
-
-            i++;
-        }
-
-        return null;
-    },
-
-    getPoints: function (divisions, stepRate)
-    {
-
-        if (!divisions && !stepRate)
-        {
-            divisions = this.defaultDivisions;
-        }
-
-        var points = [];
-        var last;
-
-        for (var i = 0; i < this.curves.length; i++)
-        {
-            var curve = this.curves[i];
-
-            if (!curve.active)
-            {
-                continue;
-            }
-
-            var resolution = curve.getResolution(divisions);
-
-            var pts = curve.getPoints(resolution, stepRate);
-
-            for (var j = 0; j < pts.length; j++)
-            {
-                var point = pts[j];
-
-                if (last && last.equals(point))
-                {
-
-                    continue;
-                }
-
-                points.push(point);
-
-                last = point;
-            }
-        }
-
-        if (this.autoClose && points.length > 1 && !points[points.length - 1].equals(points[0]))
-        {
-            points.push(points[0]);
-        }
-
-        return points;
-    },
-
-    getRandomPoint: function (out)
-    {
-        if (out === undefined) { out = new Vector2(); }
-
-        return this.getPoint(Math.random(), out);
-    },
-
-    getSpacedPoints: function (divisions)
-    {
-        if (divisions === undefined) { divisions = 40; }
-
-        var points = [];
-
-        for (var i = 0; i <= divisions; i++)
-        {
-            points.push(this.getPoint(i / divisions));
-        }
-
-        if (this.autoClose)
-        {
-            points.push(points[0]);
-        }
-
-        return points;
-    },
-
-    getStartPoint: function (out)
-    {
-        if (out === undefined) { out = new Vector2(); }
-
-        return out.copy(this.startPoint);
-    },
-
-    getTangent: function (t, out)
-    {
-        if (out === undefined) { out = new Vector2(); }
-
-        var d = t * this.getLength();
-        var curveLengths = this.getCurveLengths();
-        var i = 0;
-
-        while (i < curveLengths.length)
-        {
-            if (curveLengths[i] >= d)
-            {
-                var diff = curveLengths[i] - d;
-                var curve = this.curves[i];
-
-                var segmentLength = curve.getLength();
-                var u = (segmentLength === 0) ? 0 : 1 - diff / segmentLength;
-
-                return curve.getTangentAt(u, out);
-            }
-
-            i++;
-        }
-
-        return null;
-    },
-
-    lineTo: function (x, y)
-    {
-        if (x instanceof Vector2)
-        {
-            this._tmpVec2B.copy(x);
-        }
-        else if (typeof x === 'object')
-        {
-            this._tmpVec2B.setFromObject(x);
-        }
-        else
-        {
-            this._tmpVec2B.set(x, y);
-        }
-
-        var end = this.getEndPoint(this._tmpVec2A);
-
-        return this.add(new LineCurve([ end.x, end.y, this._tmpVec2B.x, this._tmpVec2B.y ]));
-    },
-
-    splineTo: function (points)
-    {
-        points.unshift(this.getEndPoint());
-
-        return this.add(new SplineCurve(points));
-    },
-
-    moveTo: function (x, y)
-    {
-        if (x instanceof Vector2)
-        {
-            return this.add(new MovePathTo(x.x, x.y));
-        }
-        else
-        {
-            return this.add(new MovePathTo(x, y));
-        }
-    },
-
-    toJSON: function ()
-    {
-        var out = [];
-
-        for (var i = 0; i < this.curves.length; i++)
-        {
-            out.push(this.curves[i].toJSON());
-        }
-
-        return {
-            type: 'Path',
-            x: this.startPoint.x,
-            y: this.startPoint.y,
-            autoClose: this.autoClose,
-            curves: out
-        };
-    },
-
-    updateArcLengths: function ()
-    {
-        this.cacheLengths = [];
-
-        this.getCurveLengths();
-    },
-
-    destroy: function ()
-    {
-        this.curves.length = 0;
-        this.cacheLengths.length = 0;
-        this.startPoint = undefined;
-    }
-
-});
-
-GameObjectFactory.register('path', function (x, y)
-{
-    return new Path(x, y);
-});
-
-module.exports = Path;
+var Class = require('../../utils/Class');var CubicBezierCurve = require('../CubicBezierCurve');var EllipseCurve = require('../EllipseCurve');var GameObjectFactory = require('../../gameobjects/GameObjectFactory');var LineCurve = require('../LineCurve');var MovePathTo = require('./MoveTo');var QuadraticBezierCurve = require('../QuadraticBezierCurve');var Rectangle = require('../../geom/rectangle/Rectangle');var SplineCurve = require('../SplineCurve');var Vector2 = require('../../math/Vector2');var MATH_CONST = require('../../math/const');var Path = new Class({    initialize:    function Path (x, y)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        this.name = '';        this.defaultDivisions = 12;        this.curves = [];        this.cacheLengths = [];        this.autoClose = false;        this.startPoint = new Vector2();        this._tmpVec2A = new Vector2();        this._tmpVec2B = new Vector2();        if (typeof x === 'object')        {            this.fromJSON(x);        }        else        {            this.startPoint.set(x, y);        }    },    add: function (curve)    {        this.curves.push(curve);        return this;    },    circleTo: function (radius, clockwise, rotation)    {        if (clockwise === undefined) { clockwise = false; }        return this.ellipseTo(radius, radius, 0, 360, clockwise, rotation);    },    closePath: function ()    {        var startPoint = this.curves[0].getPoint(0);        var endPoint = this.curves[this.curves.length - 1].getPoint(1);        if (!startPoint.equals(endPoint))        {            this.curves.push(new LineCurve(endPoint, startPoint));        }        return this;    },    cubicBezierTo: function (x, y, control1X, control1Y, control2X, control2Y)    {        var p0 = this.getEndPoint();        var p1;        var p2;        var p3;        if (x instanceof Vector2)        {            p1 = x;            p2 = y;            p3 = control1X;        }        else        {            p1 = new Vector2(control1X, control1Y);            p2 = new Vector2(control2X, control2Y);            p3 = new Vector2(x, y);        }        return this.add(new CubicBezierCurve(p0, p1, p2, p3));    },    quadraticBezierTo: function (x, y, controlX, controlY)    {        var p0 = this.getEndPoint();        var p1;        var p2;        if (x instanceof Vector2)        {            p1 = x;            p2 = y;        }        else        {            p1 = new Vector2(controlX, controlY);            p2 = new Vector2(x, y);        }        return this.add(new QuadraticBezierCurve(p0, p1, p2));    },    draw: function (graphics, pointsTotal)    {        for (var i = 0; i < this.curves.length; i++)        {            var curve = this.curves[i];            if (!curve.active)            {                continue;            }            curve.draw(graphics, pointsTotal);        }        return graphics;    },    ellipseTo: function (xRadius, yRadius, startAngle, endAngle, clockwise, rotation)    {        var ellipse = new EllipseCurve(0, 0, xRadius, yRadius, startAngle, endAngle, clockwise, rotation);        var end = this.getEndPoint(this._tmpVec2A);        var start = ellipse.getStartPoint(this._tmpVec2B);        end.subtract(start);        ellipse.x = end.x;        ellipse.y = end.y;        return this.add(ellipse);    },    fromJSON: function (data)    {        this.curves = [];        this.cacheLengths = [];        this.startPoint.set(data.x, data.y);        this.autoClose = data.autoClose;        for (var i = 0; i < data.curves.length; i++)        {            var curve = data.curves[i];            switch (curve.type)            {                case 'LineCurve':                    this.add(LineCurve.fromJSON(curve));                    break;                case 'EllipseCurve':                    this.add(EllipseCurve.fromJSON(curve));                    break;                case 'SplineCurve':                    this.add(SplineCurve.fromJSON(curve));                    break;                case 'CubicBezierCurve':                    this.add(CubicBezierCurve.fromJSON(curve));                    break;                case 'QuadraticBezierCurve':                    this.add(QuadraticBezierCurve.fromJSON(curve));                    break;            }        }        return this;    },    getBounds: function (out, accuracy)    {        if (out === undefined) { out = new Rectangle(); }        if (accuracy === undefined) { accuracy = 16; }        out.x = Number.MAX_VALUE;        out.y = Number.MAX_VALUE;        var bounds = new Rectangle();        var maxRight = MATH_CONST.MIN_SAFE_INTEGER;        var maxBottom = MATH_CONST.MIN_SAFE_INTEGER;        for (var i = 0; i < this.curves.length; i++)        {            var curve = this.curves[i];            if (!curve.active)            {                continue;            }            curve.getBounds(bounds, accuracy);            out.x = Math.min(out.x, bounds.x);            out.y = Math.min(out.y, bounds.y);            maxRight = Math.max(maxRight, bounds.right);            maxBottom = Math.max(maxBottom, bounds.bottom);        }        out.right = maxRight;        out.bottom = maxBottom;        return out;    },    getCurveLengths: function ()    {        if (this.cacheLengths.length === this.curves.length)        {            return this.cacheLengths;        }        var lengths = [];        var sums = 0;        for (var i = 0; i < this.curves.length; i++)        {            sums += this.curves[i].getLength();            lengths.push(sums);        }        this.cacheLengths = lengths;        return lengths;    },    getCurveAt: function (t)    {        var d = t * this.getLength();        var curveLengths = this.getCurveLengths();        var i = 0;        while (i < curveLengths.length)        {            if (curveLengths[i] >= d)            {                return this.curves[i];            }            i++;        }        return null;    },    getEndPoint: function (out)    {        if (out === undefined) { out = new Vector2(); }        if (this.curves.length > 0)        {            this.curves[this.curves.length - 1].getPoint(1, out);        }        else        {            out.copy(this.startPoint);        }        return out;    },    getLength: function ()    {        var lens = this.getCurveLengths();        return lens[lens.length - 1];    },    getPoint: function (t, out)    {        if (out === undefined) { out = new Vector2(); }        var d = t * this.getLength();        var curveLengths = this.getCurveLengths();        var i = 0;        while (i < curveLengths.length)        {            if (curveLengths[i] >= d)            {                var diff = curveLengths[i] - d;                var curve = this.curves[i];                var segmentLength = curve.getLength();                var u = (segmentLength === 0) ? 0 : 1 - diff / segmentLength;                return curve.getPointAt(u, out);            }            i++;        }        return null;    },    getPoints: function (divisions, stepRate)    {        if (!divisions && !stepRate)        {            divisions = this.defaultDivisions;        }        var points = [];        var last;        for (var i = 0; i < this.curves.length; i++)        {            var curve = this.curves[i];            if (!curve.active)            {                continue;            }            var resolution = curve.getResolution(divisions);            var pts = curve.getPoints(resolution, stepRate);            for (var j = 0; j < pts.length; j++)            {                var point = pts[j];                if (last && last.equals(point))                {                    continue;                }                points.push(point);                last = point;            }        }        if (this.autoClose && points.length > 1 && !points[points.length - 1].equals(points[0]))        {            points.push(points[0]);        }        return points;    },    getRandomPoint: function (out)    {        if (out === undefined) { out = new Vector2(); }        return this.getPoint(Math.random(), out);    },    getSpacedPoints: function (divisions)    {        if (divisions === undefined) { divisions = 40; }        var points = [];        for (var i = 0; i <= divisions; i++)        {            points.push(this.getPoint(i / divisions));        }        if (this.autoClose)        {            points.push(points[0]);        }        return points;    },    getStartPoint: function (out)    {        if (out === undefined) { out = new Vector2(); }        return out.copy(this.startPoint);    },    getTangent: function (t, out)    {        if (out === undefined) { out = new Vector2(); }        var d = t * this.getLength();        var curveLengths = this.getCurveLengths();        var i = 0;        while (i < curveLengths.length)        {            if (curveLengths[i] >= d)            {                var diff = curveLengths[i] - d;                var curve = this.curves[i];                var segmentLength = curve.getLength();                var u = (segmentLength === 0) ? 0 : 1 - diff / segmentLength;                return curve.getTangentAt(u, out);            }            i++;        }        return null;    },    lineTo: function (x, y)    {        if (x instanceof Vector2)        {            this._tmpVec2B.copy(x);        }        else if (typeof x === 'object')        {            this._tmpVec2B.setFromObject(x);        }        else        {            this._tmpVec2B.set(x, y);        }        var end = this.getEndPoint(this._tmpVec2A);        return this.add(new LineCurve([ end.x, end.y, this._tmpVec2B.x, this._tmpVec2B.y ]));    },    splineTo: function (points)    {        points.unshift(this.getEndPoint());        return this.add(new SplineCurve(points));    },    moveTo: function (x, y)    {        if (x instanceof Vector2)        {            return this.add(new MovePathTo(x.x, x.y));        }        else        {            return this.add(new MovePathTo(x, y));        }    },    toJSON: function ()    {        var out = [];        for (var i = 0; i < this.curves.length; i++)        {            out.push(this.curves[i].toJSON());        }        return {            type: 'Path',            x: this.startPoint.x,            y: this.startPoint.y,            autoClose: this.autoClose,            curves: out        };    },    updateArcLengths: function ()    {        this.cacheLengths = [];        this.getCurveLengths();    },    destroy: function ()    {        this.curves.length = 0;        this.cacheLengths.length = 0;        this.startPoint = undefined;    }});GameObjectFactory.register('path', function (x, y){    return new Path(x, y);});module.exports = Path;

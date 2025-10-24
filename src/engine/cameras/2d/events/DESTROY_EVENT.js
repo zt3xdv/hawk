@@ -1,1 +1,1 @@
-module.exports = 'cameradestroy';
+module.exports = 'cameradestroy';

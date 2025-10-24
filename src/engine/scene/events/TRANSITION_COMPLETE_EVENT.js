@@ -1,1 +1,1 @@
-module.exports = 'transitioncomplete';
+module.exports = 'transitioncomplete';

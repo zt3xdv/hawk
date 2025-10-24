@@ -1,8 +1,1 @@
-var ImageWebGLRenderer = function (renderer, src, camera, parentMatrix)
-{
-    camera.addToRenderList(src);
-
-    this.pipeline.batchSprite(src, camera, parentMatrix);
-};
-
-module.exports = ImageWebGLRenderer;
+var ImageWebGLRenderer = function (renderer, src, camera, parentMatrix){    camera.addToRenderList(src);    this.pipeline.batchSprite(src, camera, parentMatrix);};module.exports = ImageWebGLRenderer;

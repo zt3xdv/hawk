@@ -1,1 +1,1 @@
-module.exports = 'pipelineresize';
+module.exports = 'pipelineresize';

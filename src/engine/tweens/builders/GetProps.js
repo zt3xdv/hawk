@@ -1,34 +1,1 @@
-var RESERVED = require('../tween/ReservedProps');
-
-var GetProps = function (config)
-{
-    var key;
-    var keys = [];
-
-    if (config.hasOwnProperty('props'))
-    {
-        for (key in config.props)
-        {
-
-            if (key.substring(0, 1) !== '_')
-            {
-                keys.push({ key: key, value: config.props[key] });
-            }
-        }
-    }
-    else
-    {
-        for (key in config)
-        {
-
-            if (RESERVED.indexOf(key) === -1 && key.substring(0, 1) !== '_')
-            {
-                keys.push({ key: key, value: config[key] });
-            }
-        }
-    }
-
-    return keys;
-};
-
-module.exports = GetProps;
+var RESERVED = require('../tween/ReservedProps');var GetProps = function (config){    var key;    var keys = [];    if (config.hasOwnProperty('props'))    {        for (key in config.props)        {            if (key.substring(0, 1) !== '_')            {                keys.push({ key: key, value: config.props[key] });            }        }    }    else    {        for (key in config)        {            if (RESERVED.indexOf(key) === -1 && key.substring(0, 1) !== '_')            {                keys.push({ key: key, value: config[key] });            }        }    }    return keys;};module.exports = GetProps;

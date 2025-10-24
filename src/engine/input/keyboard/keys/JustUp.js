@@ -1,15 +1,1 @@
-var JustUp = function (key)
-{
-    if (key._justUp)
-    {
-        key._justUp = false;
-
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-};
-
-module.exports = JustUp;
+var JustUp = function (key){    if (key._justUp)    {        key._justUp = false;        return true;    }    else    {        return false;    }};module.exports = JustUp;

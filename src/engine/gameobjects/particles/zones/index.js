@@ -1,7 +1,1 @@
-module.exports = {
-
-    DeathZone: require('./DeathZone'),
-    EdgeZone: require('./EdgeZone'),
-    RandomZone: require('./RandomZone')
-
-};
+module.exports = {    DeathZone: require('./DeathZone'),    EdgeZone: require('./EdgeZone'),    RandomZone: require('./RandomZone')};

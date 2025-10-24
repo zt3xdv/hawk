@@ -97,7 +97,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       "banner.png",
       ...list
     ], (data) => {
-      loading.querySelector("#loading-bar-percentage-int").innerText = data.percentage + "%";
       loading.querySelector("#loading-bar div").style.width = data.percentage + "%";
     });
     

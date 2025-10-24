@@ -1,33 +1,1 @@
-var BuildGameObject = require('../BuildGameObject');
-var GameObjectCreator = require('../GameObjectCreator');
-var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');
-var Text = require('./Text');
-
-GameObjectCreator.register('text', function (config, addToScene)
-{
-    if (config === undefined) { config = {}; }
-
-    var content = GetAdvancedValue(config, 'text', '');
-    var style = GetAdvancedValue(config, 'style', null);
-
-    var padding = GetAdvancedValue(config, 'padding', null);
-
-    if (padding !== null)
-    {
-        style.padding = padding;
-    }
-
-    var text = new Text(this.scene, 0, 0, content, style);
-
-    if (addToScene !== undefined)
-    {
-        config.add = addToScene;
-    }
-
-    BuildGameObject(this.scene, text, config);
-
-    text.autoRound = GetAdvancedValue(config, 'autoRound', true);
-    text.resolution = GetAdvancedValue(config, 'resolution', 1);
-
-    return text;
-});
+var BuildGameObject = require('../BuildGameObject');var GameObjectCreator = require('../GameObjectCreator');var GetAdvancedValue = require('../../utils/object/GetAdvancedValue');var Text = require('./Text');GameObjectCreator.register('text', function (config, addToScene){    if (config === undefined) { config = {}; }    var content = GetAdvancedValue(config, 'text', '');    var style = GetAdvancedValue(config, 'style', null);    var padding = GetAdvancedValue(config, 'padding', null);    if (padding !== null)    {        style.padding = padding;    }    var text = new Text(this.scene, 0, 0, content, style);    if (addToScene !== undefined)    {        config.add = addToScene;    }    BuildGameObject(this.scene, text, config);    text.autoRound = GetAdvancedValue(config, 'autoRound', true);    text.resolution = GetAdvancedValue(config, 'resolution', 1);    return text;});

@@ -1,1 +1,1 @@
-module.exports = 'sleep';
+module.exports = 'sleep';

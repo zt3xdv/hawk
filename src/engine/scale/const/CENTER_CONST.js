@@ -1,11 +1,1 @@
-module.exports = {
-
-    NO_CENTER: 0,
-
-    CENTER_BOTH: 1,
-
-    CENTER_HORIZONTALLY: 2,
-
-    CENTER_VERTICALLY: 3
-
-};
+module.exports = {    NO_CENTER: 0,    CENTER_BOTH: 1,    CENTER_HORIZONTALLY: 2,    CENTER_VERTICALLY: 3};

@@ -1,1 +1,1 @@
-module.exports = 'visible';
+module.exports = 'visible';

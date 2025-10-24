@@ -1,1 +1,1 @@
-module.exports = 'render';
+module.exports = 'render';

@@ -1,21 +1,1 @@
-var MoveTo = function (array, item, index)
-{
-    var currentIndex = array.indexOf(item);
-
-    if (currentIndex === -1 || index < 0 || index >= array.length)
-    {
-        throw new Error('Supplied index out of bounds');
-    }
-
-    if (currentIndex !== index)
-    {
-
-        array.splice(currentIndex, 1);
-
-        array.splice(index, 0, item);
-    }
-
-    return item;
-};
-
-module.exports = MoveTo;
+var MoveTo = function (array, item, index){    var currentIndex = array.indexOf(item);    if (currentIndex === -1 || index < 0 || index >= array.length)    {        throw new Error('Supplied index out of bounds');    }    if (currentIndex !== index)    {        array.splice(currentIndex, 1);        array.splice(index, 0, item);    }    return item;};module.exports = MoveTo;

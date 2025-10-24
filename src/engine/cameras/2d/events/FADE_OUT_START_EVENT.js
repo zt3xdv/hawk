@@ -1,1 +1,1 @@
-module.exports = 'camerafadeoutstart';
+module.exports = 'camerafadeoutstart';

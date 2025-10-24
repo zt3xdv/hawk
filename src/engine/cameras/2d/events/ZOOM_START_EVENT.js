@@ -1,1 +1,1 @@
-module.exports = 'camerazoomstart';
+module.exports = 'camerazoomstart';

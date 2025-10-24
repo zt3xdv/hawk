@@ -1,34 +1,1 @@
-var GetFastValue = require('../../../utils/object/GetFastValue');
-
-var CreateGroupLayer = function (json, group, parentState)
-{
-    if (!group)
-    {
-
-        return {
-            i: 0, 
-            layers: json.layers, 
-
-            name: '',
-            opacity: 1,
-            visible: true,
-            x: 0,
-            y: 0
-        };
-    }
-
-    var layerX = group.x + GetFastValue(group, 'startx', 0) * json.tilewidth + GetFastValue(group, 'offsetx', 0);
-    var layerY = group.y + GetFastValue(group, 'starty', 0) * json.tileheight + GetFastValue(group, 'offsety', 0);
-
-    return {
-        i: 0,
-        layers: group.layers,
-        name: parentState.name + group.name + '/',
-        opacity: parentState.opacity * group.opacity,
-        visible: parentState.visible && group.visible,
-        x: parentState.x + layerX,
-        y: parentState.y + layerY
-    };
-};
-
-module.exports = CreateGroupLayer;
+var GetFastValue = require('../../../utils/object/GetFastValue');var CreateGroupLayer = function (json, group, parentState){    if (!group)    {        return {            i: 0,             layers: json.layers,             name: '',            opacity: 1,            visible: true,            x: 0,            y: 0        };    }    var layerX = group.x + GetFastValue(group, 'startx', 0) * json.tilewidth + GetFastValue(group, 'offsetx', 0);    var layerY = group.y + GetFastValue(group, 'starty', 0) * json.tileheight + GetFastValue(group, 'offsety', 0);    return {        i: 0,        layers: group.layers,        name: parentState.name + group.name + '/',        opacity: parentState.opacity * group.opacity,        visible: parentState.visible && group.visible,        x: parentState.x + layerX,        y: parentState.y + layerY    };};module.exports = CreateGroupLayer;

@@ -1,435 +1,1 @@
-var AnimationState = require('../../animations/AnimationState');
-var Clamp = require('../../math/Clamp');
-var Class = require('../../utils/Class');
-var DegToRad = require('../../math/DegToRad');
-var Rectangle = require('../../geom/rectangle/Rectangle');
-var RotateAround = require('../../math/RotateAround');
-var Vector2 = require('../../math/Vector2');
-
-var Particle = new Class({
-
-    initialize:
-
-    function Particle (emitter)
-    {
-
-        this.emitter = emitter;
-
-        this.texture = null;
-
-        this.frame = null;
-
-        this.x = 0;
-
-        this.y = 0;
-
-        this.worldPosition = new Vector2();
-
-        this.velocityX = 0;
-
-        this.velocityY = 0;
-
-        this.accelerationX = 0;
-
-        this.accelerationY = 0;
-
-        this.maxVelocityX = 10000;
-
-        this.maxVelocityY = 10000;
-
-        this.bounce = 0;
-
-        this.scaleX = 1;
-
-        this.scaleY = 1;
-
-        this.alpha = 1;
-
-        this.angle = 0;
-
-        this.rotation = 0;
-
-        this.tint = 0xffffff;
-
-        this.life = 1000;
-
-        this.lifeCurrent = 1000;
-
-        this.delayCurrent = 0;
-
-        this.holdCurrent = 0;
-
-        this.lifeT = 0;
-
-        this.data = {
-            tint: { min: 0xffffff, max: 0xffffff },
-            alpha: { min: 1, max: 1 },
-            rotate: { min: 0, max: 0 },
-            scaleX: { min: 1, max: 1 },
-            scaleY: { min: 1, max: 1 },
-            x: { min: 0, max: 0 },
-            y: { min: 0, max: 0 },
-            accelerationX: { min: 0, max: 0 },
-            accelerationY: { min: 0, max: 0 },
-            maxVelocityX: { min: 0, max: 0 },
-            maxVelocityY: { min: 0, max: 0 },
-            moveToX: { min: 0, max: 0 },
-            moveToY: { min: 0, max: 0 },
-            bounce: { min: 0, max: 0 }
-        };
-
-        this.isCropped = false;
-
-        this.scene = emitter.scene;
-
-        this.anims = null;
-
-        if (this.emitter.anims.length > 0)
-        {
-            this.anims = new AnimationState(this);
-        }
-
-        this.bounds = new Rectangle();
-    },
-
-    emit: function (event, a1, a2, a3, a4, a5)
-    {
-        return this.emitter.emit(event, a1, a2, a3, a4, a5);
-    },
-
-    isAlive: function ()
-    {
-        return (this.lifeCurrent > 0);
-    },
-
-    kill: function ()
-    {
-        this.lifeCurrent = 0;
-    },
-
-    setPosition: function (x, y)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-
-        this.x = x;
-        this.y = y;
-    },
-
-    fire: function (x, y)
-    {
-        var emitter = this.emitter;
-        var ops = emitter.ops;
-
-        var anim = emitter.getAnim();
-
-        if (anim)
-        {
-            this.anims.play(anim);
-        }
-        else
-        {
-            this.frame = emitter.getFrame();
-            this.texture = this.frame.texture;
-        }
-
-        if (!this.frame)
-        {
-            throw new Error('Particle has no texture frame');
-        }
-
-        emitter.getEmitZone(this);
-
-        if (x === undefined)
-        {
-            this.x += ops.x.onEmit(this, 'x');
-        }
-        else if (ops.x.steps > 0)
-        {
-
-            this.x += x + ops.x.onEmit(this, 'x');
-        }
-        else
-        {
-            this.x += x;
-        }
-
-        if (y === undefined)
-        {
-            this.y += ops.y.onEmit(this, 'y');
-        }
-        else if (ops.y.steps > 0)
-        {
-
-            this.y += y + ops.y.onEmit(this, 'y');
-        }
-        else
-        {
-            this.y += y;
-        }
-
-        this.life = ops.lifespan.onEmit(this, 'lifespan');
-        this.lifeCurrent = this.life;
-        this.lifeT = 0;
-
-        this.delayCurrent = ops.delay.onEmit(this, 'delay');
-        this.holdCurrent = ops.hold.onEmit(this, 'hold');
-
-        this.scaleX = ops.scaleX.onEmit(this, 'scaleX');
-        this.scaleY = (ops.scaleY.active) ? ops.scaleY.onEmit(this, 'scaleY') : this.scaleX;
-
-        this.angle = ops.rotate.onEmit(this, 'rotate');
-
-        this.rotation = DegToRad(this.angle);
-
-        emitter.worldMatrix.transformPoint(this.x, this.y, this.worldPosition);
-
-        if (this.delayCurrent === 0 && emitter.getDeathZone(this))
-        {
-            this.lifeCurrent = 0;
-
-            return false;
-        }
-
-        var sx = ops.speedX.onEmit(this, 'speedX');
-        var sy = (ops.speedY.active) ? ops.speedY.onEmit(this, 'speedY') : sx;
-
-        if (emitter.radial)
-        {
-            var rad = DegToRad(ops.angle.onEmit(this, 'angle'));
-
-            this.velocityX = Math.cos(rad) * Math.abs(sx);
-            this.velocityY = Math.sin(rad) * Math.abs(sy);
-        }
-        else if (emitter.moveTo)
-        {
-            var mx = ops.moveToX.onEmit(this, 'moveToX');
-            var my = ops.moveToY.onEmit(this, 'moveToY');
-            var lifeS = this.life / 1000;
-
-            this.velocityX = (mx - this.x) / lifeS;
-            this.velocityY = (my - this.y) / lifeS;
-        }
-        else
-        {
-            this.velocityX = sx;
-            this.velocityY = sy;
-        }
-
-        if (emitter.acceleration)
-        {
-            this.accelerationX = ops.accelerationX.onEmit(this, 'accelerationX');
-            this.accelerationY = ops.accelerationY.onEmit(this, 'accelerationY');
-        }
-
-        this.maxVelocityX = ops.maxVelocityX.onEmit(this, 'maxVelocityX');
-        this.maxVelocityY = ops.maxVelocityY.onEmit(this, 'maxVelocityY');
-
-        this.bounce = ops.bounce.onEmit(this, 'bounce');
-
-        this.alpha = ops.alpha.onEmit(this, 'alpha');
-
-        if (ops.color.active)
-        {
-            this.tint = ops.color.onEmit(this, 'tint');
-        }
-        else
-        {
-            this.tint = ops.tint.onEmit(this, 'tint');
-        }
-
-        return true;
-    },
-
-    update: function (delta, step, processors)
-    {
-        if (this.lifeCurrent <= 0)
-        {
-
-            if (this.holdCurrent > 0)
-            {
-                this.holdCurrent -= delta;
-
-                return (this.holdCurrent <= 0);
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        if (this.delayCurrent > 0)
-        {
-            this.delayCurrent -= delta;
-
-            return false;
-        }
-
-        if (this.anims)
-        {
-            this.anims.update(0, delta);
-        }
-
-        var emitter = this.emitter;
-        var ops = emitter.ops;
-
-        var t = 1 - (this.lifeCurrent / this.life);
-
-        this.lifeT = t;
-
-        this.x = ops.x.onUpdate(this, 'x', t, this.x);
-        this.y = ops.y.onUpdate(this, 'y', t, this.y);
-
-        if (emitter.moveTo)
-        {
-            var mx = ops.moveToX.onUpdate(this, 'moveToX', t, emitter.moveToX);
-            var my = ops.moveToY.onUpdate(this, 'moveToY', t, emitter.moveToY);
-            var lifeS = this.lifeCurrent / 1000;
-
-            this.velocityX = (mx - this.x) / lifeS;
-            this.velocityY = (my - this.y) / lifeS;
-        }
-
-        this.computeVelocity(emitter, delta, step, processors, t);
-
-        this.scaleX = ops.scaleX.onUpdate(this, 'scaleX', t, this.scaleX);
-
-        if (ops.scaleY.active)
-        {
-            this.scaleY = ops.scaleY.onUpdate(this, 'scaleY', t, this.scaleY);
-        }
-        else
-        {
-            this.scaleY = this.scaleX;
-        }
-
-        this.angle = ops.rotate.onUpdate(this, 'rotate', t, this.angle);
-
-        this.rotation = DegToRad(this.angle);
-
-        if (emitter.getDeathZone(this))
-        {
-            this.lifeCurrent = 0;
-
-            return true;
-        }
-
-        this.alpha = Clamp(ops.alpha.onUpdate(this, 'alpha', t, this.alpha), 0, 1);
-
-        if (ops.color.active)
-        {
-            this.tint = ops.color.onUpdate(this, 'color', t, this.tint);
-        }
-        else
-        {
-            this.tint = ops.tint.onUpdate(this, 'tint', t, this.tint);
-        }
-
-        this.lifeCurrent -= delta;
-
-        return (this.lifeCurrent <= 0 && this.holdCurrent <= 0);
-    },
-
-    computeVelocity: function (emitter, delta, step, processors, t)
-    {
-        var ops = emitter.ops;
-
-        var vx = this.velocityX;
-        var vy = this.velocityY;
-
-        var ax = ops.accelerationX.onUpdate(this, 'accelerationX', t, this.accelerationX);
-        var ay = ops.accelerationY.onUpdate(this, 'accelerationY', t, this.accelerationY);
-
-        var mx = ops.maxVelocityX.onUpdate(this, 'maxVelocityX', t, this.maxVelocityX);
-        var my = ops.maxVelocityY.onUpdate(this, 'maxVelocityY', t, this.maxVelocityY);
-
-        this.bounce = ops.bounce.onUpdate(this, 'bounce', t, this.bounce);
-
-        vx += (emitter.gravityX * step) + (ax * step);
-        vy += (emitter.gravityY * step) + (ay * step);
-
-        vx = Clamp(vx, -mx, mx);
-        vy = Clamp(vy, -my, my);
-
-        this.velocityX = vx;
-        this.velocityY = vy;
-
-        this.x += vx * step;
-        this.y += vy * step;
-
-        emitter.worldMatrix.transformPoint(this.x, this.y, this.worldPosition);
-
-        for (var i = 0; i < processors.length; i++)
-        {
-            var processor = processors[i];
-
-            if (processor.active)
-            {
-                processor.update(this, delta, step, t);
-            }
-        }
-    },
-
-    setSizeToFrame: function ()
-    {
-
-    },
-
-    getBounds: function (matrix)
-    {
-        if (matrix === undefined) { matrix = this.emitter.getWorldTransformMatrix(); }
-
-        var sx = Math.abs(matrix.scaleX) * this.scaleX;
-        var sy = Math.abs(matrix.scaleY) * this.scaleY;
-
-        var x = this.x;
-        var y = this.y;
-        var rotation = this.rotation;
-        var width = (this.frame.width * sx) / 2;
-        var height = (this.frame.height * sy) / 2;
-
-        var bounds = this.bounds;
-
-        var topLeft = new Vector2(x - width, y - height);
-        var topRight = new Vector2(x + width, y - height);
-        var bottomLeft = new Vector2(x - width, y + height);
-        var bottomRight = new Vector2(x + width, y + height);
-
-        if (rotation !== 0)
-        {
-            RotateAround(topLeft, x, y, rotation);
-            RotateAround(topRight, x, y, rotation);
-            RotateAround(bottomLeft, x, y, rotation);
-            RotateAround(bottomRight, x, y, rotation);
-        }
-
-        matrix.transformPoint(topLeft.x, topLeft.y, topLeft);
-        matrix.transformPoint(topRight.x, topRight.y, topRight);
-        matrix.transformPoint(bottomLeft.x, bottomLeft.y, bottomLeft);
-        matrix.transformPoint(bottomRight.x, bottomRight.y, bottomRight);
-
-        bounds.x = Math.min(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x);
-        bounds.y = Math.min(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y);
-        bounds.width = Math.max(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x) - bounds.x;
-        bounds.height = Math.max(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y) - bounds.y;
-
-        return bounds;
-    },
-
-    destroy: function ()
-    {
-        if (this.anims)
-        {
-            this.anims.destroy();
-        }
-
-        this.anims = null;
-        this.emitter = null;
-        this.texture = null;
-        this.frame = null;
-        this.scene = null;
-    }
-
-});
-
-module.exports = Particle;
+var AnimationState = require('../../animations/AnimationState');var Clamp = require('../../math/Clamp');var Class = require('../../utils/Class');var DegToRad = require('../../math/DegToRad');var Rectangle = require('../../geom/rectangle/Rectangle');var RotateAround = require('../../math/RotateAround');var Vector2 = require('../../math/Vector2');var Particle = new Class({    initialize:    function Particle (emitter)    {        this.emitter = emitter;        this.texture = null;        this.frame = null;        this.x = 0;        this.y = 0;        this.worldPosition = new Vector2();        this.velocityX = 0;        this.velocityY = 0;        this.accelerationX = 0;        this.accelerationY = 0;        this.maxVelocityX = 10000;        this.maxVelocityY = 10000;        this.bounce = 0;        this.scaleX = 1;        this.scaleY = 1;        this.alpha = 1;        this.angle = 0;        this.rotation = 0;        this.tint = 0xffffff;        this.life = 1000;        this.lifeCurrent = 1000;        this.delayCurrent = 0;        this.holdCurrent = 0;        this.lifeT = 0;        this.data = {            tint: { min: 0xffffff, max: 0xffffff },            alpha: { min: 1, max: 1 },            rotate: { min: 0, max: 0 },            scaleX: { min: 1, max: 1 },            scaleY: { min: 1, max: 1 },            x: { min: 0, max: 0 },            y: { min: 0, max: 0 },            accelerationX: { min: 0, max: 0 },            accelerationY: { min: 0, max: 0 },            maxVelocityX: { min: 0, max: 0 },            maxVelocityY: { min: 0, max: 0 },            moveToX: { min: 0, max: 0 },            moveToY: { min: 0, max: 0 },            bounce: { min: 0, max: 0 }        };        this.isCropped = false;        this.scene = emitter.scene;        this.anims = null;        if (this.emitter.anims.length > 0)        {            this.anims = new AnimationState(this);        }        this.bounds = new Rectangle();    },    emit: function (event, a1, a2, a3, a4, a5)    {        return this.emitter.emit(event, a1, a2, a3, a4, a5);    },    isAlive: function ()    {        return (this.lifeCurrent > 0);    },    kill: function ()    {        this.lifeCurrent = 0;    },    setPosition: function (x, y)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        this.x = x;        this.y = y;    },    fire: function (x, y)    {        var emitter = this.emitter;        var ops = emitter.ops;        var anim = emitter.getAnim();        if (anim)        {            this.anims.play(anim);        }        else        {            this.frame = emitter.getFrame();            this.texture = this.frame.texture;        }        if (!this.frame)        {            throw new Error('Particle has no texture frame');        }        emitter.getEmitZone(this);        if (x === undefined)        {            this.x += ops.x.onEmit(this, 'x');        }        else if (ops.x.steps > 0)        {            this.x += x + ops.x.onEmit(this, 'x');        }        else        {            this.x += x;        }        if (y === undefined)        {            this.y += ops.y.onEmit(this, 'y');        }        else if (ops.y.steps > 0)        {            this.y += y + ops.y.onEmit(this, 'y');        }        else        {            this.y += y;        }        this.life = ops.lifespan.onEmit(this, 'lifespan');        this.lifeCurrent = this.life;        this.lifeT = 0;        this.delayCurrent = ops.delay.onEmit(this, 'delay');        this.holdCurrent = ops.hold.onEmit(this, 'hold');        this.scaleX = ops.scaleX.onEmit(this, 'scaleX');        this.scaleY = (ops.scaleY.active) ? ops.scaleY.onEmit(this, 'scaleY') : this.scaleX;        this.angle = ops.rotate.onEmit(this, 'rotate');        this.rotation = DegToRad(this.angle);        emitter.worldMatrix.transformPoint(this.x, this.y, this.worldPosition);        if (this.delayCurrent === 0 && emitter.getDeathZone(this))        {            this.lifeCurrent = 0;            return false;        }        var sx = ops.speedX.onEmit(this, 'speedX');        var sy = (ops.speedY.active) ? ops.speedY.onEmit(this, 'speedY') : sx;        if (emitter.radial)        {            var rad = DegToRad(ops.angle.onEmit(this, 'angle'));            this.velocityX = Math.cos(rad) * Math.abs(sx);            this.velocityY = Math.sin(rad) * Math.abs(sy);        }        else if (emitter.moveTo)        {            var mx = ops.moveToX.onEmit(this, 'moveToX');            var my = ops.moveToY.onEmit(this, 'moveToY');            var lifeS = this.life / 1000;            this.velocityX = (mx - this.x) / lifeS;            this.velocityY = (my - this.y) / lifeS;        }        else        {            this.velocityX = sx;            this.velocityY = sy;        }        if (emitter.acceleration)        {            this.accelerationX = ops.accelerationX.onEmit(this, 'accelerationX');            this.accelerationY = ops.accelerationY.onEmit(this, 'accelerationY');        }        this.maxVelocityX = ops.maxVelocityX.onEmit(this, 'maxVelocityX');        this.maxVelocityY = ops.maxVelocityY.onEmit(this, 'maxVelocityY');        this.bounce = ops.bounce.onEmit(this, 'bounce');        this.alpha = ops.alpha.onEmit(this, 'alpha');        if (ops.color.active)        {            this.tint = ops.color.onEmit(this, 'tint');        }        else        {            this.tint = ops.tint.onEmit(this, 'tint');        }        return true;    },    update: function (delta, step, processors)    {        if (this.lifeCurrent <= 0)        {            if (this.holdCurrent > 0)            {                this.holdCurrent -= delta;                return (this.holdCurrent <= 0);            }            else            {                return true;            }        }        if (this.delayCurrent > 0)        {            this.delayCurrent -= delta;            return false;        }        if (this.anims)        {            this.anims.update(0, delta);        }        var emitter = this.emitter;        var ops = emitter.ops;        var t = 1 - (this.lifeCurrent / this.life);        this.lifeT = t;        this.x = ops.x.onUpdate(this, 'x', t, this.x);        this.y = ops.y.onUpdate(this, 'y', t, this.y);        if (emitter.moveTo)        {            var mx = ops.moveToX.onUpdate(this, 'moveToX', t, emitter.moveToX);            var my = ops.moveToY.onUpdate(this, 'moveToY', t, emitter.moveToY);            var lifeS = this.lifeCurrent / 1000;            this.velocityX = (mx - this.x) / lifeS;            this.velocityY = (my - this.y) / lifeS;        }        this.computeVelocity(emitter, delta, step, processors, t);        this.scaleX = ops.scaleX.onUpdate(this, 'scaleX', t, this.scaleX);        if (ops.scaleY.active)        {            this.scaleY = ops.scaleY.onUpdate(this, 'scaleY', t, this.scaleY);        }        else        {            this.scaleY = this.scaleX;        }        this.angle = ops.rotate.onUpdate(this, 'rotate', t, this.angle);        this.rotation = DegToRad(this.angle);        if (emitter.getDeathZone(this))        {            this.lifeCurrent = 0;            return true;        }        this.alpha = Clamp(ops.alpha.onUpdate(this, 'alpha', t, this.alpha), 0, 1);        if (ops.color.active)        {            this.tint = ops.color.onUpdate(this, 'color', t, this.tint);        }        else        {            this.tint = ops.tint.onUpdate(this, 'tint', t, this.tint);        }        this.lifeCurrent -= delta;        return (this.lifeCurrent <= 0 && this.holdCurrent <= 0);    },    computeVelocity: function (emitter, delta, step, processors, t)    {        var ops = emitter.ops;        var vx = this.velocityX;        var vy = this.velocityY;        var ax = ops.accelerationX.onUpdate(this, 'accelerationX', t, this.accelerationX);        var ay = ops.accelerationY.onUpdate(this, 'accelerationY', t, this.accelerationY);        var mx = ops.maxVelocityX.onUpdate(this, 'maxVelocityX', t, this.maxVelocityX);        var my = ops.maxVelocityY.onUpdate(this, 'maxVelocityY', t, this.maxVelocityY);        this.bounce = ops.bounce.onUpdate(this, 'bounce', t, this.bounce);        vx += (emitter.gravityX * step) + (ax * step);        vy += (emitter.gravityY * step) + (ay * step);        vx = Clamp(vx, -mx, mx);        vy = Clamp(vy, -my, my);        this.velocityX = vx;        this.velocityY = vy;        this.x += vx * step;        this.y += vy * step;        emitter.worldMatrix.transformPoint(this.x, this.y, this.worldPosition);        for (var i = 0; i < processors.length; i++)        {            var processor = processors[i];            if (processor.active)            {                processor.update(this, delta, step, t);            }        }    },    setSizeToFrame: function ()    {    },    getBounds: function (matrix)    {        if (matrix === undefined) { matrix = this.emitter.getWorldTransformMatrix(); }        var sx = Math.abs(matrix.scaleX) * this.scaleX;        var sy = Math.abs(matrix.scaleY) * this.scaleY;        var x = this.x;        var y = this.y;        var rotation = this.rotation;        var width = (this.frame.width * sx) / 2;        var height = (this.frame.height * sy) / 2;        var bounds = this.bounds;        var topLeft = new Vector2(x - width, y - height);        var topRight = new Vector2(x + width, y - height);        var bottomLeft = new Vector2(x - width, y + height);        var bottomRight = new Vector2(x + width, y + height);        if (rotation !== 0)        {            RotateAround(topLeft, x, y, rotation);            RotateAround(topRight, x, y, rotation);            RotateAround(bottomLeft, x, y, rotation);            RotateAround(bottomRight, x, y, rotation);        }        matrix.transformPoint(topLeft.x, topLeft.y, topLeft);        matrix.transformPoint(topRight.x, topRight.y, topRight);        matrix.transformPoint(bottomLeft.x, bottomLeft.y, bottomLeft);        matrix.transformPoint(bottomRight.x, bottomRight.y, bottomRight);        bounds.x = Math.min(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x);        bounds.y = Math.min(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y);        bounds.width = Math.max(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x) - bounds.x;        bounds.height = Math.max(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y) - bounds.y;        return bounds;    },    destroy: function ()    {        if (this.anims)        {            this.anims.destroy();        }        this.anims = null;        this.emitter = null;        this.texture = null;        this.frame = null;        this.scene = null;    }});module.exports = Particle;

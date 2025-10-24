@@ -1,123 +1,1 @@
-var BaseSoundManager = require('../BaseSoundManager');
-var Class = require('../../utils/Class');
-var EventEmitter = require('eventemitter3');
-var NoAudioSound = require('./NoAudioSound');
-var NOOP = require('../../utils/NOOP');
-
-var NoAudioSoundManager = new Class({
-
-    Extends: EventEmitter,
-
-    initialize:
-
-    function NoAudioSoundManager (game)
-    {
-        EventEmitter.call(this);
-
-        this.game = game;
-        this.sounds = [];
-        this.mute = false;
-        this.volume = 1;
-        this.rate = 1;
-        this.detune = 0;
-        this.pauseOnBlur = true;
-        this.locked = false;
-    },
-
-    add: function (key, config)
-    {
-        var sound = new NoAudioSound(this, key, config);
-
-        this.sounds.push(sound);
-
-        return sound;
-    },
-
-    addAudioSprite: function (key, config)
-    {
-        var sound = this.add(key, config);
-
-        sound.spritemap = {};
-
-        return sound;
-    },
-
-    get: function (key)
-    {
-        return BaseSoundManager.prototype.get.call(this, key);
-    },
-
-    getAll: function (key)
-    {
-        return BaseSoundManager.prototype.getAll.call(this, key);
-    },
-
-    play: function (key, extra)
-    {
-        return false;
-    },
-
-    playAudioSprite: function (key, spriteName, config)
-    {
-        return false;
-    },
-
-    remove: function (sound)
-    {
-        return BaseSoundManager.prototype.remove.call(this, sound);
-    },
-
-    removeAll: function ()
-    {
-        return BaseSoundManager.prototype.removeAll.call(this);
-    },
-
-    removeByKey: function (key)
-    {
-        return BaseSoundManager.prototype.removeByKey.call(this, key);
-    },
-
-    stopByKey: function (key)
-    {
-        return BaseSoundManager.prototype.stopByKey.call(this, key);
-    },
-
-    onBlur: NOOP,
-
-    onFocus: NOOP,
-
-    onGameBlur: NOOP,
-
-    onGameFocus: NOOP,
-
-    pauseAll: NOOP,
-
-    resumeAll: NOOP,
-
-    stopAll: NOOP,
-
-    update: NOOP,
-
-    setRate: NOOP,
-
-    setDetune: NOOP,
-
-    setMute: NOOP,
-
-    setVolume: NOOP,
-
-    unlock: NOOP,
-
-    forEachActiveSound: function (callbackfn, scope)
-    {
-        BaseSoundManager.prototype.forEachActiveSound.call(this, callbackfn, scope);
-    },
-
-    destroy: function ()
-    {
-        BaseSoundManager.prototype.destroy.call(this);
-    }
-
-});
-
-module.exports = NoAudioSoundManager;
+var BaseSoundManager = require('../BaseSoundManager');var Class = require('../../utils/Class');var EventEmitter = require('eventemitter3');var NoAudioSound = require('./NoAudioSound');var NOOP = require('../../utils/NOOP');var NoAudioSoundManager = new Class({    Extends: EventEmitter,    initialize:    function NoAudioSoundManager (game)    {        EventEmitter.call(this);        this.game = game;        this.sounds = [];        this.mute = false;        this.volume = 1;        this.rate = 1;        this.detune = 0;        this.pauseOnBlur = true;        this.locked = false;    },    add: function (key, config)    {        var sound = new NoAudioSound(this, key, config);        this.sounds.push(sound);        return sound;    },    addAudioSprite: function (key, config)    {        var sound = this.add(key, config);        sound.spritemap = {};        return sound;    },    get: function (key)    {        return BaseSoundManager.prototype.get.call(this, key);    },    getAll: function (key)    {        return BaseSoundManager.prototype.getAll.call(this, key);    },    play: function (key, extra)    {        return false;    },    playAudioSprite: function (key, spriteName, config)    {        return false;    },    remove: function (sound)    {        return BaseSoundManager.prototype.remove.call(this, sound);    },    removeAll: function ()    {        return BaseSoundManager.prototype.removeAll.call(this);    },    removeByKey: function (key)    {        return BaseSoundManager.prototype.removeByKey.call(this, key);    },    stopByKey: function (key)    {        return BaseSoundManager.prototype.stopByKey.call(this, key);    },    onBlur: NOOP,    onFocus: NOOP,    onGameBlur: NOOP,    onGameFocus: NOOP,    pauseAll: NOOP,    resumeAll: NOOP,    stopAll: NOOP,    update: NOOP,    setRate: NOOP,    setDetune: NOOP,    setMute: NOOP,    setVolume: NOOP,    unlock: NOOP,    forEachActiveSound: function (callbackfn, scope)    {        BaseSoundManager.prototype.forEachActiveSound.call(this, callbackfn, scope);    },    destroy: function ()    {        BaseSoundManager.prototype.destroy.call(this);    }});module.exports = NoAudioSoundManager;

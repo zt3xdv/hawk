@@ -1,107 +1,1 @@
-var Class = require('../../utils/Class');
-var Components = require('../components');
-var GameObject = require('../GameObject');
-var IntegerToColor = require('../../display/color/IntegerToColor');
-var PIPELINES_CONST = require('../../renderer/webgl/pipelines/const');
-var Render = require('./PointLightRender');
-
-var PointLight = new Class({
-
-    Extends: GameObject,
-
-    Mixins: [
-        Components.AlphaSingle,
-        Components.BlendMode,
-        Components.Depth,
-        Components.Mask,
-        Components.Pipeline,
-        Components.PostPipeline,
-        Components.ScrollFactor,
-        Components.Transform,
-        Components.Visible,
-        Render
-    ],
-
-    initialize:
-
-    function PointLight (scene, x, y, color, radius, intensity, attenuation)
-    {
-        if (color === undefined) { color = 0xffffff; }
-        if (radius === undefined) { radius = 128; }
-        if (intensity === undefined) { intensity = 1; }
-        if (attenuation === undefined) { attenuation = 0.1; }
-
-        GameObject.call(this, scene, 'PointLight');
-
-        this.initPipeline(PIPELINES_CONST.POINTLIGHT_PIPELINE);
-        this.initPostPipeline();
-
-        this.setPosition(x, y);
-
-        this.color = IntegerToColor(color);
-
-        this.intensity = intensity;
-
-        this.attenuation = attenuation;
-
-        this.width = radius * 2;
-        this.height = radius * 2;
-
-        this._radius = radius;
-    },
-
-    radius: {
-
-        get: function ()
-        {
-            return this._radius;
-        },
-
-        set: function (value)
-        {
-            this._radius = value;
-            this.width = value * 2;
-            this.height = value * 2;
-        }
-
-    },
-
-    originX: {
-
-        get: function ()
-        {
-            return 0.5;
-        }
-
-    },
-
-    originY: {
-
-        get: function ()
-        {
-            return 0.5;
-        }
-
-    },
-
-    displayOriginX: {
-
-        get: function ()
-        {
-            return this._radius;
-        }
-
-    },
-
-    displayOriginY: {
-
-        get: function ()
-        {
-            return this._radius;
-        }
-
-    }
-
-});
-
-module.exports = PointLight;
+var Class = require('../../utils/Class');var Components = require('../components');var GameObject = require('../GameObject');var IntegerToColor = require('../../display/color/IntegerToColor');var PIPELINES_CONST = require('../../renderer/webgl/pipelines/const');var Render = require('./PointLightRender');var PointLight = new Class({    Extends: GameObject,    Mixins: [        Components.AlphaSingle,        Components.BlendMode,        Components.Depth,        Components.Mask,        Components.Pipeline,        Components.PostPipeline,        Components.ScrollFactor,        Components.Transform,        Components.Visible,        Render    ],    initialize:    function PointLight (scene, x, y, color, radius, intensity, attenuation)    {        if (color === undefined) { color = 0xffffff; }        if (radius === undefined) { radius = 128; }        if (intensity === undefined) { intensity = 1; }        if (attenuation === undefined) { attenuation = 0.1; }        GameObject.call(this, scene, 'PointLight');        this.initPipeline(PIPELINES_CONST.POINTLIGHT_PIPELINE);        this.initPostPipeline();        this.setPosition(x, y);        this.color = IntegerToColor(color);        this.intensity = intensity;        this.attenuation = attenuation;        this.width = radius * 2;        this.height = radius * 2;        this._radius = radius;    },    radius: {        get: function ()        {            return this._radius;        },        set: function (value)        {            this._radius = value;            this.width = value * 2;            this.height = value * 2;        }    },    originX: {        get: function ()        {            return 0.5;        }    },    originY: {        get: function ()        {            return 0.5;        }    },    displayOriginX: {        get: function ()        {            return this._radius;        }    },    displayOriginY: {        get: function ()        {            return this._radius;        }    }});module.exports = PointLight;

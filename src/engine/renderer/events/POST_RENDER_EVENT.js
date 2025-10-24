@@ -1,1 +1,1 @@
-module.exports = 'postrender';
+module.exports = 'postrender';

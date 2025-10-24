@@ -1,35 +1,1 @@
-var GetCalcMatrix = require('../GetCalcMatrix');
-
-var ShaderWebGLRenderer = function (renderer, src, camera, parentMatrix)
-{
-    if (!src.shader)
-    {
-        return;
-    }
-
-    camera.addToRenderList(src);
-
-    renderer.pipelines.clear();
-
-    if (src.renderToTexture)
-    {
-        src.load();
-        src.flush();
-    }
-    else
-    {
-        var calcMatrix = GetCalcMatrix(src, camera, parentMatrix).calc;
-
-        if (renderer.width !== src._rendererWidth || renderer.height !== src._rendererHeight)
-        {
-            src.projOrtho(0, renderer.width, renderer.height, 0);
-        }
-
-        src.load(calcMatrix.matrix);
-        src.flush();
-    }
-
-    renderer.pipelines.rebind();
-};
-
-module.exports = ShaderWebGLRenderer;
+var GetCalcMatrix = require('../GetCalcMatrix');var ShaderWebGLRenderer = function (renderer, src, camera, parentMatrix){    if (!src.shader)    {        return;    }    camera.addToRenderList(src);    renderer.pipelines.clear();    if (src.renderToTexture)    {        src.load();        src.flush();    }    else    {        var calcMatrix = GetCalcMatrix(src, camera, parentMatrix).calc;        if (renderer.width !== src._rendererWidth || renderer.height !== src._rendererHeight)        {            src.projOrtho(0, renderer.width, renderer.height, 0);        }        src.load(calcMatrix.matrix);        src.flush();    }    renderer.pipelines.rebind();};module.exports = ShaderWebGLRenderer;

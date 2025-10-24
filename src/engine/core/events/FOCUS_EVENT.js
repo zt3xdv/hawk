@@ -1,1 +1,1 @@
-module.exports = 'focus';
+module.exports = 'focus';

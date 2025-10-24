@@ -1,106 +1,1 @@
-var ParseWangsets = function (wangsets, datas)
-{
-    for (var w = 0; w < wangsets.length; w++)
-    {
-        var wangset = wangsets[w];
-        var identifier = w;
-
-        if (wangset.name && wangset.name !== '')
-        {
-            identifier = wangset.name;
-        }
-
-        if (Array.isArray(wangset.wangtiles) && wangset.wangtiles.length > 0)
-        {
-            var edgeColors = {};
-            var cornerColors = {};
-
-            var c;
-            var color;
-            var colorIndex;
-
-            if (Array.isArray(wangset.edgecolors))
-            {
-                for (c = 0; c < wangset.edgecolors.length; c++)
-                {
-                    colorIndex = 1 + c;
-                    color = wangset.edgecolors[c];
-
-                    if (color.name !== '')
-                    {
-                        edgeColors[colorIndex] = color.name;
-                    }
-                }
-            }
-
-            if (Array.isArray(wangset.cornercolors))
-            {
-                for (c = 0; c < wangset.cornercolors.length; c++)
-                {
-                    colorIndex = 1 + c;
-                    color = wangset.cornercolors[c];
-
-                    if (color.name !== '')
-                    {
-                        cornerColors[colorIndex] = color.name;
-                    }
-                }
-            }
-
-            if (Array.isArray(wangset.colors))
-            {
-                for (c = 0; c < wangset.colors.length; c++)
-                {
-                    color = wangset.colors[c];
-                    colorIndex = 1 + c;
-
-                    if (color.name !== '')
-                    {
-                        edgeColors[colorIndex] = cornerColors[colorIndex] = color.name;
-                    }
-                }
-            }
-
-            var idLayout = [
-                edgeColors, cornerColors, edgeColors, cornerColors,
-                edgeColors, cornerColors, edgeColors, cornerColors
-            ];
-
-            for (var t = 0; t < wangset.wangtiles.length; t++)
-            {
-                var wangtile = wangset.wangtiles[t];
-
-                var obj = (datas[wangtile.tileid] || (datas[wangtile.tileid] = {}));
-
-                obj = (obj.wangid || (obj.wangid = {}));
-
-                var wangid = [];
-
-                for (var i = 0; i < Math.min(idLayout.length, wangtile.wangid.length); i++)
-                {
-                    color = wangtile.wangid[i];
-
-                    if (color === 0)
-                    {
-                        wangid.push(undefined);
-                        continue;
-                    }
-
-                    var renamed = idLayout[i][color];
-
-                    if (renamed !== undefined)
-                    {
-                        wangid.push(renamed);
-                        continue;
-                    }
-
-                    wangid.push(color);
-                }
-
-                obj[identifier] = wangid;
-            }
-        }
-    }
-};
-
-module.exports = ParseWangsets;
+var ParseWangsets = function (wangsets, datas){    for (var w = 0; w < wangsets.length; w++)    {        var wangset = wangsets[w];        var identifier = w;        if (wangset.name && wangset.name !== '')        {            identifier = wangset.name;        }        if (Array.isArray(wangset.wangtiles) && wangset.wangtiles.length > 0)        {            var edgeColors = {};            var cornerColors = {};            var c;            var color;            var colorIndex;            if (Array.isArray(wangset.edgecolors))            {                for (c = 0; c < wangset.edgecolors.length; c++)                {                    colorIndex = 1 + c;                    color = wangset.edgecolors[c];                    if (color.name !== '')                    {                        edgeColors[colorIndex] = color.name;                    }                }            }            if (Array.isArray(wangset.cornercolors))            {                for (c = 0; c < wangset.cornercolors.length; c++)                {                    colorIndex = 1 + c;                    color = wangset.cornercolors[c];                    if (color.name !== '')                    {                        cornerColors[colorIndex] = color.name;                    }                }            }            if (Array.isArray(wangset.colors))            {                for (c = 0; c < wangset.colors.length; c++)                {                    color = wangset.colors[c];                    colorIndex = 1 + c;                    if (color.name !== '')                    {                        edgeColors[colorIndex] = cornerColors[colorIndex] = color.name;                    }                }            }            var idLayout = [                edgeColors, cornerColors, edgeColors, cornerColors,                edgeColors, cornerColors, edgeColors, cornerColors            ];            for (var t = 0; t < wangset.wangtiles.length; t++)            {                var wangtile = wangset.wangtiles[t];                var obj = (datas[wangtile.tileid] || (datas[wangtile.tileid] = {}));                obj = (obj.wangid || (obj.wangid = {}));                var wangid = [];                for (var i = 0; i < Math.min(idLayout.length, wangtile.wangid.length); i++)                {                    color = wangtile.wangid[i];                    if (color === 0)                    {                        wangid.push(undefined);                        continue;                    }                    var renamed = idLayout[i][color];                    if (renamed !== undefined)                    {                        wangid.push(renamed);                        continue;                    }                    wangid.push(color);                }                obj[identifier] = wangid;            }        }    }};module.exports = ParseWangsets;

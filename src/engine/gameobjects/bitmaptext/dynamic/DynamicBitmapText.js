@@ -1,81 +1,1 @@
-var BitmapText = require('../static/BitmapText');
-var Class = require('../../../utils/Class');
-var Render = require('./DynamicBitmapTextRender');
-
-var DynamicBitmapText = new Class({
-
-    Extends: BitmapText,
-
-    Mixins: [
-        Render
-    ],
-
-    initialize:
-
-    function DynamicBitmapText (scene, x, y, font, text, size, align)
-    {
-        BitmapText.call(this, scene, x, y, font, text, size, align);
-
-        this.type = 'DynamicBitmapText';
-
-        this.scrollX = 0;
-
-        this.scrollY = 0;
-
-        this.cropWidth = 0;
-
-        this.cropHeight = 0;
-
-        this.displayCallback;
-
-        this.callbackData = {
-            parent: this,
-            color: 0,
-            tint: {
-                topLeft: 0,
-                topRight: 0,
-                bottomLeft: 0,
-                bottomRight: 0
-            },
-            index: 0,
-            charCode: 0,
-            x: 0,
-            y: 0,
-            scale: 0,
-            rotation: 0,
-            data: 0
-        };
-    },
-
-    setSize: function (width, height)
-    {
-        this.cropWidth = width;
-        this.cropHeight = height;
-
-        return this;
-    },
-
-    setDisplayCallback: function (callback)
-    {
-        this.displayCallback = callback;
-
-        return this;
-    },
-
-    setScrollX: function (value)
-    {
-        this.scrollX = value;
-
-        return this;
-    },
-
-    setScrollY: function (value)
-    {
-        this.scrollY = value;
-
-        return this;
-    }
-
-});
-
-module.exports = DynamicBitmapText;
+var BitmapText = require('../static/BitmapText');var Class = require('../../../utils/Class');var Render = require('./DynamicBitmapTextRender');var DynamicBitmapText = new Class({    Extends: BitmapText,    Mixins: [        Render    ],    initialize:    function DynamicBitmapText (scene, x, y, font, text, size, align)    {        BitmapText.call(this, scene, x, y, font, text, size, align);        this.type = 'DynamicBitmapText';        this.scrollX = 0;        this.scrollY = 0;        this.cropWidth = 0;        this.cropHeight = 0;        this.displayCallback;        this.callbackData = {            parent: this,            color: 0,            tint: {                topLeft: 0,                topRight: 0,                bottomLeft: 0,                bottomRight: 0            },            index: 0,            charCode: 0,            x: 0,            y: 0,            scale: 0,            rotation: 0,            data: 0        };    },    setSize: function (width, height)    {        this.cropWidth = width;        this.cropHeight = height;        return this;    },    setDisplayCallback: function (callback)    {        this.displayCallback = callback;        return this;    },    setScrollX: function (value)    {        this.scrollX = value;        return this;    },    setScrollY: function (value)    {        this.scrollY = value;        return this;    }});module.exports = DynamicBitmapText;

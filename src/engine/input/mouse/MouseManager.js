@@ -1,321 +1,1 @@
-var Class = require('../../utils/Class');
-var Features = require('../../device/Features');
-var InputEvents = require('../events');
-var NOOP = require('../../utils/NOOP');
-
-var MouseManager = new Class({
-
-    initialize:
-
-    function MouseManager (inputManager)
-    {
-
-        this.manager = inputManager;
-
-        this.preventDefaultDown = true;
-
-        this.preventDefaultUp = true;
-
-        this.preventDefaultMove = true;
-
-        this.preventDefaultWheel = false;
-
-        this.enabled = false;
-
-        this.target;
-
-        this.locked = false;
-
-        this.onMouseMove = NOOP;
-
-        this.onMouseDown = NOOP;
-
-        this.onMouseUp = NOOP;
-
-        this.onMouseDownWindow = NOOP;
-
-        this.onMouseUpWindow = NOOP;
-
-        this.onMouseOver = NOOP;
-
-        this.onMouseOut = NOOP;
-
-        this.onMouseWheel = NOOP;
-
-        this.pointerLockChange = NOOP;
-
-        this.isTop = true;
-
-        inputManager.events.once(InputEvents.MANAGER_BOOT, this.boot, this);
-    },
-
-    boot: function ()
-    {
-        var config = this.manager.config;
-
-        this.enabled = config.inputMouse;
-        this.target = config.inputMouseEventTarget;
-        this.passive = config.inputMousePassive;
-
-        this.preventDefaultDown = config.inputMousePreventDefaultDown;
-        this.preventDefaultUp = config.inputMousePreventDefaultUp;
-        this.preventDefaultMove = config.inputMousePreventDefaultMove;
-        this.preventDefaultWheel = config.inputMousePreventDefaultWheel;
-
-        if (!this.target)
-        {
-            this.target = this.manager.game.canvas;
-        }
-        else if (typeof this.target === 'string')
-        {
-            this.target = document.getElementById(this.target);
-        }
-
-        if (config.disableContextMenu)
-        {
-            this.disableContextMenu();
-        }
-
-        if (this.enabled && this.target)
-        {
-            this.startListeners();
-        }
-    },
-
-    disableContextMenu: function ()
-    {
-        this.target.addEventListener('contextmenu', function (event)
-        {
-            event.preventDefault();
-            return false;
-        });
-
-        return this;
-    },
-
-    requestPointerLock: function ()
-    {
-        if (Features.pointerLock)
-        {
-            var element = this.target;
-
-            element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
-
-            element.requestPointerLock();
-        }
-    },
-
-    releasePointerLock: function ()
-    {
-        if (Features.pointerLock)
-        {
-            document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock || document.webkitExitPointerLock;
-            document.exitPointerLock();
-        }
-    },
-
-    startListeners: function ()
-    {
-        var target = this.target;
-
-        if (!target)
-        {
-            return;
-        }
-
-        var _this = this;
-        var manager = this.manager;
-        var canvas = manager.canvas;
-        var autoFocus = (window && window.focus && manager.game.config.autoFocus);
-
-        this.onMouseMove = function (event)
-        {
-            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)
-            {
-                manager.onMouseMove(event);
-
-                if (_this.preventDefaultMove)
-                {
-                    event.preventDefault();
-                }
-            }
-        };
-
-        this.onMouseDown = function (event)
-        {
-            if (autoFocus)
-            {
-                window.focus();
-            }
-
-            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)
-            {
-                manager.onMouseDown(event);
-
-                if (_this.preventDefaultDown && event.target === canvas)
-                {
-                    event.preventDefault();
-                }
-            }
-        };
-
-        this.onMouseDownWindow = function (event)
-        {
-            if (event.sourceCapabilities && event.sourceCapabilities.firesTouchEvents)
-            {
-                return;
-            }
-
-            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled && event.target !== canvas)
-            {
-
-                manager.onMouseDown(event);
-            }
-        };
-
-        this.onMouseUp = function (event)
-        {
-            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)
-            {
-                manager.onMouseUp(event);
-
-                if (_this.preventDefaultUp && event.target === canvas)
-                {
-                    event.preventDefault();
-                }
-            }
-        };
-
-        this.onMouseUpWindow = function (event)
-        {
-            if (event.sourceCapabilities && event.sourceCapabilities.firesTouchEvents)
-            {
-                return;
-            }
-
-            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled && event.target !== canvas)
-            {
-
-                manager.onMouseUp(event);
-            }
-        };
-
-        this.onMouseOver = function (event)
-        {
-            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)
-            {
-                manager.setCanvasOver(event);
-            }
-        };
-
-        this.onMouseOut = function (event)
-        {
-            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)
-            {
-                manager.setCanvasOut(event);
-            }
-        };
-
-        this.onMouseWheel = function (event)
-        {
-            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)
-            {
-                manager.onMouseWheel(event);
-            }
-
-            if (_this.preventDefaultWheel && event.target === canvas)
-            {
-                event.preventDefault();
-            }
-        };
-
-        var passive = { passive: true };
-
-        target.addEventListener('mousemove', this.onMouseMove);
-        target.addEventListener('mousedown', this.onMouseDown);
-        target.addEventListener('mouseup', this.onMouseUp);
-        target.addEventListener('mouseover', this.onMouseOver, passive);
-        target.addEventListener('mouseout', this.onMouseOut, passive);
-
-        if (this.preventDefaultWheel)
-        {
-            target.addEventListener('wheel', this.onMouseWheel, { passive: false });
-        }
-        else
-        {
-            target.addEventListener('wheel', this.onMouseWheel, passive);
-        }
-
-        if (window && manager.game.config.inputWindowEvents)
-        {
-            try
-            {
-                window.top.addEventListener('mousedown', this.onMouseDownWindow, passive);
-                window.top.addEventListener('mouseup', this.onMouseUpWindow, passive);
-            }
-            catch (exception)
-            {
-                window.addEventListener('mousedown', this.onMouseDownWindow, passive);
-                window.addEventListener('mouseup', this.onMouseUpWindow, passive);
-
-                this.isTop = false;
-            }
-        }
-
-        if (Features.pointerLock)
-        {
-            this.pointerLockChange = function (event)
-            {
-                var element = _this.target;
-
-                _this.locked = (document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element) ? true : false;
-
-                manager.onPointerLockChange(event);
-            };
-
-            document.addEventListener('pointerlockchange', this.pointerLockChange, true);
-            document.addEventListener('mozpointerlockchange', this.pointerLockChange, true);
-            document.addEventListener('webkitpointerlockchange', this.pointerLockChange, true);
-        }
-
-        this.enabled = true;
-    },
-
-    stopListeners: function ()
-    {
-        var target = this.target;
-
-        target.removeEventListener('mousemove', this.onMouseMove);
-        target.removeEventListener('mousedown', this.onMouseDown);
-        target.removeEventListener('mouseup', this.onMouseUp);
-        target.removeEventListener('mouseover', this.onMouseOver);
-        target.removeEventListener('mouseout', this.onMouseOut);
-
-        if (window)
-        {
-            target = (this.isTop) ? window.top : window;
-
-            target.removeEventListener('mousedown', this.onMouseDownWindow);
-            target.removeEventListener('mouseup', this.onMouseUpWindow);
-        }
-
-        if (Features.pointerLock)
-        {
-            document.removeEventListener('pointerlockchange', this.pointerLockChange, true);
-            document.removeEventListener('mozpointerlockchange', this.pointerLockChange, true);
-            document.removeEventListener('webkitpointerlockchange', this.pointerLockChange, true);
-        }
-    },
-
-    destroy: function ()
-    {
-        this.stopListeners();
-
-        this.target = null;
-        this.enabled = false;
-        this.manager = null;
-    }
-
-});
-
-module.exports = MouseManager;
+var Class = require('../../utils/Class');var Features = require('../../device/Features');var InputEvents = require('../events');var NOOP = require('../../utils/NOOP');var MouseManager = new Class({    initialize:    function MouseManager (inputManager)    {        this.manager = inputManager;        this.preventDefaultDown = true;        this.preventDefaultUp = true;        this.preventDefaultMove = true;        this.preventDefaultWheel = false;        this.enabled = false;        this.target;        this.locked = false;        this.onMouseMove = NOOP;        this.onMouseDown = NOOP;        this.onMouseUp = NOOP;        this.onMouseDownWindow = NOOP;        this.onMouseUpWindow = NOOP;        this.onMouseOver = NOOP;        this.onMouseOut = NOOP;        this.onMouseWheel = NOOP;        this.pointerLockChange = NOOP;        this.isTop = true;        inputManager.events.once(InputEvents.MANAGER_BOOT, this.boot, this);    },    boot: function ()    {        var config = this.manager.config;        this.enabled = config.inputMouse;        this.target = config.inputMouseEventTarget;        this.passive = config.inputMousePassive;        this.preventDefaultDown = config.inputMousePreventDefaultDown;        this.preventDefaultUp = config.inputMousePreventDefaultUp;        this.preventDefaultMove = config.inputMousePreventDefaultMove;        this.preventDefaultWheel = config.inputMousePreventDefaultWheel;        if (!this.target)        {            this.target = this.manager.game.canvas;        }        else if (typeof this.target === 'string')        {            this.target = document.getElementById(this.target);        }        if (config.disableContextMenu)        {            this.disableContextMenu();        }        if (this.enabled && this.target)        {            this.startListeners();        }    },    disableContextMenu: function ()    {        this.target.addEventListener('contextmenu', function (event)        {            event.preventDefault();            return false;        });        return this;    },    requestPointerLock: function ()    {        if (Features.pointerLock)        {            var element = this.target;            element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;            element.requestPointerLock();        }    },    releasePointerLock: function ()    {        if (Features.pointerLock)        {            document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock || document.webkitExitPointerLock;            document.exitPointerLock();        }    },    startListeners: function ()    {        var target = this.target;        if (!target)        {            return;        }        var _this = this;        var manager = this.manager;        var canvas = manager.canvas;        var autoFocus = (window && window.focus && manager.game.config.autoFocus);        this.onMouseMove = function (event)        {            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)            {                manager.onMouseMove(event);                if (_this.preventDefaultMove)                {                    event.preventDefault();                }            }        };        this.onMouseDown = function (event)        {            if (autoFocus)            {                window.focus();            }            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)            {                manager.onMouseDown(event);                if (_this.preventDefaultDown && event.target === canvas)                {                    event.preventDefault();                }            }        };        this.onMouseDownWindow = function (event)        {            if (event.sourceCapabilities && event.sourceCapabilities.firesTouchEvents)            {                return;            }            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled && event.target !== canvas)            {                manager.onMouseDown(event);            }        };        this.onMouseUp = function (event)        {            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)            {                manager.onMouseUp(event);                if (_this.preventDefaultUp && event.target === canvas)                {                    event.preventDefault();                }            }        };        this.onMouseUpWindow = function (event)        {            if (event.sourceCapabilities && event.sourceCapabilities.firesTouchEvents)            {                return;            }            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled && event.target !== canvas)            {                manager.onMouseUp(event);            }        };        this.onMouseOver = function (event)        {            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)            {                manager.setCanvasOver(event);            }        };        this.onMouseOut = function (event)        {            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)            {                manager.setCanvasOut(event);            }        };        this.onMouseWheel = function (event)        {            if (!event.defaultPrevented && _this.enabled && manager && manager.enabled)            {                manager.onMouseWheel(event);            }            if (_this.preventDefaultWheel && event.target === canvas)            {                event.preventDefault();            }        };        var passive = { passive: true };        target.addEventListener('mousemove', this.onMouseMove);        target.addEventListener('mousedown', this.onMouseDown);        target.addEventListener('mouseup', this.onMouseUp);        target.addEventListener('mouseover', this.onMouseOver, passive);        target.addEventListener('mouseout', this.onMouseOut, passive);        if (this.preventDefaultWheel)        {            target.addEventListener('wheel', this.onMouseWheel, { passive: false });        }        else        {            target.addEventListener('wheel', this.onMouseWheel, passive);        }        if (window && manager.game.config.inputWindowEvents)        {            try            {                window.top.addEventListener('mousedown', this.onMouseDownWindow, passive);                window.top.addEventListener('mouseup', this.onMouseUpWindow, passive);            }            catch (exception)            {                window.addEventListener('mousedown', this.onMouseDownWindow, passive);                window.addEventListener('mouseup', this.onMouseUpWindow, passive);                this.isTop = false;            }        }        if (Features.pointerLock)        {            this.pointerLockChange = function (event)            {                var element = _this.target;                _this.locked = (document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element) ? true : false;                manager.onPointerLockChange(event);            };            document.addEventListener('pointerlockchange', this.pointerLockChange, true);            document.addEventListener('mozpointerlockchange', this.pointerLockChange, true);            document.addEventListener('webkitpointerlockchange', this.pointerLockChange, true);        }        this.enabled = true;    },    stopListeners: function ()    {        var target = this.target;        target.removeEventListener('mousemove', this.onMouseMove);        target.removeEventListener('mousedown', this.onMouseDown);        target.removeEventListener('mouseup', this.onMouseUp);        target.removeEventListener('mouseover', this.onMouseOver);        target.removeEventListener('mouseout', this.onMouseOut);        if (window)        {            target = (this.isTop) ? window.top : window;            target.removeEventListener('mousedown', this.onMouseDownWindow);            target.removeEventListener('mouseup', this.onMouseUpWindow);        }        if (Features.pointerLock)        {            document.removeEventListener('pointerlockchange', this.pointerLockChange, true);            document.removeEventListener('mozpointerlockchange', this.pointerLockChange, true);            document.removeEventListener('webkitpointerlockchange', this.pointerLockChange, true);        }    },    destroy: function ()    {        this.stopListeners();        this.target = null;        this.enabled = false;        this.manager = null;    }});module.exports = MouseManager;

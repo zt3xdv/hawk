@@ -1,376 +1,1 @@
-var CanvasPool = require('../../display/canvas/CanvasPool');
-var Class = require('../../utils/Class');
-var Components = require('../components');
-var GameObject = require('../GameObject');
-var GetPowerOfTwo = require('../../math/pow2/GetPowerOfTwo');
-var Smoothing = require('../../display/canvas/Smoothing');
-var TileSpriteRender = require('./TileSpriteRender');
-var UUID = require('../../utils/string/UUID');
-var Vector2 = require('../../math/Vector2');
-
-var _FLAG = 8; 
-
-var TileSprite = new Class({
-
-    Extends: GameObject,
-
-    Mixins: [
-        Components.Alpha,
-        Components.BlendMode,
-        Components.ComputedSize,
-        Components.Crop,
-        Components.Depth,
-        Components.Flip,
-        Components.GetBounds,
-        Components.Mask,
-        Components.Origin,
-        Components.Pipeline,
-        Components.PostPipeline,
-        Components.ScrollFactor,
-        Components.Tint,
-        Components.Transform,
-        Components.Visible,
-        TileSpriteRender
-    ],
-
-    initialize:
-
-    function TileSprite (scene, x, y, width, height, textureKey, frameKey)
-    {
-        var renderer = scene.sys.renderer;
-
-        GameObject.call(this, scene, 'TileSprite');
-
-        var displayTexture = scene.sys.textures.get(textureKey);
-        var displayFrame = displayTexture.get(frameKey);
-
-        if (displayFrame.source.compressionAlgorithm)
-        {
-            console.warn('TileSprite cannot use compressed texture');
-            displayTexture = scene.sys.textures.get('__MISSING');
-            displayFrame = displayTexture.get();
-        }
-
-        if (displayTexture.type === 'DynamicTexture')
-        {
-            console.warn('TileSprite cannot use Dynamic Texture');
-            displayTexture = scene.sys.textures.get('__MISSING');
-            displayFrame = displayTexture.get();
-        }
-
-        if (!width || !height)
-        {
-            width = width ? width : displayFrame.width;
-            height = height ? height : displayFrame.height;
-        }
-        else
-        {
-            width = Math.floor(width);
-            height = Math.floor(height);
-        }
-
-        this._tilePosition = new Vector2();
-
-        this._tileScale = new Vector2(1, 1);
-
-        this.dirty = false;
-
-        this.renderer = renderer;
-
-        this.canvas = CanvasPool.create(this, width, height);
-
-        this.context = this.canvas.getContext('2d', { willReadFrequently: false });
-
-        this.displayTexture = displayTexture;
-
-        this.displayFrame = displayFrame;
-
-        this._crop = this.resetCropObject();
-
-        this._textureKey = UUID();
-
-        this.texture = scene.sys.textures.addCanvas(this._textureKey, this.canvas);
-
-        this.frame = this.texture.get();
-
-        this.potWidth = GetPowerOfTwo(displayFrame.width);
-
-        this.potHeight = GetPowerOfTwo(displayFrame.height);
-
-        this.fillCanvas = CanvasPool.create2D(this, this.potWidth, this.potHeight);
-
-        this.fillContext = this.fillCanvas.getContext('2d', { willReadFrequently: false });
-
-        this.fillPattern = null;
-
-        this.setPosition(x, y);
-        this.setSize(width, height);
-        this.setFrame(frameKey);
-        this.setOriginFromFrame();
-        this.initPipeline();
-        this.initPostPipeline(true);
-    },
-
-    setTexture: function (key, frame)
-    {
-        this.displayTexture = this.scene.sys.textures.get(key);
-
-        return this.setFrame(frame);
-    },
-
-    setFrame: function (frame)
-    {
-        var newFrame = this.displayTexture.get(frame);
-
-        this.potWidth = GetPowerOfTwo(newFrame.width);
-        this.potHeight = GetPowerOfTwo(newFrame.height);
-
-        this.canvas.width = 0;
-
-        if (!newFrame.cutWidth || !newFrame.cutHeight)
-        {
-            this.renderFlags &= ~_FLAG;
-        }
-        else
-        {
-            this.renderFlags |= _FLAG;
-        }
-
-        this.displayFrame = newFrame;
-
-        this.dirty = true;
-
-        this.updateTileTexture();
-
-        return this;
-    },
-
-    setTilePosition: function (x, y)
-    {
-        if (x !== undefined)
-        {
-            this.tilePositionX = x;
-        }
-
-        if (y !== undefined)
-        {
-            this.tilePositionY = y;
-        }
-
-        return this;
-    },
-
-    setTileScale: function (x, y)
-    {
-        if (x === undefined) { x = this.tileScaleX; }
-        if (y === undefined) { y = x; }
-
-        this.tileScaleX = x;
-        this.tileScaleY = y;
-
-        return this;
-    },
-
-    updateTileTexture: function ()
-    {
-        if (!this.dirty || !this.renderer)
-        {
-            return;
-        }
-
-        var frame = this.displayFrame;
-
-        if (frame.source.isRenderTexture || frame.source.isGLTexture)
-        {
-            console.warn('TileSprites can only use Image or Canvas based textures');
-
-            this.dirty = false;
-
-            return;
-        }
-
-        var ctx = this.fillContext;
-        var canvas = this.fillCanvas;
-
-        var fw = this.potWidth;
-        var fh = this.potHeight;
-
-        if (!this.renderer || !this.renderer.gl)
-        {
-            fw = frame.cutWidth;
-            fh = frame.cutHeight;
-        }
-
-        ctx.clearRect(0, 0, fw, fh);
-
-        canvas.width = fw;
-        canvas.height = fh;
-
-        ctx.drawImage(
-            frame.source.image,
-            frame.cutX, frame.cutY,
-            frame.cutWidth, frame.cutHeight,
-            0, 0,
-            fw, fh
-        );
-
-        if (this.renderer && this.renderer.gl)
-        {
-            this.fillPattern = this.renderer.canvasToTexture(canvas, this.fillPattern);
-
-            if (typeof WEBGL_DEBUG)
-            {
-                this.fillPattern.spectorMetadata = { textureKey: 'TileSprite Game Object' };
-            }
-        }
-        else
-        {
-            this.fillPattern = ctx.createPattern(canvas, 'repeat');
-        }
-
-        this.updateCanvas();
-
-        this.dirty = false;
-    },
-
-    updateCanvas: function ()
-    {
-        var canvas = this.canvas;
-
-        if (canvas.width !== this.width || canvas.height !== this.height)
-        {
-            canvas.width = this.width;
-            canvas.height = this.height;
-
-            this.frame.setSize(this.width, this.height);
-            this.updateDisplayOrigin();
-
-            this.dirty = true;
-        }
-
-        if (!this.dirty || this.renderer && this.renderer.gl)
-        {
-            this.dirty = false;
-            return;
-        }
-
-        var ctx = this.context;
-
-        if (!this.scene.sys.game.config.antialias)
-        {
-            Smoothing.disable(ctx);
-        }
-
-        var scaleX = this._tileScale.x;
-        var scaleY = this._tileScale.y;
-
-        var positionX = this._tilePosition.x;
-        var positionY = this._tilePosition.y;
-
-        ctx.clearRect(0, 0, this.width, this.height);
-
-        ctx.save();
-
-        ctx.scale(scaleX, scaleY);
-
-        ctx.translate(-positionX, -positionY);
-
-        ctx.fillStyle = this.fillPattern;
-
-        ctx.fillRect(positionX, positionY, this.width / scaleX, this.height / scaleY);
-
-        ctx.restore();
-
-        this.dirty = false;
-    },
-
-    preDestroy: function ()
-    {
-        if (this.renderer && this.renderer.gl)
-        {
-            this.renderer.deleteTexture(this.fillPattern);
-        }
-
-        CanvasPool.remove(this.canvas);
-        CanvasPool.remove(this.fillCanvas);
-
-        this.fillPattern = null;
-        this.fillContext = null;
-        this.fillCanvas = null;
-
-        this.displayTexture = null;
-        this.displayFrame = null;
-
-        var texture = this.texture;
-
-        if (texture)
-        {
-            texture.destroy();
-        }
-
-        this.renderer = null;
-    },
-
-    tilePositionX: {
-
-        get: function ()
-        {
-            return this._tilePosition.x;
-        },
-
-        set: function (value)
-        {
-            this._tilePosition.x = value;
-            this.dirty = true;
-        }
-
-    },
-
-    tilePositionY: {
-
-        get: function ()
-        {
-            return this._tilePosition.y;
-        },
-
-        set: function (value)
-        {
-            this._tilePosition.y = value;
-            this.dirty = true;
-        }
-
-    },
-
-    tileScaleX: {
-
-        get: function ()
-        {
-            return this._tileScale.x;
-        },
-
-        set: function (value)
-        {
-            this._tileScale.x = value;
-            this.dirty = true;
-        }
-
-    },
-
-    tileScaleY: {
-
-        get: function ()
-        {
-            return this._tileScale.y;
-        },
-
-        set: function (value)
-        {
-            this._tileScale.y = value;
-            this.dirty = true;
-        }
-
-    }
-
-});
-
-module.exports = TileSprite;
+var CanvasPool = require('../../display/canvas/CanvasPool');var Class = require('../../utils/Class');var Components = require('../components');var GameObject = require('../GameObject');var GetPowerOfTwo = require('../../math/pow2/GetPowerOfTwo');var Smoothing = require('../../display/canvas/Smoothing');var TileSpriteRender = require('./TileSpriteRender');var UUID = require('../../utils/string/UUID');var Vector2 = require('../../math/Vector2');var _FLAG = 8; var TileSprite = new Class({    Extends: GameObject,    Mixins: [        Components.Alpha,        Components.BlendMode,        Components.ComputedSize,        Components.Crop,        Components.Depth,        Components.Flip,        Components.GetBounds,        Components.Mask,        Components.Origin,        Components.Pipeline,        Components.PostPipeline,        Components.ScrollFactor,        Components.Tint,        Components.Transform,        Components.Visible,        TileSpriteRender    ],    initialize:    function TileSprite (scene, x, y, width, height, textureKey, frameKey)    {        var renderer = scene.sys.renderer;        GameObject.call(this, scene, 'TileSprite');        var displayTexture = scene.sys.textures.get(textureKey);        var displayFrame = displayTexture.get(frameKey);        if (displayFrame.source.compressionAlgorithm)        {            console.warn('TileSprite cannot use compressed texture');            displayTexture = scene.sys.textures.get('__MISSING');            displayFrame = displayTexture.get();        }        if (displayTexture.type === 'DynamicTexture')        {            console.warn('TileSprite cannot use Dynamic Texture');            displayTexture = scene.sys.textures.get('__MISSING');            displayFrame = displayTexture.get();        }        if (!width || !height)        {            width = width ? width : displayFrame.width;            height = height ? height : displayFrame.height;        }        else        {            width = Math.floor(width);            height = Math.floor(height);        }        this._tilePosition = new Vector2();        this._tileScale = new Vector2(1, 1);        this.dirty = false;        this.renderer = renderer;        this.canvas = CanvasPool.create(this, width, height);        this.context = this.canvas.getContext('2d', { willReadFrequently: false });        this.displayTexture = displayTexture;        this.displayFrame = displayFrame;        this._crop = this.resetCropObject();        this._textureKey = UUID();        this.texture = scene.sys.textures.addCanvas(this._textureKey, this.canvas);        this.frame = this.texture.get();        this.potWidth = GetPowerOfTwo(displayFrame.width);        this.potHeight = GetPowerOfTwo(displayFrame.height);        this.fillCanvas = CanvasPool.create2D(this, this.potWidth, this.potHeight);        this.fillContext = this.fillCanvas.getContext('2d', { willReadFrequently: false });        this.fillPattern = null;        this.setPosition(x, y);        this.setSize(width, height);        this.setFrame(frameKey);        this.setOriginFromFrame();        this.initPipeline();        this.initPostPipeline(true);    },    setTexture: function (key, frame)    {        this.displayTexture = this.scene.sys.textures.get(key);        return this.setFrame(frame);    },    setFrame: function (frame)    {        var newFrame = this.displayTexture.get(frame);        this.potWidth = GetPowerOfTwo(newFrame.width);        this.potHeight = GetPowerOfTwo(newFrame.height);        this.canvas.width = 0;        if (!newFrame.cutWidth || !newFrame.cutHeight)        {            this.renderFlags &= ~_FLAG;        }        else        {            this.renderFlags |= _FLAG;        }        this.displayFrame = newFrame;        this.dirty = true;        this.updateTileTexture();        return this;    },    setTilePosition: function (x, y)    {        if (x !== undefined)        {            this.tilePositionX = x;        }        if (y !== undefined)        {            this.tilePositionY = y;        }        return this;    },    setTileScale: function (x, y)    {        if (x === undefined) { x = this.tileScaleX; }        if (y === undefined) { y = x; }        this.tileScaleX = x;        this.tileScaleY = y;        return this;    },    updateTileTexture: function ()    {        if (!this.dirty || !this.renderer)        {            return;        }        var frame = this.displayFrame;        if (frame.source.isRenderTexture || frame.source.isGLTexture)        {            console.warn('TileSprites can only use Image or Canvas based textures');            this.dirty = false;            return;        }        var ctx = this.fillContext;        var canvas = this.fillCanvas;        var fw = this.potWidth;        var fh = this.potHeight;        if (!this.renderer || !this.renderer.gl)        {            fw = frame.cutWidth;            fh = frame.cutHeight;        }        ctx.clearRect(0, 0, fw, fh);        canvas.width = fw;        canvas.height = fh;        ctx.drawImage(            frame.source.image,            frame.cutX, frame.cutY,            frame.cutWidth, frame.cutHeight,            0, 0,            fw, fh        );        if (this.renderer && this.renderer.gl)        {            this.fillPattern = this.renderer.canvasToTexture(canvas, this.fillPattern);            if (typeof WEBGL_DEBUG)            {                this.fillPattern.spectorMetadata = { textureKey: 'TileSprite Game Object' };            }        }        else        {            this.fillPattern = ctx.createPattern(canvas, 'repeat');        }        this.updateCanvas();        this.dirty = false;    },    updateCanvas: function ()    {        var canvas = this.canvas;        if (canvas.width !== this.width || canvas.height !== this.height)        {            canvas.width = this.width;            canvas.height = this.height;            this.frame.setSize(this.width, this.height);            this.updateDisplayOrigin();            this.dirty = true;        }        if (!this.dirty || this.renderer && this.renderer.gl)        {            this.dirty = false;            return;        }        var ctx = this.context;        if (!this.scene.sys.game.config.antialias)        {            Smoothing.disable(ctx);        }        var scaleX = this._tileScale.x;        var scaleY = this._tileScale.y;        var positionX = this._tilePosition.x;        var positionY = this._tilePosition.y;        ctx.clearRect(0, 0, this.width, this.height);        ctx.save();        ctx.scale(scaleX, scaleY);        ctx.translate(-positionX, -positionY);        ctx.fillStyle = this.fillPattern;        ctx.fillRect(positionX, positionY, this.width / scaleX, this.height / scaleY);        ctx.restore();        this.dirty = false;    },    preDestroy: function ()    {        if (this.renderer && this.renderer.gl)        {            this.renderer.deleteTexture(this.fillPattern);        }        CanvasPool.remove(this.canvas);        CanvasPool.remove(this.fillCanvas);        this.fillPattern = null;        this.fillContext = null;        this.fillCanvas = null;        this.displayTexture = null;        this.displayFrame = null;        var texture = this.texture;        if (texture)        {            texture.destroy();        }        this.renderer = null;    },    tilePositionX: {        get: function ()        {            return this._tilePosition.x;        },        set: function (value)        {            this._tilePosition.x = value;            this.dirty = true;        }    },    tilePositionY: {        get: function ()        {            return this._tilePosition.y;        },        set: function (value)        {            this._tilePosition.y = value;            this.dirty = true;        }    },    tileScaleX: {        get: function ()        {            return this._tileScale.x;        },        set: function (value)        {            this._tileScale.x = value;            this.dirty = true;        }    },    tileScaleY: {        get: function ()        {            return this._tileScale.y;        },        set: function (value)        {            this._tileScale.y = value;            this.dirty = true;        }    }});module.exports = TileSprite;

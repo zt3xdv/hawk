@@ -1,217 +1,1 @@
-var Class = require('../../utils/Class');
-var Events = require('../events');
-
-var RenderTarget = new Class({
-
-    initialize:
-
-    function RenderTarget (renderer, width, height, scale, minFilter, autoClear, autoResize, addDepthBuffer, forceClamp)
-    {
-        if (scale === undefined) { scale = 1; }
-        if (minFilter === undefined) { minFilter = 0; }
-        if (autoClear === undefined) { autoClear = true; }
-        if (autoResize === undefined) { autoResize = false; }
-        if (addDepthBuffer === undefined) { addDepthBuffer = true; }
-        if (forceClamp === undefined) { forceClamp = true; }
-
-        this.renderer = renderer;
-
-        this.framebuffer = null;
-
-        this.texture = null;
-
-        this.width = 0;
-
-        this.height = 0;
-
-        this.scale = scale;
-
-        this.minFilter = minFilter;
-
-        this.autoClear = autoClear;
-
-        this.autoResize = true;
-
-        this.hasDepthBuffer = addDepthBuffer;
-
-        this.forceClamp = forceClamp;
-
-        this.init(width, height);
-
-        if (autoResize)
-        {
-            this.renderer.on(Events.RESIZE, this.resize, this);
-        }
-        else
-        {
-
-            this.autoResize = false;
-        }
-    },
-
-    init: function (width, height)
-    {
-        var renderer = this.renderer;
-
-        this.texture = renderer.createTextureFromSource(null, width, height, this.minFilter, this.forceClamp);
-        this.framebuffer = renderer.createFramebuffer(width, height, this.texture, this.hasDepthBuffer);
-
-        this.width = width;
-        this.height = height;
-    },
-
-    setAutoResize: function (autoResize)
-    {
-        if (autoResize && !this.autoResize)
-        {
-            this.renderer.on(Events.RESIZE, this.resize, this);
-
-            this.autoResize = true;
-        }
-        else if (!autoResize && this.autoResize)
-        {
-            this.renderer.off(Events.RESIZE, this.resize, this);
-
-            this.autoResize = false;
-        }
-
-        return this;
-    },
-
-    resize: function (width, height)
-    {
-        if (this.autoResize && this.willResize(width, height))
-        {
-            var renderer = this.renderer;
-
-            renderer.deleteFramebuffer(this.framebuffer);
-
-            renderer.deleteTexture(this.texture);
-
-            this.texture = renderer.createTextureFromSource(null, width, height, this.minFilter, this.forceClamp);
-            this.framebuffer = renderer.createFramebuffer(width, height, this.texture, this.hasDepthBuffer);
-
-            this.width = width;
-            this.height = height;
-        }
-
-        return this;
-    },
-
-    willResize: function (width, height)
-    {
-        if (typeof width !== 'number' || typeof height !== 'number')
-        {
-            return false;
-        }
-
-        width = Math.round(width * this.scale);
-        height = Math.round(height * this.scale);
-
-        width = Math.max(width, 1);
-        height = Math.max(height, 1);
-
-        return (width !== this.width || height !== this.height);
-    },
-
-    bind: function (adjustViewport, width, height)
-    {
-        if (adjustViewport === undefined) { adjustViewport = false; }
-
-        var renderer = this.renderer;
-
-        if (adjustViewport)
-        {
-            renderer.flush();
-        }
-
-        if (width && height)
-        {
-            this.resize(width, height);
-        }
-
-        renderer.pushFramebuffer(this.framebuffer, false, false);
-
-        if (adjustViewport)
-        {
-            this.adjustViewport();
-        }
-
-        if (this.autoClear)
-        {
-            var gl = this.renderer.gl;
-
-            gl.clearColor(0, 0, 0, 0);
-
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-
-        renderer.clearStencilMask();
-    },
-
-    adjustViewport: function ()
-    {
-        var gl = this.renderer.gl;
-
-        gl.viewport(0, 0, this.width, this.height);
-
-        gl.disable(gl.SCISSOR_TEST);
-    },
-
-    clear: function (x, y, width, height)
-    {
-        var renderer = this.renderer;
-        var gl = renderer.gl;
-
-        renderer.pushFramebuffer(this.framebuffer);
-
-        if (x !== undefined && y !== undefined && width !== undefined && height !== undefined)
-        {
-            gl.enable(gl.SCISSOR_TEST);
-            gl.scissor(x, y, width, height);
-        }
-        else
-        {
-            gl.disable(gl.SCISSOR_TEST);
-        }
-
-        gl.clearColor(0, 0, 0, 0);
-
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        renderer.popFramebuffer();
-
-        renderer.resetScissor();
-    },
-
-    unbind: function (flush)
-    {
-        if (flush === undefined) { flush = false; }
-
-        var renderer = this.renderer;
-
-        if (flush)
-        {
-            renderer.flush();
-        }
-
-        return renderer.popFramebuffer();
-    },
-
-    destroy: function ()
-    {
-        var renderer = this.renderer;
-
-        renderer.off(Events.RESIZE, this.resize, this);
-
-        renderer.deleteFramebuffer(this.framebuffer);
-        renderer.deleteTexture(this.texture);
-
-        this.renderer = null;
-        this.framebuffer = null;
-        this.texture = null;
-    }
-
-});
-
-module.exports = RenderTarget;
+var Class = require('../../utils/Class');var Events = require('../events');var RenderTarget = new Class({    initialize:    function RenderTarget (renderer, width, height, scale, minFilter, autoClear, autoResize, addDepthBuffer, forceClamp)    {        if (scale === undefined) { scale = 1; }        if (minFilter === undefined) { minFilter = 0; }        if (autoClear === undefined) { autoClear = true; }        if (autoResize === undefined) { autoResize = false; }        if (addDepthBuffer === undefined) { addDepthBuffer = true; }        if (forceClamp === undefined) { forceClamp = true; }        this.renderer = renderer;        this.framebuffer = null;        this.texture = null;        this.width = 0;        this.height = 0;        this.scale = scale;        this.minFilter = minFilter;        this.autoClear = autoClear;        this.autoResize = true;        this.hasDepthBuffer = addDepthBuffer;        this.forceClamp = forceClamp;        this.init(width, height);        if (autoResize)        {            this.renderer.on(Events.RESIZE, this.resize, this);        }        else        {            this.autoResize = false;        }    },    init: function (width, height)    {        var renderer = this.renderer;        this.texture = renderer.createTextureFromSource(null, width, height, this.minFilter, this.forceClamp);        this.framebuffer = renderer.createFramebuffer(width, height, this.texture, this.hasDepthBuffer);        this.width = width;        this.height = height;    },    setAutoResize: function (autoResize)    {        if (autoResize && !this.autoResize)        {            this.renderer.on(Events.RESIZE, this.resize, this);            this.autoResize = true;        }        else if (!autoResize && this.autoResize)        {            this.renderer.off(Events.RESIZE, this.resize, this);            this.autoResize = false;        }        return this;    },    resize: function (width, height)    {        if (this.autoResize && this.willResize(width, height))        {            var renderer = this.renderer;            renderer.deleteFramebuffer(this.framebuffer);            renderer.deleteTexture(this.texture);            this.texture = renderer.createTextureFromSource(null, width, height, this.minFilter, this.forceClamp);            this.framebuffer = renderer.createFramebuffer(width, height, this.texture, this.hasDepthBuffer);            this.width = width;            this.height = height;        }        return this;    },    willResize: function (width, height)    {        if (typeof width !== 'number' || typeof height !== 'number')        {            return false;        }        width = Math.round(width * this.scale);        height = Math.round(height * this.scale);        width = Math.max(width, 1);        height = Math.max(height, 1);        return (width !== this.width || height !== this.height);    },    bind: function (adjustViewport, width, height)    {        if (adjustViewport === undefined) { adjustViewport = false; }        var renderer = this.renderer;        if (adjustViewport)        {            renderer.flush();        }        if (width && height)        {            this.resize(width, height);        }        renderer.pushFramebuffer(this.framebuffer, false, false);        if (adjustViewport)        {            this.adjustViewport();        }        if (this.autoClear)        {            var gl = this.renderer.gl;            gl.clearColor(0, 0, 0, 0);            gl.clear(gl.COLOR_BUFFER_BIT);        }        renderer.clearStencilMask();    },    adjustViewport: function ()    {        var gl = this.renderer.gl;        gl.viewport(0, 0, this.width, this.height);        gl.disable(gl.SCISSOR_TEST);    },    clear: function (x, y, width, height)    {        var renderer = this.renderer;        var gl = renderer.gl;        renderer.pushFramebuffer(this.framebuffer);        if (x !== undefined && y !== undefined && width !== undefined && height !== undefined)        {            gl.enable(gl.SCISSOR_TEST);            gl.scissor(x, y, width, height);        }        else        {            gl.disable(gl.SCISSOR_TEST);        }        gl.clearColor(0, 0, 0, 0);        gl.clear(gl.COLOR_BUFFER_BIT);        renderer.popFramebuffer();        renderer.resetScissor();    },    unbind: function (flush)    {        if (flush === undefined) { flush = false; }        var renderer = this.renderer;        if (flush)        {            renderer.flush();        }        return renderer.popFramebuffer();    },    destroy: function ()    {        var renderer = this.renderer;        renderer.off(Events.RESIZE, this.resize, this);        renderer.deleteFramebuffer(this.framebuffer);        renderer.deleteTexture(this.texture);        this.renderer = null;        this.framebuffer = null;        this.texture = null;    }});module.exports = RenderTarget;

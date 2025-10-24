@@ -1,7 +1,1 @@
-var GameObjectCreator = require('../GameObjectCreator');
-var Group = require('./Group');
-
-GameObjectCreator.register('group', function (config)
-{
-    return new Group(this.scene, null, config);
-});
+var GameObjectCreator = require('../GameObjectCreator');var Group = require('./Group');GameObjectCreator.register('group', function (config){    return new Group(this.scene, null, config);});

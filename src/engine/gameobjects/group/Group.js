@@ -1,874 +1,1 @@
-var Actions = require('../../actions/');
-var Class = require('../../utils/Class');
-var Events = require('../events');
-var EventEmitter = require('eventemitter3');
-var GetAll = require('../../utils/array/GetAll');
-var GetFastValue = require('../../utils/object/GetFastValue');
-var GetValue = require('../../utils/object/GetValue');
-var HasValue = require('../../utils/object/HasValue');
-var IsPlainObject = require('../../utils/object/IsPlainObject');
-var Range = require('../../utils/array/Range');
-var Set = require('../../structs/Set');
-var Sprite = require('../sprite/Sprite');
-
-var Group = new Class({
-
-    Extends: EventEmitter,
-
-    initialize:
-
-    function Group (scene, children, config)
-    {
-        EventEmitter.call(this);
-
-        if (config)
-        {
-
-            if (children && !Array.isArray(children))
-            {
-                children = [ children ];
-            }
-        }
-        else if (Array.isArray(children))
-        {
-
-            if (IsPlainObject(children[0]))
-            {
-
-                config = children;
-                children = null;
-            }
-        }
-        else if (IsPlainObject(children))
-        {
-
-            config = children;
-            children = null;
-        }
-
-        this.scene = scene;
-
-        this.children = new Set();
-
-        this.isParent = true;
-
-        this.type = 'Group';
-
-        this.classType = GetFastValue(config, 'classType', Sprite);
-
-        this.name = GetFastValue(config, 'name', '');
-
-        this.active = GetFastValue(config, 'active', true);
-
-        this.maxSize = GetFastValue(config, 'maxSize', -1);
-
-        this.defaultKey = GetFastValue(config, 'defaultKey', null);
-
-        this.defaultFrame = GetFastValue(config, 'defaultFrame', null);
-
-        this.runChildUpdate = GetFastValue(config, 'runChildUpdate', false);
-
-        this.createCallback = GetFastValue(config, 'createCallback', null);
-
-        this.removeCallback = GetFastValue(config, 'removeCallback', null);
-
-        this.createMultipleCallback = GetFastValue(config, 'createMultipleCallback', null);
-
-        this.internalCreateCallback = GetFastValue(config, 'internalCreateCallback', null);
-
-        this.internalRemoveCallback = GetFastValue(config, 'internalRemoveCallback', null);
-
-        if (children)
-        {
-            this.addMultiple(children);
-        }
-
-        if (config)
-        {
-            this.createMultiple(config);
-        }
-
-        this.on(Events.ADDED_TO_SCENE, this.addedToScene, this);
-        this.on(Events.REMOVED_FROM_SCENE, this.removedFromScene, this);
-    },
-
-    addedToScene: function ()
-    {
-        this.scene.sys.updateList.add(this);
-    },
-
-    removedFromScene: function ()
-    {
-        this.scene.sys.updateList.remove(this);
-    },
-
-    create: function (x, y, key, frame, visible, active)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (key === undefined) { key = this.defaultKey; }
-        if (frame === undefined) { frame = this.defaultFrame; }
-        if (visible === undefined) { visible = true; }
-        if (active === undefined) { active = true; }
-
-        if (this.isFull())
-        {
-            return null;
-        }
-
-        var child = new this.classType(this.scene, x, y, key, frame);
-
-        child.addToDisplayList(this.scene.sys.displayList);
-        child.addToUpdateList();
-
-        child.visible = visible;
-        child.setActive(active);
-
-        this.add(child);
-
-        return child;
-    },
-
-    createMultiple: function (config)
-    {
-        if (this.isFull())
-        {
-            return [];
-        }
-
-        if (!Array.isArray(config))
-        {
-            config = [ config ];
-        }
-
-        var output = [];
-
-        if (config[0].key)
-        {
-            for (var i = 0; i < config.length; i++)
-            {
-                var entries = this.createFromConfig(config[i]);
-
-                output = output.concat(entries);
-            }
-        }
-
-        return output;
-    },
-
-    createFromConfig: function (options)
-    {
-        if (this.isFull())
-        {
-            return [];
-        }
-
-        this.classType = GetFastValue(options, 'classType', this.classType);
-
-        var key = GetFastValue(options, 'key', undefined);
-        var frame = GetFastValue(options, 'frame', null);
-        var visible = GetFastValue(options, 'visible', true);
-        var active = GetFastValue(options, 'active', true);
-
-        var entries = [];
-
-        if (key === undefined)
-        {
-            return entries;
-        }
-        else
-        {
-            if (!Array.isArray(key))
-            {
-                key = [ key ];
-            }
-
-            if (!Array.isArray(frame))
-            {
-                frame = [ frame ];
-            }
-        }
-
-        var repeat = GetFastValue(options, 'repeat', 0);
-        var randomKey = GetFastValue(options, 'randomKey', false);
-        var randomFrame = GetFastValue(options, 'randomFrame', false);
-        var yoyo = GetFastValue(options, 'yoyo', false);
-        var quantity = GetFastValue(options, 'quantity', false);
-        var frameQuantity = GetFastValue(options, 'frameQuantity', 1);
-        var max = GetFastValue(options, 'max', 0);
-
-        var range = Range(key, frame, {
-            max: max,
-            qty: (quantity) ? quantity : frameQuantity,
-            random: randomKey,
-            randomB: randomFrame,
-            repeat: repeat,
-            yoyo: yoyo
-        });
-
-        if (options.createCallback)
-        {
-            this.createCallback = options.createCallback;
-        }
-
-        if (options.removeCallback)
-        {
-            this.removeCallback = options.removeCallback;
-        }
-
-        if (options.internalCreateCallback)
-        {
-            this.internalCreateCallback = options.internalCreateCallback;
-        }
-
-        if (options.internalRemoveCallback)
-        {
-            this.internalRemoveCallback = options.internalRemoveCallback;
-        }
-
-        for (var c = 0; c < range.length; c++)
-        {
-            var created = this.create(0, 0, range[c].a, range[c].b, visible, active);
-
-            if (!created)
-            {
-                break;
-            }
-
-            entries.push(created);
-        }
-
-        if (HasValue(options, 'setXY'))
-        {
-            var x = GetValue(options, 'setXY.x', 0);
-            var y = GetValue(options, 'setXY.y', 0);
-            var stepX = GetValue(options, 'setXY.stepX', 0);
-            var stepY = GetValue(options, 'setXY.stepY', 0);
-
-            Actions.SetXY(entries, x, y, stepX, stepY);
-        }
-
-        if (HasValue(options, 'setRotation'))
-        {
-            var rotation = GetValue(options, 'setRotation.value', 0);
-            var stepRotation = GetValue(options, 'setRotation.step', 0);
-
-            Actions.SetRotation(entries, rotation, stepRotation);
-        }
-
-        if (HasValue(options, 'setScale'))
-        {
-            var scaleX = GetValue(options, 'setScale.x', 1);
-            var scaleY = GetValue(options, 'setScale.y', scaleX);
-            var stepScaleX = GetValue(options, 'setScale.stepX', 0);
-            var stepScaleY = GetValue(options, 'setScale.stepY', 0);
-
-            Actions.SetScale(entries, scaleX, scaleY, stepScaleX, stepScaleY);
-        }
-
-        if (HasValue(options, 'setOrigin'))
-        {
-            var originX = GetValue(options, 'setOrigin.x', 0.5);
-            var originY = GetValue(options, 'setOrigin.y', originX);
-            var stepOriginX = GetValue(options, 'setOrigin.stepX', 0);
-            var stepOriginY = GetValue(options, 'setOrigin.stepY', 0);
-
-            Actions.SetOrigin(entries, originX, originY, stepOriginX, stepOriginY);
-        }
-
-        if (HasValue(options, 'setAlpha'))
-        {
-            var alpha = GetValue(options, 'setAlpha.value', 1);
-            var stepAlpha = GetValue(options, 'setAlpha.step', 0);
-
-            Actions.SetAlpha(entries, alpha, stepAlpha);
-        }
-
-        if (HasValue(options, 'setDepth'))
-        {
-            var depth = GetValue(options, 'setDepth.value', 0);
-            var stepDepth = GetValue(options, 'setDepth.step', 0);
-
-            Actions.SetDepth(entries, depth, stepDepth);
-        }
-
-        if (HasValue(options, 'setScrollFactor'))
-        {
-            var scrollFactorX = GetValue(options, 'setScrollFactor.x', 1);
-            var scrollFactorY = GetValue(options, 'setScrollFactor.y', scrollFactorX);
-            var stepScrollFactorX = GetValue(options, 'setScrollFactor.stepX', 0);
-            var stepScrollFactorY = GetValue(options, 'setScrollFactor.stepY', 0);
-
-            Actions.SetScrollFactor(entries, scrollFactorX, scrollFactorY, stepScrollFactorX, stepScrollFactorY);
-        }
-
-        var hitArea = GetFastValue(options, 'hitArea', null);
-        var hitAreaCallback = GetFastValue(options, 'hitAreaCallback', null);
-
-        if (hitArea)
-        {
-            Actions.SetHitArea(entries, hitArea, hitAreaCallback);
-        }
-
-        var grid = GetFastValue(options, 'gridAlign', false);
-
-        if (grid)
-        {
-            Actions.GridAlign(entries, grid);
-        }
-
-        if (this.createMultipleCallback)
-        {
-            this.createMultipleCallback.call(this, entries);
-        }
-
-        return entries;
-    },
-
-    preUpdate: function (time, delta)
-    {
-        if (!this.runChildUpdate || this.children.size === 0)
-        {
-            return;
-        }
-
-        var temp = this.children.entries.slice();
-
-        for (var i = 0; i < temp.length; i++)
-        {
-            var item = temp[i];
-
-            if (item.active)
-            {
-                item.update(time, delta);
-            }
-        }
-    },
-
-    add: function (child, addToScene)
-    {
-        if (addToScene === undefined) { addToScene = false; }
-
-        if (this.isFull())
-        {
-            return this;
-        }
-
-        this.children.set(child);
-
-        if (this.internalCreateCallback)
-        {
-            this.internalCreateCallback.call(this, child);
-        }
-
-        if (this.createCallback)
-        {
-            this.createCallback.call(this, child);
-        }
-
-        if (addToScene)
-        {
-            child.addToDisplayList(this.scene.sys.displayList);
-            child.addToUpdateList();
-        }
-
-        child.on(Events.DESTROY, this.remove, this);
-
-        return this;
-    },
-
-    addMultiple: function (children, addToScene)
-    {
-        if (addToScene === undefined) { addToScene = false; }
-
-        if (Array.isArray(children))
-        {
-            for (var i = 0; i < children.length; i++)
-            {
-                this.add(children[i], addToScene);
-            }
-        }
-
-        return this;
-    },
-
-    remove: function (child, removeFromScene, destroyChild)
-    {
-        if (removeFromScene === undefined) { removeFromScene = false; }
-        if (destroyChild === undefined) { destroyChild = false; }
-
-        if (!this.children.contains(child))
-        {
-            return this;
-        }
-
-        this.children.delete(child);
-
-        if (this.internalRemoveCallback)
-        {
-            this.internalRemoveCallback.call(this, child);
-        }
-
-        if (this.removeCallback)
-        {
-            this.removeCallback.call(this, child);
-        }
-
-        child.off(Events.DESTROY, this.remove, this);
-
-        if (destroyChild)
-        {
-            child.destroy();
-        }
-        else if (removeFromScene)
-        {
-            child.removeFromDisplayList();
-            child.removeFromUpdateList();
-        }
-
-        return this;
-    },
-
-    clear: function (removeFromScene, destroyChild)
-    {
-        if (removeFromScene === undefined) { removeFromScene = false; }
-        if (destroyChild === undefined) { destroyChild = false; }
-
-        var children = this.children;
-
-        for (var i = 0; i < children.size; i++)
-        {
-            var gameObject = children.entries[i];
-
-            gameObject.off(Events.DESTROY, this.remove, this);
-
-            if (destroyChild)
-            {
-                gameObject.destroy();
-            }
-            else if (removeFromScene)
-            {
-                gameObject.removeFromDisplayList();
-                gameObject.removeFromUpdateList();
-            }
-        }
-
-        this.children.clear();
-
-        return this;
-    },
-
-    contains: function (child)
-    {
-        return this.children.contains(child);
-    },
-
-    getChildren: function ()
-    {
-        return this.children.entries;
-    },
-
-    getLength: function ()
-    {
-        return this.children.size;
-    },
-
-    getMatching: function (property, value, startIndex, endIndex)
-    {
-        return GetAll(this.children.entries, property, value, startIndex, endIndex);
-    },
-
-    getFirst: function (state, createIfNull, x, y, key, frame, visible)
-    {
-        return this.getHandler(true, 1, state, createIfNull, x, y, key, frame, visible);
-    },
-
-    getFirstNth: function (nth, state, createIfNull, x, y, key, frame, visible)
-    {
-        return this.getHandler(true, nth, state, createIfNull, x, y, key, frame, visible);
-    },
-
-    getLast: function (state, createIfNull, x, y, key, frame, visible)
-    {
-        return this.getHandler(false, 1, state, createIfNull, x, y, key, frame, visible);
-    },
-
-    getLastNth: function (nth, state, createIfNull, x, y, key, frame, visible)
-    {
-        return this.getHandler(false, nth, state, createIfNull, x, y, key, frame, visible);
-    },
-
-    getHandler: function (forwards, nth, state, createIfNull, x, y, key, frame, visible)
-    {
-        if (state === undefined) { state = false; }
-        if (createIfNull === undefined) { createIfNull = false; }
-
-        var gameObject;
-
-        var i;
-        var total = 0;
-        var children = this.children.entries;
-
-        if (forwards)
-        {
-            for (i = 0; i < children.length; i++)
-            {
-                gameObject = children[i];
-
-                if (gameObject.active === state)
-                {
-                    total++;
-
-                    if (total === nth)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    gameObject = null;
-                }
-            }
-        }
-        else
-        {
-            for (i = children.length - 1; i >= 0; i--)
-            {
-                gameObject = children[i];
-
-                if (gameObject.active === state)
-                {
-                    total++;
-
-                    if (total === nth)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    gameObject = null;
-                }
-            }
-        }
-
-        if (gameObject)
-        {
-            if (typeof(x) === 'number')
-            {
-                gameObject.x = x;
-            }
-
-            if (typeof(y) === 'number')
-            {
-                gameObject.y = y;
-            }
-
-            return gameObject;
-        }
-
-        if (createIfNull)
-        {
-            return this.create(x, y, key, frame, visible);
-        }
-        else
-        {
-            return null;
-        }
-    },
-
-    get: function (x, y, key, frame, visible)
-    {
-        return this.getFirst(false, true, x, y, key, frame, visible);
-    },
-
-    getFirstAlive: function (createIfNull, x, y, key, frame, visible)
-    {
-        return this.getFirst(true, createIfNull, x, y, key, frame, visible);
-    },
-
-    getFirstDead: function (createIfNull, x, y, key, frame, visible)
-    {
-        return this.getFirst(false, createIfNull, x, y, key, frame, visible);
-    },
-
-    playAnimation: function (key, startFrame)
-    {
-        Actions.PlayAnimation(this.children.entries, key, startFrame);
-
-        return this;
-    },
-
-    isFull: function ()
-    {
-        if (this.maxSize === -1)
-        {
-            return false;
-        }
-        else
-        {
-            return (this.children.size >= this.maxSize);
-        }
-    },
-
-    countActive: function (value)
-    {
-        if (value === undefined) { value = true; }
-
-        var total = 0;
-
-        for (var i = 0; i < this.children.size; i++)
-        {
-            if (this.children.entries[i].active === value)
-            {
-                total++;
-            }
-        }
-
-        return total;
-    },
-
-    getTotalUsed: function ()
-    {
-        return this.countActive();
-    },
-
-    getTotalFree: function ()
-    {
-        var used = this.getTotalUsed();
-        var capacity = (this.maxSize === -1) ? 999999999999 : this.maxSize;
-
-        return (capacity - used);
-    },
-
-    setActive: function (value)
-    {
-        this.active = value;
-
-        return this;
-    },
-
-    setName: function (value)
-    {
-        this.name = value;
-
-        return this;
-    },
-
-    propertyValueSet: function (key, value, step, index, direction)
-    {
-        Actions.PropertyValueSet(this.children.entries, key, value, step, index, direction);
-
-        return this;
-    },
-
-    propertyValueInc: function (key, value, step, index, direction)
-    {
-        Actions.PropertyValueInc(this.children.entries, key, value, step, index, direction);
-
-        return this;
-    },
-
-    setX: function (value, step)
-    {
-        Actions.SetX(this.children.entries, value, step);
-
-        return this;
-    },
-
-    setY: function (value, step)
-    {
-        Actions.SetY(this.children.entries, value, step);
-
-        return this;
-    },
-
-    setXY: function (x, y, stepX, stepY)
-    {
-        Actions.SetXY(this.children.entries, x, y, stepX, stepY);
-
-        return this;
-    },
-
-    incX: function (value, step)
-    {
-        Actions.IncX(this.children.entries, value, step);
-
-        return this;
-    },
-
-    incY: function (value, step)
-    {
-        Actions.IncY(this.children.entries, value, step);
-
-        return this;
-    },
-
-    incXY: function (x, y, stepX, stepY)
-    {
-        Actions.IncXY(this.children.entries, x, y, stepX, stepY);
-
-        return this;
-    },
-
-    shiftPosition: function (x, y, direction)
-    {
-        Actions.ShiftPosition(this.children.entries, x, y, direction);
-
-        return this;
-    },
-
-    angle: function (value, step)
-    {
-        Actions.Angle(this.children.entries, value, step);
-
-        return this;
-    },
-
-    rotate: function (value, step)
-    {
-        Actions.Rotate(this.children.entries, value, step);
-
-        return this;
-    },
-
-    rotateAround: function (point, angle)
-    {
-        Actions.RotateAround(this.children.entries, point, angle);
-
-        return this;
-    },
-
-    rotateAroundDistance: function (point, angle, distance)
-    {
-        Actions.RotateAroundDistance(this.children.entries, point, angle, distance);
-
-        return this;
-    },
-
-    setAlpha: function (value, step)
-    {
-        Actions.SetAlpha(this.children.entries, value, step);
-
-        return this;
-    },
-
-    setTint: function (topLeft, topRight, bottomLeft, bottomRight)
-    {
-        Actions.SetTint(this.children.entries, topLeft, topRight, bottomLeft, bottomRight);
-
-        return this;
-    },
-
-    setOrigin: function (originX, originY, stepX, stepY)
-    {
-        Actions.SetOrigin(this.children.entries, originX, originY, stepX, stepY);
-
-        return this;
-    },
-
-    scaleX: function (value, step)
-    {
-        Actions.ScaleX(this.children.entries, value, step);
-
-        return this;
-    },
-
-    scaleY: function (value, step)
-    {
-        Actions.ScaleY(this.children.entries, value, step);
-
-        return this;
-    },
-
-    scaleXY: function (scaleX, scaleY, stepX, stepY)
-    {
-        Actions.ScaleXY(this.children.entries, scaleX, scaleY, stepX, stepY);
-
-        return this;
-    },
-
-    setDepth: function (value, step)
-    {
-        Actions.SetDepth(this.children.entries, value, step);
-
-        return this;
-    },
-
-    setBlendMode: function (value)
-    {
-        Actions.SetBlendMode(this.children.entries, value);
-
-        return this;
-    },
-
-    setHitArea: function (hitArea, hitAreaCallback)
-    {
-        Actions.SetHitArea(this.children.entries, hitArea, hitAreaCallback);
-
-        return this;
-    },
-
-    shuffle: function ()
-    {
-        Actions.Shuffle(this.children.entries);
-
-        return this;
-    },
-
-    kill: function (gameObject)
-    {
-        if (this.children.contains(gameObject))
-        {
-            gameObject.setActive(false);
-        }
-    },
-
-    killAndHide: function (gameObject)
-    {
-        if (this.children.contains(gameObject))
-        {
-            gameObject.setActive(false);
-            gameObject.setVisible(false);
-        }
-    },
-
-    setVisible: function (value, index, direction)
-    {
-        Actions.SetVisible(this.children.entries, value, index, direction);
-
-        return this;
-    },
-
-    toggleVisible: function ()
-    {
-        Actions.ToggleVisible(this.children.entries);
-
-        return this;
-    },
-
-    destroy: function (destroyChildren, removeFromScene)
-    {
-        if (destroyChildren === undefined) { destroyChildren = false; }
-        if (removeFromScene === undefined) { removeFromScene = false; }
-
-        if (!this.scene || this.ignoreDestroy)
-        {
-            return;
-        }
-
-        this.emit(Events.DESTROY, this);
-
-        this.removeAllListeners();
-
-        this.scene.sys.updateList.remove(this);
-
-        this.clear(removeFromScene, destroyChildren);
-
-        this.scene = undefined;
-        this.children = undefined;
-    }
-
-});
-
-module.exports = Group;
+var Actions = require('../../actions/');var Class = require('../../utils/Class');var Events = require('../events');var EventEmitter = require('eventemitter3');var GetAll = require('../../utils/array/GetAll');var GetFastValue = require('../../utils/object/GetFastValue');var GetValue = require('../../utils/object/GetValue');var HasValue = require('../../utils/object/HasValue');var IsPlainObject = require('../../utils/object/IsPlainObject');var Range = require('../../utils/array/Range');var Set = require('../../structs/Set');var Sprite = require('../sprite/Sprite');var Group = new Class({    Extends: EventEmitter,    initialize:    function Group (scene, children, config)    {        EventEmitter.call(this);        if (config)        {            if (children && !Array.isArray(children))            {                children = [ children ];            }        }        else if (Array.isArray(children))        {            if (IsPlainObject(children[0]))            {                config = children;                children = null;            }        }        else if (IsPlainObject(children))        {            config = children;            children = null;        }        this.scene = scene;        this.children = new Set();        this.isParent = true;        this.type = 'Group';        this.classType = GetFastValue(config, 'classType', Sprite);        this.name = GetFastValue(config, 'name', '');        this.active = GetFastValue(config, 'active', true);        this.maxSize = GetFastValue(config, 'maxSize', -1);        this.defaultKey = GetFastValue(config, 'defaultKey', null);        this.defaultFrame = GetFastValue(config, 'defaultFrame', null);        this.runChildUpdate = GetFastValue(config, 'runChildUpdate', false);        this.createCallback = GetFastValue(config, 'createCallback', null);        this.removeCallback = GetFastValue(config, 'removeCallback', null);        this.createMultipleCallback = GetFastValue(config, 'createMultipleCallback', null);        this.internalCreateCallback = GetFastValue(config, 'internalCreateCallback', null);        this.internalRemoveCallback = GetFastValue(config, 'internalRemoveCallback', null);        if (children)        {            this.addMultiple(children);        }        if (config)        {            this.createMultiple(config);        }        this.on(Events.ADDED_TO_SCENE, this.addedToScene, this);        this.on(Events.REMOVED_FROM_SCENE, this.removedFromScene, this);    },    addedToScene: function ()    {        this.scene.sys.updateList.add(this);    },    removedFromScene: function ()    {        this.scene.sys.updateList.remove(this);    },    create: function (x, y, key, frame, visible, active)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (key === undefined) { key = this.defaultKey; }        if (frame === undefined) { frame = this.defaultFrame; }        if (visible === undefined) { visible = true; }        if (active === undefined) { active = true; }        if (this.isFull())        {            return null;        }        var child = new this.classType(this.scene, x, y, key, frame);        child.addToDisplayList(this.scene.sys.displayList);        child.addToUpdateList();        child.visible = visible;        child.setActive(active);        this.add(child);        return child;    },    createMultiple: function (config)    {        if (this.isFull())        {            return [];        }        if (!Array.isArray(config))        {            config = [ config ];        }        var output = [];        if (config[0].key)        {            for (var i = 0; i < config.length; i++)            {                var entries = this.createFromConfig(config[i]);                output = output.concat(entries);            }        }        return output;    },    createFromConfig: function (options)    {        if (this.isFull())        {            return [];        }        this.classType = GetFastValue(options, 'classType', this.classType);        var key = GetFastValue(options, 'key', undefined);        var frame = GetFastValue(options, 'frame', null);        var visible = GetFastValue(options, 'visible', true);        var active = GetFastValue(options, 'active', true);        var entries = [];        if (key === undefined)        {            return entries;        }        else        {            if (!Array.isArray(key))            {                key = [ key ];            }            if (!Array.isArray(frame))            {                frame = [ frame ];            }        }        var repeat = GetFastValue(options, 'repeat', 0);        var randomKey = GetFastValue(options, 'randomKey', false);        var randomFrame = GetFastValue(options, 'randomFrame', false);        var yoyo = GetFastValue(options, 'yoyo', false);        var quantity = GetFastValue(options, 'quantity', false);        var frameQuantity = GetFastValue(options, 'frameQuantity', 1);        var max = GetFastValue(options, 'max', 0);        var range = Range(key, frame, {            max: max,            qty: (quantity) ? quantity : frameQuantity,            random: randomKey,            randomB: randomFrame,            repeat: repeat,            yoyo: yoyo        });        if (options.createCallback)        {            this.createCallback = options.createCallback;        }        if (options.removeCallback)        {            this.removeCallback = options.removeCallback;        }        if (options.internalCreateCallback)        {            this.internalCreateCallback = options.internalCreateCallback;        }        if (options.internalRemoveCallback)        {            this.internalRemoveCallback = options.internalRemoveCallback;        }        for (var c = 0; c < range.length; c++)        {            var created = this.create(0, 0, range[c].a, range[c].b, visible, active);            if (!created)            {                break;            }            entries.push(created);        }        if (HasValue(options, 'setXY'))        {            var x = GetValue(options, 'setXY.x', 0);            var y = GetValue(options, 'setXY.y', 0);            var stepX = GetValue(options, 'setXY.stepX', 0);            var stepY = GetValue(options, 'setXY.stepY', 0);            Actions.SetXY(entries, x, y, stepX, stepY);        }        if (HasValue(options, 'setRotation'))        {            var rotation = GetValue(options, 'setRotation.value', 0);            var stepRotation = GetValue(options, 'setRotation.step', 0);            Actions.SetRotation(entries, rotation, stepRotation);        }        if (HasValue(options, 'setScale'))        {            var scaleX = GetValue(options, 'setScale.x', 1);            var scaleY = GetValue(options, 'setScale.y', scaleX);            var stepScaleX = GetValue(options, 'setScale.stepX', 0);            var stepScaleY = GetValue(options, 'setScale.stepY', 0);            Actions.SetScale(entries, scaleX, scaleY, stepScaleX, stepScaleY);        }        if (HasValue(options, 'setOrigin'))        {            var originX = GetValue(options, 'setOrigin.x', 0.5);            var originY = GetValue(options, 'setOrigin.y', originX);            var stepOriginX = GetValue(options, 'setOrigin.stepX', 0);            var stepOriginY = GetValue(options, 'setOrigin.stepY', 0);            Actions.SetOrigin(entries, originX, originY, stepOriginX, stepOriginY);        }        if (HasValue(options, 'setAlpha'))        {            var alpha = GetValue(options, 'setAlpha.value', 1);            var stepAlpha = GetValue(options, 'setAlpha.step', 0);            Actions.SetAlpha(entries, alpha, stepAlpha);        }        if (HasValue(options, 'setDepth'))        {            var depth = GetValue(options, 'setDepth.value', 0);            var stepDepth = GetValue(options, 'setDepth.step', 0);            Actions.SetDepth(entries, depth, stepDepth);        }        if (HasValue(options, 'setScrollFactor'))        {            var scrollFactorX = GetValue(options, 'setScrollFactor.x', 1);            var scrollFactorY = GetValue(options, 'setScrollFactor.y', scrollFactorX);            var stepScrollFactorX = GetValue(options, 'setScrollFactor.stepX', 0);            var stepScrollFactorY = GetValue(options, 'setScrollFactor.stepY', 0);            Actions.SetScrollFactor(entries, scrollFactorX, scrollFactorY, stepScrollFactorX, stepScrollFactorY);        }        var hitArea = GetFastValue(options, 'hitArea', null);        var hitAreaCallback = GetFastValue(options, 'hitAreaCallback', null);        if (hitArea)        {            Actions.SetHitArea(entries, hitArea, hitAreaCallback);        }        var grid = GetFastValue(options, 'gridAlign', false);        if (grid)        {            Actions.GridAlign(entries, grid);        }        if (this.createMultipleCallback)        {            this.createMultipleCallback.call(this, entries);        }        return entries;    },    preUpdate: function (time, delta)    {        if (!this.runChildUpdate || this.children.size === 0)        {            return;        }        var temp = this.children.entries.slice();        for (var i = 0; i < temp.length; i++)        {            var item = temp[i];            if (item.active)            {                item.update(time, delta);            }        }    },    add: function (child, addToScene)    {        if (addToScene === undefined) { addToScene = false; }        if (this.isFull())        {            return this;        }        this.children.set(child);        if (this.internalCreateCallback)        {            this.internalCreateCallback.call(this, child);        }        if (this.createCallback)        {            this.createCallback.call(this, child);        }        if (addToScene)        {            child.addToDisplayList(this.scene.sys.displayList);            child.addToUpdateList();        }        child.on(Events.DESTROY, this.remove, this);        return this;    },    addMultiple: function (children, addToScene)    {        if (addToScene === undefined) { addToScene = false; }        if (Array.isArray(children))        {            for (var i = 0; i < children.length; i++)            {                this.add(children[i], addToScene);            }        }        return this;    },    remove: function (child, removeFromScene, destroyChild)    {        if (removeFromScene === undefined) { removeFromScene = false; }        if (destroyChild === undefined) { destroyChild = false; }        if (!this.children.contains(child))        {            return this;        }        this.children.delete(child);        if (this.internalRemoveCallback)        {            this.internalRemoveCallback.call(this, child);        }        if (this.removeCallback)        {            this.removeCallback.call(this, child);        }        child.off(Events.DESTROY, this.remove, this);        if (destroyChild)        {            child.destroy();        }        else if (removeFromScene)        {            child.removeFromDisplayList();            child.removeFromUpdateList();        }        return this;    },    clear: function (removeFromScene, destroyChild)    {        if (removeFromScene === undefined) { removeFromScene = false; }        if (destroyChild === undefined) { destroyChild = false; }        var children = this.children;        for (var i = 0; i < children.size; i++)        {            var gameObject = children.entries[i];            gameObject.off(Events.DESTROY, this.remove, this);            if (destroyChild)            {                gameObject.destroy();            }            else if (removeFromScene)            {                gameObject.removeFromDisplayList();                gameObject.removeFromUpdateList();            }        }        this.children.clear();        return this;    },    contains: function (child)    {        return this.children.contains(child);    },    getChildren: function ()    {        return this.children.entries;    },    getLength: function ()    {        return this.children.size;    },    getMatching: function (property, value, startIndex, endIndex)    {        return GetAll(this.children.entries, property, value, startIndex, endIndex);    },    getFirst: function (state, createIfNull, x, y, key, frame, visible)    {        return this.getHandler(true, 1, state, createIfNull, x, y, key, frame, visible);    },    getFirstNth: function (nth, state, createIfNull, x, y, key, frame, visible)    {        return this.getHandler(true, nth, state, createIfNull, x, y, key, frame, visible);    },    getLast: function (state, createIfNull, x, y, key, frame, visible)    {        return this.getHandler(false, 1, state, createIfNull, x, y, key, frame, visible);    },    getLastNth: function (nth, state, createIfNull, x, y, key, frame, visible)    {        return this.getHandler(false, nth, state, createIfNull, x, y, key, frame, visible);    },    getHandler: function (forwards, nth, state, createIfNull, x, y, key, frame, visible)    {        if (state === undefined) { state = false; }        if (createIfNull === undefined) { createIfNull = false; }        var gameObject;        var i;        var total = 0;        var children = this.children.entries;        if (forwards)        {            for (i = 0; i < children.length; i++)            {                gameObject = children[i];                if (gameObject.active === state)                {                    total++;                    if (total === nth)                    {                        break;                    }                }                else                {                    gameObject = null;                }            }        }        else        {            for (i = children.length - 1; i >= 0; i--)            {                gameObject = children[i];                if (gameObject.active === state)                {                    total++;                    if (total === nth)                    {                        break;                    }                }                else                {                    gameObject = null;                }            }        }        if (gameObject)        {            if (typeof(x) === 'number')            {                gameObject.x = x;            }            if (typeof(y) === 'number')            {                gameObject.y = y;            }            return gameObject;        }        if (createIfNull)        {            return this.create(x, y, key, frame, visible);        }        else        {            return null;        }    },    get: function (x, y, key, frame, visible)    {        return this.getFirst(false, true, x, y, key, frame, visible);    },    getFirstAlive: function (createIfNull, x, y, key, frame, visible)    {        return this.getFirst(true, createIfNull, x, y, key, frame, visible);    },    getFirstDead: function (createIfNull, x, y, key, frame, visible)    {        return this.getFirst(false, createIfNull, x, y, key, frame, visible);    },    playAnimation: function (key, startFrame)    {        Actions.PlayAnimation(this.children.entries, key, startFrame);        return this;    },    isFull: function ()    {        if (this.maxSize === -1)        {            return false;        }        else        {            return (this.children.size >= this.maxSize);        }    },    countActive: function (value)    {        if (value === undefined) { value = true; }        var total = 0;        for (var i = 0; i < this.children.size; i++)        {            if (this.children.entries[i].active === value)            {                total++;            }        }        return total;    },    getTotalUsed: function ()    {        return this.countActive();    },    getTotalFree: function ()    {        var used = this.getTotalUsed();        var capacity = (this.maxSize === -1) ? 999999999999 : this.maxSize;        return (capacity - used);    },    setActive: function (value)    {        this.active = value;        return this;    },    setName: function (value)    {        this.name = value;        return this;    },    propertyValueSet: function (key, value, step, index, direction)    {        Actions.PropertyValueSet(this.children.entries, key, value, step, index, direction);        return this;    },    propertyValueInc: function (key, value, step, index, direction)    {        Actions.PropertyValueInc(this.children.entries, key, value, step, index, direction);        return this;    },    setX: function (value, step)    {        Actions.SetX(this.children.entries, value, step);        return this;    },    setY: function (value, step)    {        Actions.SetY(this.children.entries, value, step);        return this;    },    setXY: function (x, y, stepX, stepY)    {        Actions.SetXY(this.children.entries, x, y, stepX, stepY);        return this;    },    incX: function (value, step)    {        Actions.IncX(this.children.entries, value, step);        return this;    },    incY: function (value, step)    {        Actions.IncY(this.children.entries, value, step);        return this;    },    incXY: function (x, y, stepX, stepY)    {        Actions.IncXY(this.children.entries, x, y, stepX, stepY);        return this;    },    shiftPosition: function (x, y, direction)    {        Actions.ShiftPosition(this.children.entries, x, y, direction);        return this;    },    angle: function (value, step)    {        Actions.Angle(this.children.entries, value, step);        return this;    },    rotate: function (value, step)    {        Actions.Rotate(this.children.entries, value, step);        return this;    },    rotateAround: function (point, angle)    {        Actions.RotateAround(this.children.entries, point, angle);        return this;    },    rotateAroundDistance: function (point, angle, distance)    {        Actions.RotateAroundDistance(this.children.entries, point, angle, distance);        return this;    },    setAlpha: function (value, step)    {        Actions.SetAlpha(this.children.entries, value, step);        return this;    },    setTint: function (topLeft, topRight, bottomLeft, bottomRight)    {        Actions.SetTint(this.children.entries, topLeft, topRight, bottomLeft, bottomRight);        return this;    },    setOrigin: function (originX, originY, stepX, stepY)    {        Actions.SetOrigin(this.children.entries, originX, originY, stepX, stepY);        return this;    },    scaleX: function (value, step)    {        Actions.ScaleX(this.children.entries, value, step);        return this;    },    scaleY: function (value, step)    {        Actions.ScaleY(this.children.entries, value, step);        return this;    },    scaleXY: function (scaleX, scaleY, stepX, stepY)    {        Actions.ScaleXY(this.children.entries, scaleX, scaleY, stepX, stepY);        return this;    },    setDepth: function (value, step)    {        Actions.SetDepth(this.children.entries, value, step);        return this;    },    setBlendMode: function (value)    {        Actions.SetBlendMode(this.children.entries, value);        return this;    },    setHitArea: function (hitArea, hitAreaCallback)    {        Actions.SetHitArea(this.children.entries, hitArea, hitAreaCallback);        return this;    },    shuffle: function ()    {        Actions.Shuffle(this.children.entries);        return this;    },    kill: function (gameObject)    {        if (this.children.contains(gameObject))        {            gameObject.setActive(false);        }    },    killAndHide: function (gameObject)    {        if (this.children.contains(gameObject))        {            gameObject.setActive(false);            gameObject.setVisible(false);        }    },    setVisible: function (value, index, direction)    {        Actions.SetVisible(this.children.entries, value, index, direction);        return this;    },    toggleVisible: function ()    {        Actions.ToggleVisible(this.children.entries);        return this;    },    destroy: function (destroyChildren, removeFromScene)    {        if (destroyChildren === undefined) { destroyChildren = false; }        if (removeFromScene === undefined) { removeFromScene = false; }        if (!this.scene || this.ignoreDestroy)        {            return;        }        this.emit(Events.DESTROY, this);        this.removeAllListeners();        this.scene.sys.updateList.remove(this);        this.clear(removeFromScene, destroyChildren);        this.scene = undefined;        this.children = undefined;    }});module.exports = Group;

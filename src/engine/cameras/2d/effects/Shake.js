@@ -1,152 +1,1 @@
-var Clamp = require('../../../math/Clamp');
-var Class = require('../../../utils/Class');
-var Events = require('../events');
-var Vector2 = require('../../../math/Vector2');
-
-var Shake = new Class({
-
-    initialize:
-
-    function Shake (camera)
-    {
-
-        this.camera = camera;
-
-        this.isRunning = false;
-
-        this.duration = 0;
-
-        this.intensity = new Vector2();
-
-        this.progress = 0;
-
-        this._elapsed = 0;
-
-        this._offsetX = 0;
-
-        this._offsetY = 0;
-
-        this._onUpdate;
-
-        this._onUpdateScope;
-    },
-
-    start: function (duration, intensity, force, callback, context)
-    {
-        if (duration === undefined) { duration = 100; }
-        if (intensity === undefined) { intensity = 0.05; }
-        if (force === undefined) { force = false; }
-        if (callback === undefined) { callback = null; }
-        if (context === undefined) { context = this.camera.scene; }
-
-        if (!force && this.isRunning)
-        {
-            return this.camera;
-        }
-
-        this.isRunning = true;
-        this.duration = duration;
-        this.progress = 0;
-
-        if (typeof intensity === 'number')
-        {
-            this.intensity.set(intensity);
-        }
-        else
-        {
-            this.intensity.set(intensity.x, intensity.y);
-        }
-
-        this._elapsed = 0;
-        this._offsetX = 0;
-        this._offsetY = 0;
-
-        this._onUpdate = callback;
-        this._onUpdateScope = context;
-
-        this.camera.emit(Events.SHAKE_START, this.camera, this, duration, intensity);
-
-        return this.camera;
-    },
-
-    preRender: function ()
-    {
-        if (this.isRunning)
-        {
-            this.camera.matrix.translate(this._offsetX, this._offsetY);
-        }
-    },
-
-    update: function (time, delta)
-    {
-        if (!this.isRunning)
-        {
-            return;
-        }
-
-        this._elapsed += delta;
-
-        this.progress = Clamp(this._elapsed / this.duration, 0, 1);
-
-        if (this._onUpdate)
-        {
-            this._onUpdate.call(this._onUpdateScope, this.camera, this.progress);
-        }
-
-        if (this._elapsed < this.duration)
-        {
-            var intensity = this.intensity;
-            var width = this.camera.width;
-            var height = this.camera.height;
-            var zoom = this.camera.zoom;
-
-            this._offsetX = (Math.random() * intensity.x * width * 2 - intensity.x * width) * zoom;
-            this._offsetY = (Math.random() * intensity.y * height * 2 - intensity.y * height) * zoom;
-
-            if (this.camera.roundPixels)
-            {
-                this._offsetX = Math.round(this._offsetX);
-                this._offsetY = Math.round(this._offsetY);
-            }
-        }
-        else
-        {
-            this.effectComplete();
-        }
-    },
-
-    effectComplete: function ()
-    {
-        this._offsetX = 0;
-        this._offsetY = 0;
-
-        this._onUpdate = null;
-        this._onUpdateScope = null;
-
-        this.isRunning = false;
-
-        this.camera.emit(Events.SHAKE_COMPLETE, this.camera, this);
-    },
-
-    reset: function ()
-    {
-        this.isRunning = false;
-
-        this._offsetX = 0;
-        this._offsetY = 0;
-
-        this._onUpdate = null;
-        this._onUpdateScope = null;
-    },
-
-    destroy: function ()
-    {
-        this.reset();
-
-        this.camera = null;
-        this.intensity = null;
-    }
-
-});
-
-module.exports = Shake;
+var Clamp = require('../../../math/Clamp');var Class = require('../../../utils/Class');var Events = require('../events');var Vector2 = require('../../../math/Vector2');var Shake = new Class({    initialize:    function Shake (camera)    {        this.camera = camera;        this.isRunning = false;        this.duration = 0;        this.intensity = new Vector2();        this.progress = 0;        this._elapsed = 0;        this._offsetX = 0;        this._offsetY = 0;        this._onUpdate;        this._onUpdateScope;    },    start: function (duration, intensity, force, callback, context)    {        if (duration === undefined) { duration = 100; }        if (intensity === undefined) { intensity = 0.05; }        if (force === undefined) { force = false; }        if (callback === undefined) { callback = null; }        if (context === undefined) { context = this.camera.scene; }        if (!force && this.isRunning)        {            return this.camera;        }        this.isRunning = true;        this.duration = duration;        this.progress = 0;        if (typeof intensity === 'number')        {            this.intensity.set(intensity);        }        else        {            this.intensity.set(intensity.x, intensity.y);        }        this._elapsed = 0;        this._offsetX = 0;        this._offsetY = 0;        this._onUpdate = callback;        this._onUpdateScope = context;        this.camera.emit(Events.SHAKE_START, this.camera, this, duration, intensity);        return this.camera;    },    preRender: function ()    {        if (this.isRunning)        {            this.camera.matrix.translate(this._offsetX, this._offsetY);        }    },    update: function (time, delta)    {        if (!this.isRunning)        {            return;        }        this._elapsed += delta;        this.progress = Clamp(this._elapsed / this.duration, 0, 1);        if (this._onUpdate)        {            this._onUpdate.call(this._onUpdateScope, this.camera, this.progress);        }        if (this._elapsed < this.duration)        {            var intensity = this.intensity;            var width = this.camera.width;            var height = this.camera.height;            var zoom = this.camera.zoom;            this._offsetX = (Math.random() * intensity.x * width * 2 - intensity.x * width) * zoom;            this._offsetY = (Math.random() * intensity.y * height * 2 - intensity.y * height) * zoom;            if (this.camera.roundPixels)            {                this._offsetX = Math.round(this._offsetX);                this._offsetY = Math.round(this._offsetY);            }        }        else        {            this.effectComplete();        }    },    effectComplete: function ()    {        this._offsetX = 0;        this._offsetY = 0;        this._onUpdate = null;        this._onUpdateScope = null;        this.isRunning = false;        this.camera.emit(Events.SHAKE_COMPLETE, this.camera, this);    },    reset: function ()    {        this.isRunning = false;        this._offsetX = 0;        this._offsetY = 0;        this._onUpdate = null;        this._onUpdateScope = null;    },    destroy: function ()    {        this.reset();        this.camera = null;        this.intensity = null;    }});module.exports = Shake;

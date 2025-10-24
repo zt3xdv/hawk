@@ -1,40 +1,1 @@
-var GetColor = require('./GetColor');
-
-function ConvertValue (n, h, s, v)
-{
-    var k = (n + h * 6) % 6;
-
-    var min = Math.min(k, 4 - k, 1);
-
-    return Math.round(255 * (v - v * s * Math.max(0, min)));
-}
-
-var HSVToRGB = function (h, s, v, out)
-{
-    if (s === undefined) { s = 1; }
-    if (v === undefined) { v = 1; }
-
-    var r = ConvertValue(5, h, s, v);
-    var g = ConvertValue(3, h, s, v);
-    var b = ConvertValue(1, h, s, v);
-
-    if (!out)
-    {
-        return { r: r, g: g, b: b, color: GetColor(r, g, b) };
-    }
-    else if (out.setTo)
-    {
-        return out.setTo(r, g, b, out.alpha, true);
-    }
-    else
-    {
-        out.r = r;
-        out.g = g;
-        out.b = b;
-        out.color = GetColor(r, g, b);
-
-        return out;
-    }
-};
-
-module.exports = HSVToRGB;
+var GetColor = require('./GetColor');function ConvertValue (n, h, s, v){    var k = (n + h * 6) % 6;    var min = Math.min(k, 4 - k, 1);    return Math.round(255 * (v - v * s * Math.max(0, min)));}var HSVToRGB = function (h, s, v, out){    if (s === undefined) { s = 1; }    if (v === undefined) { v = 1; }    var r = ConvertValue(5, h, s, v);    var g = ConvertValue(3, h, s, v);    var b = ConvertValue(1, h, s, v);    if (!out)    {        return { r: r, g: g, b: b, color: GetColor(r, g, b) };    }    else if (out.setTo)    {        return out.setTo(r, g, b, out.alpha, true);    }    else    {        out.r = r;        out.g = g;        out.b = b;        out.color = GetColor(r, g, b);        return out;    }};module.exports = HSVToRGB;

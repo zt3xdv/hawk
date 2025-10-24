@@ -1,1 +1,1 @@
-module.exports = 'resize';
+module.exports = 'resize';

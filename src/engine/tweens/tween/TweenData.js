@@ -1,241 +1,1 @@
-var BaseTweenData = require('./BaseTweenData');
-var Clamp = require('../../math/Clamp');
-var Class = require('../../utils/Class');
-var Events = require('../events');
-
-var TweenData = new Class({
-
-    Extends: BaseTweenData,
-
-    initialize:
-
-    function TweenData (tween, targetIndex, key, getEnd, getStart, getActive, ease, delay, duration, yoyo, hold, repeat, repeatDelay, flipX, flipY, interpolation, interpolationData)
-    {
-        BaseTweenData.call(this, tween, targetIndex, delay, duration, yoyo, hold, repeat, repeatDelay, flipX, flipY);
-
-        this.key = key;
-
-        this.getActiveValue = getActive;
-
-        this.getEndValue = getEnd;
-
-        this.getStartValue = getStart;
-
-        this.ease = ease;
-
-        this.start = 0;
-
-        this.previous = 0;
-
-        this.current = 0;
-
-        this.end = 0;
-
-        this.interpolation = interpolation;
-
-        this.interpolationData = interpolationData;
-    },
-
-    reset: function (isSeeking)
-    {
-        BaseTweenData.prototype.reset.call(this);
-
-        var target = this.tween.targets[this.targetIndex];
-        var key = this.key;
-
-        if (isSeeking)
-        {
-            target[key] = this.start;
-        }
-
-        this.start = 0;
-        this.previous = 0;
-        this.current = 0;
-        this.end = 0;
-
-        if (this.getActiveValue)
-        {
-            target[key] = this.getActiveValue(target, key, 0);
-        }
-    },
-
-    update: function (delta)
-    {
-        var tween = this.tween;
-        var totalTargets = tween.totalTargets;
-
-        var targetIndex = this.targetIndex;
-        var target = tween.targets[targetIndex];
-        var key = this.key;
-
-        if (!target)
-        {
-            this.setCompleteState();
-
-            return false;
-        }
-
-        if (this.isCountdown)
-        {
-            this.elapsed -= delta;
-
-            if (this.elapsed <= 0)
-            {
-                this.elapsed = 0;
-
-                delta = 0;
-
-                if (this.isDelayed())
-                {
-                    this.setPendingRenderState();
-                }
-                else if (this.isRepeating())
-                {
-                    this.setPlayingForwardState();
-
-                    this.dispatchEvent(Events.TWEEN_REPEAT, 'onRepeat');
-                }
-                else if (this.isHolding())
-                {
-                    this.setStateFromEnd(0);
-                }
-            }
-        }
-
-        if (this.isPendingRender())
-        {
-            this.start = this.getStartValue(target, key, target[key], targetIndex, totalTargets, tween);
-
-            this.end = this.getEndValue(target, key, this.start, targetIndex, totalTargets, tween);
-
-            this.current = this.start;
-
-            target[key] = this.start;
-
-            this.setPlayingForwardState();
-
-            return true;
-        }
-
-        var forward = this.isPlayingForward();
-        var backward = this.isPlayingBackward();
-
-        if (forward || backward)
-        {
-            var elapsed = this.elapsed;
-            var duration = this.duration;
-            var diff = 0;
-            var complete = false;
-
-            elapsed += delta;
-
-            if (elapsed >= duration)
-            {
-                diff = elapsed - duration;
-                elapsed = duration;
-                complete = true;
-            }
-            else if (elapsed < 0)
-            {
-                elapsed = 0;
-            }
-
-            var progress = Clamp(elapsed / duration, 0, 1);
-
-            this.elapsed = elapsed;
-            this.progress = progress;
-            this.previous = this.current;
-
-            if (!forward)
-            {
-                progress = 1 - progress;
-            }
-
-            var v = this.ease(progress);
-
-            if (this.interpolation)
-            {
-                this.current = this.interpolation(this.interpolationData, v);
-            }
-            else
-            {
-                this.current = this.start + ((this.end - this.start) * v);
-            }
-
-            target[key] = this.current;
-
-            if (complete)
-            {
-                if (forward)
-                {
-                    if (tween.isNumberTween)
-                    {
-                        this.current = this.end;
-                        target[key] = this.current;
-                    }
-
-                    if (this.hold > 0)
-                    {
-                        this.elapsed = this.hold;
-
-                        this.setHoldState();
-                    }
-                    else
-                    {
-                        this.setStateFromEnd(diff);
-                    }
-                }
-                else
-                {
-                    if (tween.isNumberTween)
-                    {
-                        this.current = this.start;
-                        target[key] = this.current;
-                    }
-
-                    this.setStateFromStart(diff);
-                }
-            }
-
-            this.dispatchEvent(Events.TWEEN_UPDATE, 'onUpdate');
-        }
-
-        return !this.isComplete();
-    },
-
-    dispatchEvent: function (event, callback)
-    {
-        var tween = this.tween;
-
-        if (!tween.isSeeking)
-        {
-            var target = tween.targets[this.targetIndex];
-            var key = this.key;
-
-            var current = this.current;
-            var previous = this.previous;
-
-            tween.emit(event, tween, key, target, current, previous);
-
-            var handler = tween.callbacks[callback];
-
-            if (handler)
-            {
-                handler.func.apply(tween.callbackScope, [ tween, target, key, current, previous ].concat(handler.params));
-            }
-        }
-    },
-
-    destroy: function ()
-    {
-        BaseTweenData.prototype.destroy.call(this);
-
-        this.getActiveValue = null;
-        this.getEndValue = null;
-        this.getStartValue = null;
-        this.ease = null;
-    }
-
-});
-
-module.exports = TweenData;
+var BaseTweenData = require('./BaseTweenData');var Clamp = require('../../math/Clamp');var Class = require('../../utils/Class');var Events = require('../events');var TweenData = new Class({    Extends: BaseTweenData,    initialize:    function TweenData (tween, targetIndex, key, getEnd, getStart, getActive, ease, delay, duration, yoyo, hold, repeat, repeatDelay, flipX, flipY, interpolation, interpolationData)    {        BaseTweenData.call(this, tween, targetIndex, delay, duration, yoyo, hold, repeat, repeatDelay, flipX, flipY);        this.key = key;        this.getActiveValue = getActive;        this.getEndValue = getEnd;        this.getStartValue = getStart;        this.ease = ease;        this.start = 0;        this.previous = 0;        this.current = 0;        this.end = 0;        this.interpolation = interpolation;        this.interpolationData = interpolationData;    },    reset: function (isSeeking)    {        BaseTweenData.prototype.reset.call(this);        var target = this.tween.targets[this.targetIndex];        var key = this.key;        if (isSeeking)        {            target[key] = this.start;        }        this.start = 0;        this.previous = 0;        this.current = 0;        this.end = 0;        if (this.getActiveValue)        {            target[key] = this.getActiveValue(target, key, 0);        }    },    update: function (delta)    {        var tween = this.tween;        var totalTargets = tween.totalTargets;        var targetIndex = this.targetIndex;        var target = tween.targets[targetIndex];        var key = this.key;        if (!target)        {            this.setCompleteState();            return false;        }        if (this.isCountdown)        {            this.elapsed -= delta;            if (this.elapsed <= 0)            {                this.elapsed = 0;                delta = 0;                if (this.isDelayed())                {                    this.setPendingRenderState();                }                else if (this.isRepeating())                {                    this.setPlayingForwardState();                    this.dispatchEvent(Events.TWEEN_REPEAT, 'onRepeat');                }                else if (this.isHolding())                {                    this.setStateFromEnd(0);                }            }        }        if (this.isPendingRender())        {            this.start = this.getStartValue(target, key, target[key], targetIndex, totalTargets, tween);            this.end = this.getEndValue(target, key, this.start, targetIndex, totalTargets, tween);            this.current = this.start;            target[key] = this.start;            this.setPlayingForwardState();            return true;        }        var forward = this.isPlayingForward();        var backward = this.isPlayingBackward();        if (forward || backward)        {            var elapsed = this.elapsed;            var duration = this.duration;            var diff = 0;            var complete = false;            elapsed += delta;            if (elapsed >= duration)            {                diff = elapsed - duration;                elapsed = duration;                complete = true;            }            else if (elapsed < 0)            {                elapsed = 0;            }            var progress = Clamp(elapsed / duration, 0, 1);            this.elapsed = elapsed;            this.progress = progress;            this.previous = this.current;            if (!forward)            {                progress = 1 - progress;            }            var v = this.ease(progress);            if (this.interpolation)            {                this.current = this.interpolation(this.interpolationData, v);            }            else            {                this.current = this.start + ((this.end - this.start) * v);            }            target[key] = this.current;            if (complete)            {                if (forward)                {                    if (tween.isNumberTween)                    {                        this.current = this.end;                        target[key] = this.current;                    }                    if (this.hold > 0)                    {                        this.elapsed = this.hold;                        this.setHoldState();                    }                    else                    {                        this.setStateFromEnd(diff);                    }                }                else                {                    if (tween.isNumberTween)                    {                        this.current = this.start;                        target[key] = this.current;                    }                    this.setStateFromStart(diff);                }            }            this.dispatchEvent(Events.TWEEN_UPDATE, 'onUpdate');        }        return !this.isComplete();    },    dispatchEvent: function (event, callback)    {        var tween = this.tween;        if (!tween.isSeeking)        {            var target = tween.targets[this.targetIndex];            var key = this.key;            var current = this.current;            var previous = this.previous;            tween.emit(event, tween, key, target, current, previous);            var handler = tween.callbacks[callback];            if (handler)            {                handler.func.apply(tween.callbackScope, [ tween, target, key, current, previous ].concat(handler.params));            }        }    },    destroy: function ()    {        BaseTweenData.prototype.destroy.call(this);        this.getActiveValue = null;        this.getEndValue = null;        this.getStartValue = null;        this.ease = null;    }});module.exports = TweenData;

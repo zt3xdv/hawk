@@ -1,1 +1,1 @@
-module.exports = 'rate';
+module.exports = 'rate';

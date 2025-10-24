@@ -1,17 +1,1 @@
-var GetBottom = require('../../bounds/GetBottom');
-var GetCenterX = require('../../bounds/GetCenterX');
-var SetCenterX = require('../../bounds/SetCenterX');
-var SetTop = require('../../bounds/SetTop');
-
-var BottomCenter = function (gameObject, alignTo, offsetX, offsetY)
-{
-    if (offsetX === undefined) { offsetX = 0; }
-    if (offsetY === undefined) { offsetY = 0; }
-
-    SetCenterX(gameObject, GetCenterX(alignTo) + offsetX);
-    SetTop(gameObject, GetBottom(alignTo) + offsetY);
-
-    return gameObject;
-};
-
-module.exports = BottomCenter;
+var GetBottom = require('../../bounds/GetBottom');var GetCenterX = require('../../bounds/GetCenterX');var SetCenterX = require('../../bounds/SetCenterX');var SetTop = require('../../bounds/SetTop');var BottomCenter = function (gameObject, alignTo, offsetX, offsetY){    if (offsetX === undefined) { offsetX = 0; }    if (offsetY === undefined) { offsetY = 0; }    SetCenterX(gameObject, GetCenterX(alignTo) + offsetX);    SetTop(gameObject, GetBottom(alignTo) + offsetY);    return gameObject;};module.exports = BottomCenter;

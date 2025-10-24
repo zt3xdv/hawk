@@ -1,6 +1,1 @@
-module.exports = {
-
-    BitmapMask: require('./BitmapMask'),
-    GeometryMask: require('./GeometryMask')
-
-};
+module.exports = {    BitmapMask: require('./BitmapMask'),    GeometryMask: require('./GeometryMask')};

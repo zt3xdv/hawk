@@ -1,7 +1,1 @@
-var Blitter = require('./Blitter');
-var GameObjectFactory = require('../GameObjectFactory');
-
-GameObjectFactory.register('blitter', function (x, y, texture, frame)
-{
-    return this.displayList.add(new Blitter(this.scene, x, y, texture, frame));
-});
+var Blitter = require('./Blitter');var GameObjectFactory = require('../GameObjectFactory');GameObjectFactory.register('blitter', function (x, y, texture, frame){    return this.displayList.add(new Blitter(this.scene, x, y, texture, frame));});

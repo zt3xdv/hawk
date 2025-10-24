@@ -1,49 +1,1 @@
-var Utils = require('../../renderer/webgl/Utils');
-
-var TileSpriteWebGLRenderer = function (renderer, src, camera, parentMatrix)
-{
-    src.updateCanvas();
-
-    var width = src.width;
-    var height = src.height;
-
-    if (width === 0 || height === 0)
-    {
-        return;
-    }
-
-    camera.addToRenderList(src);
-
-    var getTint = Utils.getTintAppendFloatAlpha;
-
-    var pipeline = renderer.pipelines.set(src.pipeline, src);
-
-    var textureUnit = pipeline.setTexture2D(src.fillPattern, src);
-
-    pipeline.batchTexture(
-        src,
-        src.fillPattern,
-        src.displayFrame.width * src.tileScaleX, src.displayFrame.height * src.tileScaleY,
-        src.x, src.y,
-        width, height,
-        src.scaleX, src.scaleY,
-        src.rotation,
-        src.flipX, src.flipY,
-        src.scrollFactorX, src.scrollFactorY,
-        src.originX * width, src.originY * height,
-        0, 0, width, height,
-        getTint(src.tintTopLeft, camera.alpha * src._alphaTL),
-        getTint(src.tintTopRight, camera.alpha * src._alphaTR),
-        getTint(src.tintBottomLeft, camera.alpha * src._alphaBL),
-        getTint(src.tintBottomRight, camera.alpha * src._alphaBR),
-        src.tintFill,
-        (src.tilePositionX % src.displayFrame.width) / src.displayFrame.width,
-        (src.tilePositionY % src.displayFrame.height) / src.displayFrame.height,
-        camera,
-        parentMatrix,
-        false,
-        textureUnit
-    );
-};
-
-module.exports = TileSpriteWebGLRenderer;
+var Utils = require('../../renderer/webgl/Utils');var TileSpriteWebGLRenderer = function (renderer, src, camera, parentMatrix){    src.updateCanvas();    var width = src.width;    var height = src.height;    if (width === 0 || height === 0)    {        return;    }    camera.addToRenderList(src);    var getTint = Utils.getTintAppendFloatAlpha;    var pipeline = renderer.pipelines.set(src.pipeline, src);    var textureUnit = pipeline.setTexture2D(src.fillPattern, src);    pipeline.batchTexture(        src,        src.fillPattern,        src.displayFrame.width * src.tileScaleX, src.displayFrame.height * src.tileScaleY,        src.x, src.y,        width, height,        src.scaleX, src.scaleY,        src.rotation,        src.flipX, src.flipY,        src.scrollFactorX, src.scrollFactorY,        src.originX * width, src.originY * height,        0, 0, width, height,        getTint(src.tintTopLeft, camera.alpha * src._alphaTL),        getTint(src.tintTopRight, camera.alpha * src._alphaTR),        getTint(src.tintBottomLeft, camera.alpha * src._alphaBL),        getTint(src.tintBottomRight, camera.alpha * src._alphaBR),        src.tintFill,        (src.tilePositionX % src.displayFrame.width) / src.displayFrame.width,        (src.tilePositionY % src.displayFrame.height) / src.displayFrame.height,        camera,        parentMatrix,        false,        textureUnit    );};module.exports = TileSpriteWebGLRenderer;

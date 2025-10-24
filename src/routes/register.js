@@ -1,6 +1,7 @@
 import Alerts from '../utils/Alerts.js';
-import { DISPLAY_NAME, USERNAME, PASSWORD } from '../utils/Constants.js';
+import { DISPLAY_NAME, USERNAME, PASSWORD, TURNSTILE } from '../utils/Constants.js';
 import Cache from '../utils/Cache.js';
+import { setupTurnstile } from '../utils/Utils.js';
 
 export function renderRegister() {
   const app = document.getElementById('app');
@@ -16,6 +17,8 @@ export function renderRegister() {
     <input type="text" id="username" placeholder="Username" required>
     <input type="password" id="password" placeholder="Password" required>
     <br>
+    <div id="turnstile-container"></div>
+    <br>
     <button class="btn" type="submit">Register</button>
     <br>
     <small class="accent">By creating a account your accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
@@ -24,6 +27,12 @@ export function renderRegister() {
   <p>Already have a account? <a href="/login">Login</a></p>
   </div>
   `;
+
+  if (TURNSTILE) {
+    setupTurnstile((token) => {
+      window.turnstileToken = token;
+    });
+  }
 
   const form = document.getElementById('regForm');
   
@@ -62,6 +71,11 @@ export function renderRegister() {
     const username = e.target.username.value.trim();
     const password = e.target.password.value;
 
+    if (!window.turnstileToken && TURNSTILE) {
+      Alerts.add('Validation error', "Please complete captcha");
+      return;
+    }
+
     if (!validateField('display_name', display_name)) {
       Alerts.add('Validation error', validationMessage('display_name'));
       return;
@@ -79,7 +93,7 @@ export function renderRegister() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ display_name, username, password })
+        body: JSON.stringify({ display_name, username, password, turnstile: window.turnstileToken })
       });
       const data = await res.json();
       if (res.ok) {

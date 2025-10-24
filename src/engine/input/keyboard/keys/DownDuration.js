@@ -1,10 +1,1 @@
-var DownDuration = function (key, duration)
-{
-    if (duration === undefined) { duration = 50; }
-
-    var current = key.plugin.game.loop.time - key.timeDown;
-
-    return (key.isDown && current < duration);
-};
-
-module.exports = DownDuration;
+var DownDuration = function (key, duration){    if (duration === undefined) { duration = 50; }    var current = key.plugin.game.loop.time - key.timeDown;    return (key.isDown && current < duration);};module.exports = DownDuration;

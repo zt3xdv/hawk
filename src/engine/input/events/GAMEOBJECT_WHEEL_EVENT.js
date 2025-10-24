@@ -1,1 +1,1 @@
-module.exports = 'gameobjectwheel';
+module.exports = 'gameobjectwheel';

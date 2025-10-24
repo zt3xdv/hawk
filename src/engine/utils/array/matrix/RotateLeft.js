@@ -1,15 +1,1 @@
-var RotateMatrix = require('./RotateMatrix');
-
-var RotateLeft = function (matrix, amount)
-{
-    if (amount === undefined) { amount = 1; }
-
-    for (var i = 0; i < amount; i++)
-    {
-        matrix = RotateMatrix(matrix, 90);
-    }
-
-    return matrix;
-};
-
-module.exports = RotateLeft;
+var RotateMatrix = require('./RotateMatrix');var RotateLeft = function (matrix, amount){    if (amount === undefined) { amount = 1; }    for (var i = 0; i < amount; i++)    {        matrix = RotateMatrix(matrix, 90);    }    return matrix;};module.exports = RotateLeft;

@@ -1,21 +1,1 @@
-var Each = function (array, callback, context)
-{
-    var i;
-    var args = [ null ];
-
-    for (i = 3; i < arguments.length; i++)
-    {
-        args.push(arguments[i]);
-    }
-
-    for (i = 0; i < array.length; i++)
-    {
-        args[0] = array[i];
-
-        callback.apply(context, args);
-    }
-
-    return array;
-};
-
-module.exports = Each;
+var Each = function (array, callback, context){    var i;    var args = [ null ];    for (i = 3; i < arguments.length; i++)    {        args.push(arguments[i]);    }    for (i = 0; i < array.length; i++)    {        args[0] = array[i];        callback.apply(context, args);    }    return array;};module.exports = Each;

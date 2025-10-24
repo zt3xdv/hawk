@@ -1,1 +1,1 @@
-module.exports = 'pointerout';
+module.exports = 'pointerout';

@@ -1,211 +1,1 @@
-var ArrayRemove = require('../../utils/array/Remove');
-var Class = require('../../utils/Class');
-var GameEvents = require('../../core/events');
-var InputEvents = require('../events');
-var KeyCodes = require('../../input/keyboard/keys/KeyCodes');
-var NOOP = require('../../utils/NOOP');
-
-var KeyboardManager = new Class({
-
-    initialize:
-
-    function KeyboardManager (inputManager)
-    {
-
-        this.manager = inputManager;
-
-        this.queue = [];
-
-        this.preventDefault = true;
-
-        this.captures = [];
-
-        this.enabled = false;
-
-        this.target;
-
-        this.onKeyDown = NOOP;
-
-        this.onKeyUp = NOOP;
-
-        inputManager.events.once(InputEvents.MANAGER_BOOT, this.boot, this);
-    },
-
-    boot: function ()
-    {
-        var config = this.manager.config;
-
-        this.enabled = config.inputKeyboard;
-        this.target = config.inputKeyboardEventTarget;
-
-        this.addCapture(config.inputKeyboardCapture);
-
-        if (!this.target && window)
-        {
-            this.target = window;
-        }
-
-        if (this.enabled && this.target)
-        {
-            this.startListeners();
-        }
-
-        this.manager.game.events.on(GameEvents.POST_STEP, this.postUpdate, this);
-    },
-
-    startListeners: function ()
-    {
-        var _this = this;
-
-        this.onKeyDown = function (event)
-        {
-            if (event.defaultPrevented || !_this.enabled || !_this.manager)
-            {
-
-                return;
-            }
-
-            _this.queue.push(event);
-
-            _this.manager.events.emit(InputEvents.MANAGER_PROCESS);
-
-            var modified = (event.altKey || event.ctrlKey || event.shiftKey || event.metaKey);
-
-            if (_this.preventDefault && !modified && _this.captures.indexOf(event.keyCode) > -1)
-            {
-                event.preventDefault();
-            }
-        };
-
-        this.onKeyUp = function (event)
-        {
-            if (event.defaultPrevented || !_this.enabled || !_this.manager)
-            {
-
-                return;
-            }
-
-            _this.queue.push(event);
-
-            _this.manager.events.emit(InputEvents.MANAGER_PROCESS);
-
-            var modified = (event.altKey || event.ctrlKey || event.shiftKey || event.metaKey);
-
-            if (_this.preventDefault && !modified && _this.captures.indexOf(event.keyCode) > -1)
-            {
-                event.preventDefault();
-            }
-        };
-
-        var target = this.target;
-
-        if (target)
-        {
-            target.addEventListener('keydown', this.onKeyDown, false);
-            target.addEventListener('keyup', this.onKeyUp, false);
-
-            this.enabled = true;
-        }
-    },
-
-    stopListeners: function ()
-    {
-        var target = this.target;
-
-        target.removeEventListener('keydown', this.onKeyDown, false);
-        target.removeEventListener('keyup', this.onKeyUp, false);
-
-        this.enabled = false;
-    },
-
-    postUpdate: function ()
-    {
-        this.queue = [];
-    },
-
-    addCapture: function (keycode)
-    {
-        if (typeof keycode === 'string')
-        {
-            keycode = keycode.split(',');
-        }
-
-        if (!Array.isArray(keycode))
-        {
-            keycode = [ keycode ];
-        }
-
-        var captures = this.captures;
-
-        for (var i = 0; i < keycode.length; i++)
-        {
-            var code = keycode[i];
-
-            if (typeof code === 'string')
-            {
-                code = KeyCodes[code.trim().toUpperCase()];
-            }
-
-            if (captures.indexOf(code) === -1)
-            {
-                captures.push(code);
-            }
-        }
-
-        this.preventDefault = captures.length > 0;
-    },
-
-    removeCapture: function (keycode)
-    {
-        if (typeof keycode === 'string')
-        {
-            keycode = keycode.split(',');
-        }
-
-        if (!Array.isArray(keycode))
-        {
-            keycode = [ keycode ];
-        }
-
-        var captures = this.captures;
-
-        for (var i = 0; i < keycode.length; i++)
-        {
-            var code = keycode[i];
-
-            if (typeof code === 'string')
-            {
-                code = KeyCodes[code.toUpperCase()];
-            }
-
-            ArrayRemove(captures, code);
-        }
-
-        this.preventDefault = captures.length > 0;
-    },
-
-    clearCaptures: function ()
-    {
-        this.captures = [];
-
-        this.preventDefault = false;
-    },
-
-    destroy: function ()
-    {
-        this.stopListeners();
-
-        this.clearCaptures();
-
-        this.queue = [];
-
-        this.manager.game.events.off(GameEvents.POST_RENDER, this.postUpdate, this);
-
-        this.target = null;
-        this.enabled = false;
-        this.manager = null;
-    }
-
-});
-
-module.exports = KeyboardManager;
+var ArrayRemove = require('../../utils/array/Remove');var Class = require('../../utils/Class');var GameEvents = require('../../core/events');var InputEvents = require('../events');var KeyCodes = require('../../input/keyboard/keys/KeyCodes');var NOOP = require('../../utils/NOOP');var KeyboardManager = new Class({    initialize:    function KeyboardManager (inputManager)    {        this.manager = inputManager;        this.queue = [];        this.preventDefault = true;        this.captures = [];        this.enabled = false;        this.target;        this.onKeyDown = NOOP;        this.onKeyUp = NOOP;        inputManager.events.once(InputEvents.MANAGER_BOOT, this.boot, this);    },    boot: function ()    {        var config = this.manager.config;        this.enabled = config.inputKeyboard;        this.target = config.inputKeyboardEventTarget;        this.addCapture(config.inputKeyboardCapture);        if (!this.target && window)        {            this.target = window;        }        if (this.enabled && this.target)        {            this.startListeners();        }        this.manager.game.events.on(GameEvents.POST_STEP, this.postUpdate, this);    },    startListeners: function ()    {        var _this = this;        this.onKeyDown = function (event)        {            if (event.defaultPrevented || !_this.enabled || !_this.manager)            {                return;            }            _this.queue.push(event);            _this.manager.events.emit(InputEvents.MANAGER_PROCESS);            var modified = (event.altKey || event.ctrlKey || event.shiftKey || event.metaKey);            if (_this.preventDefault && !modified && _this.captures.indexOf(event.keyCode) > -1)            {                event.preventDefault();            }        };        this.onKeyUp = function (event)        {            if (event.defaultPrevented || !_this.enabled || !_this.manager)            {                return;            }            _this.queue.push(event);            _this.manager.events.emit(InputEvents.MANAGER_PROCESS);            var modified = (event.altKey || event.ctrlKey || event.shiftKey || event.metaKey);            if (_this.preventDefault && !modified && _this.captures.indexOf(event.keyCode) > -1)            {                event.preventDefault();            }        };        var target = this.target;        if (target)        {            target.addEventListener('keydown', this.onKeyDown, false);            target.addEventListener('keyup', this.onKeyUp, false);            this.enabled = true;        }    },    stopListeners: function ()    {        var target = this.target;        target.removeEventListener('keydown', this.onKeyDown, false);        target.removeEventListener('keyup', this.onKeyUp, false);        this.enabled = false;    },    postUpdate: function ()    {        this.queue = [];    },    addCapture: function (keycode)    {        if (typeof keycode === 'string')        {            keycode = keycode.split(',');        }        if (!Array.isArray(keycode))        {            keycode = [ keycode ];        }        var captures = this.captures;        for (var i = 0; i < keycode.length; i++)        {            var code = keycode[i];            if (typeof code === 'string')            {                code = KeyCodes[code.trim().toUpperCase()];            }            if (captures.indexOf(code) === -1)            {                captures.push(code);            }        }        this.preventDefault = captures.length > 0;    },    removeCapture: function (keycode)    {        if (typeof keycode === 'string')        {            keycode = keycode.split(',');        }        if (!Array.isArray(keycode))        {            keycode = [ keycode ];        }        var captures = this.captures;        for (var i = 0; i < keycode.length; i++)        {            var code = keycode[i];            if (typeof code === 'string')            {                code = KeyCodes[code.toUpperCase()];            }            ArrayRemove(captures, code);        }        this.preventDefault = captures.length > 0;    },    clearCaptures: function ()    {        this.captures = [];        this.preventDefault = false;    },    destroy: function ()    {        this.stopListeners();        this.clearCaptures();        this.queue = [];        this.manager.game.events.off(GameEvents.POST_RENDER, this.postUpdate, this);        this.target = null;        this.enabled = false;        this.manager = null;    }});module.exports = KeyboardManager;

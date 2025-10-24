@@ -1,11 +1,1 @@
-var Area = function (ellipse)
-{
-    if (ellipse.isEmpty())
-    {
-        return 0;
-    }
-
-    return (ellipse.getMajorRadius() * ellipse.getMinorRadius() * Math.PI);
-};
-
-module.exports = Area;
+var Area = function (ellipse){    if (ellipse.isEmpty())    {        return 0;    }    return (ellipse.getMajorRadius() * ellipse.getMinorRadius() * Math.PI);};module.exports = Area;

@@ -1,159 +1,1 @@
-var Class = require('../../../utils/Class');
-var Earcut = require('../../../geom/polygon/Earcut');
-var GeomRectangle = require('../../../geom/rectangle/Rectangle');
-var Shape = require('../Shape');
-var RectangleRender = require('./RectangleRender');
-
-var Rectangle = new Class({
-
-    Extends: Shape,
-
-    Mixins: [
-        RectangleRender
-    ],
-
-    initialize:
-
-    function Rectangle (scene, x, y, width, height, fillColor, fillAlpha)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (width === undefined) { width = 128; }
-        if (height === undefined) { height = 128; }
-
-        Shape.call(this, scene, 'Rectangle', new GeomRectangle(0, 0, width, height));
-
-        this.radius = 20;
-
-        this.isRounded = false;
-
-        this.setPosition(x, y);
-        this.setSize(width, height);
-
-        if (fillColor !== undefined)
-        {
-            this.setFillStyle(fillColor, fillAlpha);
-        }
-
-        this.updateDisplayOrigin();
-        this.updateData();
-    },
-
-    setRounded: function (radius)
-    {
-        if (radius === undefined) { radius = 16; }
-
-        this.radius = radius;
-        this.isRounded = radius > 0;
-
-        return this.updateRoundedData();
-    },
-
-    setSize: function (width, height)
-    {
-        this.width = width;
-        this.height = height;
-
-        this.geom.setSize(width, height);
-
-        this.updateData();
-
-        this.updateDisplayOrigin();
-
-        var input = this.input;
-
-        if (input && !input.customHitArea)
-        {
-            input.hitArea.width = width;
-            input.hitArea.height = height;
-        }
-
-        return this;
-    },
-
-    updateData: function ()
-    {
-        if (this.isRounded)
-        {
-            return this.updateRoundedData();
-        }
-
-        var path = [];
-        var rect = this.geom;
-        var line = this._tempLine;
-
-        rect.getLineA(line);
-
-        path.push(line.x1, line.y1, line.x2, line.y2);
-
-        rect.getLineB(line);
-
-        path.push(line.x2, line.y2);
-
-        rect.getLineC(line);
-
-        path.push(line.x2, line.y2);
-
-        rect.getLineD(line);
-
-        path.push(line.x2, line.y2);
-
-        this.pathData = path;
-
-        return this;
-    },
-
-    updateRoundedData: function ()
-    {
-        var path = [];
-        var halfWidth = this.width / 2;
-        var halfHeight = this.height / 2;
-
-        var maxRadius = Math.min(halfWidth, halfHeight);
-        var radius = Math.min(this.radius, maxRadius);
-
-        var x = halfWidth;
-        var y = halfHeight;
-
-        var segments = Math.max(1, Math.floor(radius / 5));
-
-        this.arcTo(path, x - halfWidth + radius, y - halfHeight + radius, radius, Math.PI, Math.PI * 1.5, segments);
-
-        path.push(x + halfWidth - radius, y - halfHeight);
-
-        this.arcTo(path, x + halfWidth - radius, y - halfHeight + radius, radius, Math.PI * 1.5, Math.PI * 2, segments);
-
-        path.push(x + halfWidth, y + halfHeight - radius);
-
-        this.arcTo(path, x + halfWidth - radius, y + halfHeight - radius, radius, 0, Math.PI * 0.5, segments);
-
-        path.push(x - halfWidth + radius, y + halfHeight);
-
-        this.arcTo(path, x - halfWidth + radius, y + halfHeight - radius, radius, Math.PI * 0.5, Math.PI, segments);
-
-        path.push(x - halfWidth, y - halfHeight + radius);
-
-        this.pathIndexes = Earcut(path);
-        this.pathData = path;
-
-        return this;
-    },
-
-    arcTo: function (path, centerX, centerY, radius, startAngle, endAngle, segments)
-    {
-        var angleInc = (endAngle - startAngle) / segments;
-
-        for (var i = 0; i <= segments; i++)
-        {
-            var angle = startAngle + (angleInc * i);
-
-            path.push(
-                centerX + Math.cos(angle) * radius,
-                centerY + Math.sin(angle) * radius
-            );
-        }
-    }
-
-});
-
-module.exports = Rectangle;
+var Class = require('../../../utils/Class');var Earcut = require('../../../geom/polygon/Earcut');var GeomRectangle = require('../../../geom/rectangle/Rectangle');var Shape = require('../Shape');var RectangleRender = require('./RectangleRender');var Rectangle = new Class({    Extends: Shape,    Mixins: [        RectangleRender    ],    initialize:    function Rectangle (scene, x, y, width, height, fillColor, fillAlpha)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (width === undefined) { width = 128; }        if (height === undefined) { height = 128; }        Shape.call(this, scene, 'Rectangle', new GeomRectangle(0, 0, width, height));        this.radius = 20;        this.isRounded = false;        this.setPosition(x, y);        this.setSize(width, height);        if (fillColor !== undefined)        {            this.setFillStyle(fillColor, fillAlpha);        }        this.updateDisplayOrigin();        this.updateData();    },    setRounded: function (radius)    {        if (radius === undefined) { radius = 16; }        this.radius = radius;        this.isRounded = radius > 0;        return this.updateRoundedData();    },    setSize: function (width, height)    {        this.width = width;        this.height = height;        this.geom.setSize(width, height);        this.updateData();        this.updateDisplayOrigin();        var input = this.input;        if (input && !input.customHitArea)        {            input.hitArea.width = width;            input.hitArea.height = height;        }        return this;    },    updateData: function ()    {        if (this.isRounded)        {            return this.updateRoundedData();        }        var path = [];        var rect = this.geom;        var line = this._tempLine;        rect.getLineA(line);        path.push(line.x1, line.y1, line.x2, line.y2);        rect.getLineB(line);        path.push(line.x2, line.y2);        rect.getLineC(line);        path.push(line.x2, line.y2);        rect.getLineD(line);        path.push(line.x2, line.y2);        this.pathData = path;        return this;    },    updateRoundedData: function ()    {        var path = [];        var halfWidth = this.width / 2;        var halfHeight = this.height / 2;        var maxRadius = Math.min(halfWidth, halfHeight);        var radius = Math.min(this.radius, maxRadius);        var x = halfWidth;        var y = halfHeight;        var segments = Math.max(1, Math.floor(radius / 5));        this.arcTo(path, x - halfWidth + radius, y - halfHeight + radius, radius, Math.PI, Math.PI * 1.5, segments);        path.push(x + halfWidth - radius, y - halfHeight);        this.arcTo(path, x + halfWidth - radius, y - halfHeight + radius, radius, Math.PI * 1.5, Math.PI * 2, segments);        path.push(x + halfWidth, y + halfHeight - radius);        this.arcTo(path, x + halfWidth - radius, y + halfHeight - radius, radius, 0, Math.PI * 0.5, segments);        path.push(x - halfWidth + radius, y + halfHeight);        this.arcTo(path, x - halfWidth + radius, y + halfHeight - radius, radius, Math.PI * 0.5, Math.PI, segments);        path.push(x - halfWidth, y - halfHeight + radius);        this.pathIndexes = Earcut(path);        this.pathData = path;        return this;    },    arcTo: function (path, centerX, centerY, radius, startAngle, endAngle, segments)    {        var angleInc = (endAngle - startAngle) / segments;        for (var i = 0; i <= segments; i++)        {            var angle = startAngle + (angleInc * i);            path.push(                centerX + Math.cos(angle) * radius,                centerY + Math.sin(angle) * radius            );        }    }});module.exports = Rectangle;

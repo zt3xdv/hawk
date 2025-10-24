@@ -1,1151 +1,1 @@
-var Clamp = require('../../math/Clamp');
-var Class = require('../../utils/Class');
-var Components = require('../components');
-var Events = require('../events');
-var GameEvents = require('../../core/events/');
-var GameObject = require('../GameObject');
-var MATH_CONST = require('../../math/const');
-var SoundEvents = require('../../sound/events/');
-var UUID = require('../../utils/string/UUID');
-var VideoRender = require('./VideoRender');
-
-var Video = new Class({
-
-    Extends: GameObject,
-
-    Mixins: [
-        Components.Alpha,
-        Components.BlendMode,
-        Components.ComputedSize,
-        Components.Depth,
-        Components.Flip,
-        Components.GetBounds,
-        Components.Mask,
-        Components.Origin,
-        Components.Pipeline,
-        Components.PostPipeline,
-        Components.ScrollFactor,
-        Components.TextureCrop,
-        Components.Tint,
-        Components.Transform,
-        Components.Visible,
-        VideoRender
-    ],
-
-    initialize:
-
-    function Video (scene, x, y, key)
-    {
-        GameObject.call(this, scene, 'Video');
-
-        this.video;
-
-        this.videoTexture;
-
-        this.videoTextureSource;
-
-        this.snapshotTexture;
-
-        this.flipY = false;
-
-        this._key = UUID();
-
-        this.touchLocked = false;
-
-        this.playWhenUnlocked = false;
-
-        this.frameReady = false;
-
-        this.isStalled = false;
-
-        this.failedPlayAttempts = 0;
-
-        this.metadata;
-
-        this.retry = 0;
-
-        this.retryInterval = 500;
-
-        this._systemMuted = false;
-
-        this._codeMuted = false;
-
-        this._systemPaused = false;
-
-        this._codePaused = false;
-
-        this._callbacks = {
-            ended: this.completeHandler.bind(this),
-            legacy: this.legacyPlayHandler.bind(this),
-            playing: this.playingHandler.bind(this),
-            seeked: this.seekedHandler.bind(this),
-            seeking: this.seekingHandler.bind(this),
-            stalled: this.stalledHandler.bind(this),
-            suspend: this.stalledHandler.bind(this),
-            waiting: this.stalledHandler.bind(this)
-        };
-
-        this._loadCallbackHandler = this.loadErrorHandler.bind(this);
-
-        this._metadataCallbackHandler = this.metadataHandler.bind(this);
-
-        this._crop = this.resetCropObject();
-
-        this.markers = {};
-
-        this._markerIn = 0;
-
-        this._markerOut = 0;
-
-        this._playingMarker = false;
-
-        this._lastUpdate = 0;
-
-        this.cacheKey = '';
-
-        this.isSeeking = false;
-
-        this._playCalled = false;
-
-        this._getFrame = false;
-
-        this._rfvCallbackId = 0;
-
-        var game = scene.sys.game;
-
-        this._device = game.device.video;
-
-        this.setPosition(x, y);
-        this.setSize(256, 256);
-        this.initPipeline();
-        this.initPostPipeline(true);
-
-        game.events.on(GameEvents.PAUSE, this.globalPause, this);
-        game.events.on(GameEvents.RESUME, this.globalResume, this);
-
-        var sound = scene.sys.sound;
-
-        if (sound)
-        {
-            sound.on(SoundEvents.GLOBAL_MUTE, this.globalMute, this);
-        }
-
-        if (key)
-        {
-            this.load(key);
-        }
-    },
-
-    addedToScene: function ()
-    {
-        this.scene.sys.updateList.add(this);
-    },
-
-    removedFromScene: function ()
-    {
-        this.scene.sys.updateList.remove(this);
-    },
-
-    load: function (key)
-    {
-        var video = this.scene.sys.cache.video.get(key);
-
-        if (video)
-        {
-            this.cacheKey = key;
-
-            this.loadHandler(video.url, video.noAudio, video.crossOrigin);
-        }
-        else
-        {
-            console.warn('No video in cache for key: ' + key);
-        }
-
-        return this;
-    },
-
-    changeSource: function (key, autoplay, loop, markerIn, markerOut)
-    {
-        if (autoplay === undefined) { autoplay = true; }
-        if (loop === undefined) { loop = false; }
-
-        if (this.cacheKey !== key)
-        {
-            this.load(key);
-
-            if (autoplay)
-            {
-                this.play(loop, markerIn, markerOut);
-            }
-        }
-    },
-
-    getVideoKey: function ()
-    {
-        return this.cacheKey;
-    },
-
-    loadURL: function (urls, noAudio, crossOrigin)
-    {
-        if (noAudio === undefined) { noAudio = false; }
-
-        var urlConfig = this._device.getVideoURL(urls);
-
-        if (!urlConfig)
-        {
-            console.warn('No supported video format found for ' + urls);
-        }
-        else
-        {
-            this.cacheKey = '';
-
-            this.loadHandler(urlConfig.url, noAudio, crossOrigin);
-        }
-
-        return this;
-    },
-
-    loadMediaStream: function (stream, noAudio, crossOrigin)
-    {
-        return this.loadHandler(null, noAudio, crossOrigin, stream);
-    },
-
-    loadHandler: function (url, noAudio, crossOrigin, stream)
-    {
-        if (!noAudio) { noAudio = false; }
-
-        var video = this.video;
-
-        if (video)
-        {
-
-            this.removeLoadEventHandlers();
-
-            this.stop();
-        }
-        else
-        {
-            video = document.createElement('video');
-
-            video.controls = false;
-
-            video.setAttribute('playsinline', 'playsinline');
-            video.setAttribute('preload', 'auto');
-            video.setAttribute('disablePictureInPicture', 'true');
-        }
-
-        if (noAudio)
-        {
-            video.muted = true;
-            video.defaultMuted = true;
-
-            video.setAttribute('autoplay', 'autoplay');
-        }
-        else
-        {
-            video.muted = false;
-            video.defaultMuted = false;
-
-            video.removeAttribute('autoplay');
-        }
-
-        if (!crossOrigin)
-        {
-            video.removeAttribute('crossorigin');
-        }
-        else
-        {
-            video.setAttribute('crossorigin', crossOrigin);
-        }
-
-        if (stream)
-        {
-            if ('srcObject' in video)
-            {
-                try
-                {
-                    video.srcObject = stream;
-                }
-                catch (err)
-                {
-                    if (err.name !== 'TypeError')
-                    {
-                        throw err;
-                    }
-
-                    video.src = URL.createObjectURL(stream);
-                }
-            }
-            else
-            {
-                video.src = URL.createObjectURL(stream);
-            }
-        }
-        else
-        {
-            video.src = url;
-        }
-
-        this.retry = 0;
-        this.video = video;
-
-        this._playCalled = false;
-
-        video.load();
-
-        this.addLoadEventHandlers();
-
-        var texture = this.scene.sys.textures.get(this._key);
-
-        this.setTexture(texture);
-
-        return this;
-    },
-
-    requestVideoFrame: function (now, metadata)
-    {
-        var video = this.video;
-
-        if (!video)
-        {
-            return;
-        }
-
-        var width = metadata.width;
-        var height = metadata.height;
-
-        var texture = this.videoTexture;
-        var textureSource = this.videoTextureSource;
-        var newVideo = (!texture || textureSource.source !== video);
-
-        if (newVideo)
-        {
-
-            this._codePaused = video.paused;
-            this._codeMuted = video.muted;
-
-            if (!texture)
-            {
-                texture = this.scene.sys.textures.create(this._key, video, width, height);
-
-                texture.add('__BASE', 0, 0, 0, width, height);
-
-                this.setTexture(texture);
-
-                this.videoTexture = texture;
-                this.videoTextureSource = texture.source[0];
-
-                this.videoTextureSource.setFlipY(this.flipY);
-
-                this.emit(Events.VIDEO_TEXTURE, this, texture);
-            }
-            else
-            {
-
-                textureSource.source = video;
-                textureSource.width = width;
-                textureSource.height = height;
-
-                texture.get().setSize(width, height);
-            }
-
-            this.setSizeToFrame();
-            this.updateDisplayOrigin();
-        }
-        else
-        {
-            textureSource.update();
-        }
-
-        this.isStalled = false;
-
-        this.metadata = metadata;
-
-        var currentTime = metadata.mediaTime;
-
-        if (newVideo)
-        {
-            this._lastUpdate = currentTime;
-
-            this.emit(Events.VIDEO_CREATED, this, width, height);
-
-            if (!this.frameReady)
-            {
-                this.frameReady = true;
-
-                this.emit(Events.VIDEO_PLAY, this);
-            }
-        }
-
-        if (this._playingMarker)
-        {
-            if (currentTime >= this._markerOut)
-            {
-                if (video.loop)
-                {
-                    video.currentTime = this._markerIn;
-
-                    this.emit(Events.VIDEO_LOOP, this);
-                }
-                else
-                {
-                    this.stop(false);
-
-                    this.emit(Events.VIDEO_COMPLETE, this);
-                }
-            }
-        }
-        else if (currentTime < this._lastUpdate)
-        {
-            this.emit(Events.VIDEO_LOOP, this);
-        }
-
-        this._lastUpdate = currentTime;
-
-        if (this._getFrame)
-        {
-            this.removeEventHandlers();
-
-            video.pause();
-
-            this._getFrame = false;
-        }
-        else
-        {
-            this._rfvCallbackId = this.video.requestVideoFrameCallback(this.requestVideoFrame.bind(this));
-        }
-    },
-
-    play: function (loop, markerIn, markerOut)
-    {
-        if (markerIn === undefined) { markerIn = -1; }
-        if (markerOut === undefined) { markerOut = MATH_CONST.MAX_SAFE_INTEGER; }
-
-        var video = this.video;
-
-        if (!video || this.isPlaying())
-        {
-            if (!video)
-            {
-                console.warn('Video not loaded');
-            }
-
-            return this;
-        }
-
-        if (loop === undefined) { loop = video.loop; }
-
-        video.loop = loop;
-
-        this._markerIn = markerIn;
-        this._markerOut = markerOut;
-        this._playingMarker = (markerIn > -1 && markerOut > markerIn && markerOut < MATH_CONST.MAX_SAFE_INTEGER);
-
-        if (!this._playCalled)
-        {
-            this._getFrame = false;
-
-            this._rfvCallbackId = video.requestVideoFrameCallback(this.requestVideoFrame.bind(this));
-
-            this._playCalled = true;
-
-            this.createPlayPromise();
-        }
-
-        return this;
-    },
-
-    getFirstFrame: function ()
-    {
-        var video = this.video;
-
-        if (!video || this.isPlaying())
-        {
-            if (!video)
-            {
-                console.warn('Video not loaded');
-            }
-
-            return this;
-        }
-
-        if (!this._playCalled)
-        {
-            this._getFrame = true;
-
-            this._rfvCallbackId = video.requestVideoFrameCallback(this.requestVideoFrame.bind(this));
-
-            this.createPlayPromise();
-        }
-
-        return this;
-    },
-
-    addLoadEventHandlers: function ()
-    {
-        var video = this.video;
-
-        if (video)
-        {
-            video.addEventListener('error', this._loadCallbackHandler);
-            video.addEventListener('abort', this._loadCallbackHandler);
-            video.addEventListener('loadedmetadata', this._metadataCallbackHandler);
-        }
-    },
-
-    removeLoadEventHandlers: function ()
-    {
-        var video = this.video;
-
-        if (video)
-        {
-            video.removeEventListener('error', this._loadCallbackHandler);
-            video.removeEventListener('abort', this._loadCallbackHandler);
-        }
-    },
-
-    addEventHandlers: function ()
-    {
-        var video = this.video;
-
-        if (video)
-        {
-            var callbacks = this._callbacks;
-
-            for (var callback in callbacks)
-            {
-                video.addEventListener(callback, callbacks[callback]);
-            }
-        }
-    },
-
-    removeEventHandlers: function ()
-    {
-        var video = this.video;
-
-        if (video)
-        {
-            var callbacks = this._callbacks;
-
-            for (var callback in callbacks)
-            {
-                video.removeEventListener(callback, callbacks[callback]);
-            }
-        }
-    },
-
-    createPlayPromise: function (catchError)
-    {
-        if (catchError === undefined) { catchError = true; }
-
-        var video = this.video;
-
-        var playPromise = video.play();
-
-        if (playPromise !== undefined)
-        {
-            var success = this.playSuccess.bind(this);
-            var error = this.playError.bind(this);
-
-            if (!catchError)
-            {
-                var _this = this;
-
-                error = function ()
-                {
-                    _this.failedPlayAttempts++;
-                };
-            }
-
-            playPromise.then(success).catch(error);
-        }
-        else
-        {
-
-            video.addEventListener('playing', this._callbacks.legacy);
-
-            if (!catchError)
-            {
-                this.failedPlayAttempts++;
-            }
-        }
-    },
-
-    addMarker: function (key, markerIn, markerOut)
-    {
-        if (!isNaN(markerIn) && markerIn >= 0 && !isNaN(markerOut) && markerOut > markerIn)
-        {
-            this.markers[key] = [ markerIn, markerOut ];
-        }
-
-        return this;
-    },
-
-    playMarker: function (key, loop)
-    {
-        var marker = this.markers[key];
-
-        if (marker)
-        {
-            this.play(loop, marker[0], marker[1]);
-        }
-
-        return this;
-    },
-
-    removeMarker: function (key)
-    {
-        delete this.markers[key];
-
-        return this;
-    },
-
-    snapshot: function (width, height)
-    {
-        if (width === undefined) { width = this.width; }
-        if (height === undefined) { height = this.height; }
-
-        return this.snapshotArea(0, 0, this.width, this.height, width, height);
-    },
-
-    snapshotArea: function (x, y, srcWidth, srcHeight, destWidth, destHeight)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (srcWidth === undefined) { srcWidth = this.width; }
-        if (srcHeight === undefined) { srcHeight = this.height; }
-        if (destWidth === undefined) { destWidth = srcWidth; }
-        if (destHeight === undefined) { destHeight = srcHeight; }
-
-        var video = this.video;
-        var snap = this.snapshotTexture;
-
-        if (!snap)
-        {
-            snap = this.scene.sys.textures.createCanvas(UUID(), destWidth, destHeight);
-
-            this.snapshotTexture = snap;
-
-            if (video)
-            {
-                snap.context.drawImage(video, x, y, srcWidth, srcHeight, 0, 0, destWidth, destHeight);
-            }
-        }
-        else
-        {
-            snap.setSize(destWidth, destHeight);
-
-            if (video)
-            {
-                snap.context.drawImage(video, x, y, srcWidth, srcHeight, 0, 0, destWidth, destHeight);
-            }
-        }
-
-        return snap.update();
-    },
-
-    saveSnapshotTexture: function (key)
-    {
-        if (this.snapshotTexture)
-        {
-            this.scene.sys.textures.renameTexture(this.snapshotTexture.key, key);
-        }
-        else
-        {
-            this.snapshotTexture = this.scene.sys.textures.createCanvas(key, this.width, this.height);
-        }
-
-        return this.snapshotTexture;
-    },
-
-    playSuccess: function ()
-    {
-        if (!this._playCalled)
-        {
-
-            return;
-        }
-
-        this.addEventHandlers();
-
-        this._codePaused = false;
-
-        if (this.touchLocked)
-        {
-            this.touchLocked = false;
-
-            this.emit(Events.VIDEO_UNLOCKED, this);
-        }
-
-        var sound = this.scene.sys.sound;
-
-        if (sound && sound.mute)
-        {
-
-            this.setMute(true);
-        }
-
-        if (this._markerIn > -1)
-        {
-            this.video.currentTime = this._markerIn;
-        }
-    },
-
-    playError: function (error)
-    {
-        var name = error.name;
-
-        if (name === 'NotAllowedError')
-        {
-            this.touchLocked = true;
-            this.playWhenUnlocked = true;
-            this.failedPlayAttempts = 1;
-
-            this.emit(Events.VIDEO_LOCKED, this);
-        }
-        else if (name === 'NotSupportedError')
-        {
-            this.stop(false);
-
-            this.emit(Events.VIDEO_UNSUPPORTED, this, error);
-        }
-        else
-        {
-            this.stop(false);
-
-            this.emit(Events.VIDEO_ERROR, this, error);
-        }
-    },
-
-    legacyPlayHandler: function ()
-    {
-        var video = this.video;
-
-        if (video)
-        {
-            this.playSuccess();
-
-            video.removeEventListener('playing', this._callbacks.legacy);
-        }
-    },
-
-    playingHandler: function ()
-    {
-        this.isStalled = false;
-
-        this.emit(Events.VIDEO_PLAYING, this);
-    },
-
-    loadErrorHandler: function (event)
-    {
-        this.stop(false);
-
-        this.emit(Events.VIDEO_ERROR, this, event);
-    },
-
-    metadataHandler: function (event)
-    {
-        this.emit(Events.VIDEO_METADATA, this, event);
-    },
-
-    setSizeToFrame: function (frame)
-    {
-        if (!frame) { frame = this.frame; }
-
-        this.width = frame.realWidth;
-        this.height = frame.realHeight;
-
-        if (this.scaleX !== 1)
-        {
-            this.scaleX = this.displayWidth / this.width;
-        }
-
-        if (this.scaleY !== 1)
-        {
-            this.scaleY = this.displayHeight / this.height;
-        }
-
-        var input = this.input;
-
-        if (input && !input.customHitArea)
-        {
-            input.hitArea.width = this.width;
-            input.hitArea.height = this.height;
-        }
-
-        return this;
-    },
-
-    stalledHandler: function (event)
-    {
-        this.isStalled = true;
-
-        this.emit(Events.VIDEO_STALLED, this, event);
-    },
-
-    completeHandler: function ()
-    {
-        this._playCalled = false;
-
-        this.emit(Events.VIDEO_COMPLETE, this);
-    },
-
-    preUpdate: function (time, delta)
-    {
-        var video = this.video;
-
-        if (!video || !this._playCalled)
-        {
-            return;
-        }
-
-        if (this.touchLocked && this.playWhenUnlocked)
-        {
-            this.retry += delta;
-
-            if (this.retry >= this.retryInterval)
-            {
-                this.createPlayPromise(false);
-
-                this.retry = 0;
-            }
-        }
-    },
-
-    seekTo: function (value)
-    {
-        var video = this.video;
-
-        if (video)
-        {
-            var duration = video.duration;
-
-            if (duration !== Infinity && !isNaN(duration))
-            {
-                var seekTime = duration * value;
-
-                this.setCurrentTime(seekTime);
-            }
-        }
-
-        return this;
-    },
-
-    getCurrentTime: function ()
-    {
-        return (this.video) ? this.video.currentTime : 0;
-    },
-
-    setCurrentTime: function (value)
-    {
-        var video = this.video;
-
-        if (video)
-        {
-            if (typeof value === 'string')
-            {
-                var op = value[0];
-                var num = parseFloat(value.substr(1));
-
-                if (op === '+')
-                {
-                    value = video.currentTime + num;
-                }
-                else if (op === '-')
-                {
-                    value = video.currentTime - num;
-                }
-            }
-
-            video.currentTime = value;
-        }
-
-        return this;
-    },
-
-    seekingHandler: function ()
-    {
-        this.isSeeking = true;
-
-        this.emit(Events.VIDEO_SEEKING, this);
-    },
-
-    seekedHandler: function ()
-    {
-        this.isSeeking = false;
-
-        this.emit(Events.VIDEO_SEEKED, this);
-    },
-
-    getProgress: function ()
-    {
-        var video = this.video;
-
-        if (video)
-        {
-            var duration = video.duration;
-
-            if (duration !== Infinity && !isNaN(duration))
-            {
-                return video.currentTime / duration;
-            }
-        }
-
-        return -1;
-    },
-
-    getDuration: function ()
-    {
-        return (this.video) ? this.video.duration : 0;
-    },
-
-    setMute: function (value)
-    {
-        if (value === undefined) { value = true; }
-
-        this._codeMuted = value;
-
-        var video = this.video;
-
-        if (video)
-        {
-            video.muted = (this._systemMuted) ? true : value;
-        }
-
-        return this;
-    },
-
-    isMuted: function ()
-    {
-        return this._codeMuted;
-    },
-
-    globalMute: function (soundManager, value)
-    {
-        this._systemMuted = value;
-
-        var video = this.video;
-
-        if (video)
-        {
-            video.muted = (this._codeMuted) ? true : value;
-        }
-    },
-
-    globalPause: function ()
-    {
-        this._systemPaused = true;
-
-        if (this.video && !this.video.ended)
-        {
-            this.removeEventHandlers();
-
-            this.video.pause();
-        }
-    },
-
-    globalResume: function ()
-    {
-        this._systemPaused = false;
-
-        if (this.video && !this._codePaused && !this.video.ended)
-        {
-            this.createPlayPromise();
-        }
-    },
-
-    setPaused: function (value)
-    {
-        if (value === undefined) { value = true; }
-
-        var video = this.video;
-
-        this._codePaused = value;
-
-        if (video && !video.ended)
-        {
-            if (value)
-            {
-                if (!video.paused)
-                {
-                    this.removeEventHandlers();
-
-                    video.pause();
-                }
-            }
-            else if (!value)
-            {
-                if (!this._playCalled)
-                {
-                    this.play();
-                }
-                else if (video.paused && !this._systemPaused)
-                {
-                    this.createPlayPromise();
-                }
-            }
-        }
-
-        return this;
-    },
-
-    pause: function ()
-    {
-        return this.setPaused(true);
-    },
-
-    resume: function ()
-    {
-        return this.setPaused(false);
-    },
-
-    getVolume: function ()
-    {
-        return (this.video) ? this.video.volume : 1;
-    },
-
-    setVolume: function (value)
-    {
-        if (value === undefined) { value = 1; }
-
-        if (this.video)
-        {
-            this.video.volume = Clamp(value, 0, 1);
-        }
-
-        return this;
-    },
-
-    getPlaybackRate: function ()
-    {
-        return (this.video) ? this.video.playbackRate : 1;
-    },
-
-    setPlaybackRate: function (rate)
-    {
-        if (this.video)
-        {
-            this.video.playbackRate = rate;
-        }
-
-        return this;
-    },
-
-    getLoop: function ()
-    {
-        return (this.video) ? this.video.loop : false;
-    },
-
-    setLoop: function (value)
-    {
-        if (value === undefined) { value = true; }
-
-        if (this.video)
-        {
-            this.video.loop = value;
-        }
-
-        return this;
-    },
-
-    isPlaying: function ()
-    {
-        return (this.video) ? !(this.video.paused || this.video.ended) : false;
-    },
-
-    isPaused: function ()
-    {
-        return ((this.video && this._playCalled && this.video.paused) || this._codePaused || this._systemPaused);
-    },
-
-    saveTexture: function (key, flipY)
-    {
-        if (flipY === undefined) { flipY = false; }
-
-        if (this.videoTexture)
-        {
-            this.scene.sys.textures.renameTexture(this._key, key);
-            this.videoTextureSource.setFlipY(flipY);
-        }
-
-        this._key = key;
-        this.flipY = flipY;
-
-        return (this.videoTexture) ? true : false;
-    },
-
-    stop: function (emitStopEvent)
-    {
-        if (emitStopEvent === undefined) { emitStopEvent = true; }
-
-        var video = this.video;
-
-        if (video)
-        {
-            this.removeEventHandlers();
-
-            video.cancelVideoFrameCallback(this._rfvCallbackId);
-
-            video.pause();
-        }
-
-        this.retry = 0;
-        this._playCalled = false;
-
-        if (emitStopEvent)
-        {
-            this.emit(Events.VIDEO_STOP, this);
-        }
-
-        return this;
-    },
-
-    removeVideoElement: function ()
-    {
-        var video = this.video;
-
-        if (!video)
-        {
-            return;
-        }
-
-        if (video.parentNode)
-        {
-            video.parentNode.removeChild(video);
-        }
-
-        while (video.hasChildNodes())
-        {
-            video.removeChild(video.firstChild);
-        }
-
-        video.removeAttribute('autoplay');
-        video.removeAttribute('src');
-
-        this.video = null;
-    },
-
-    preDestroy: function ()
-    {
-        this.stop(false);
-
-        this.removeLoadEventHandlers();
-
-        this.removeVideoElement();
-
-        var game = this.scene.sys.game.events;
-
-        game.off(GameEvents.PAUSE, this.globalPause, this);
-        game.off(GameEvents.RESUME, this.globalResume, this);
-
-        var sound = this.scene.sys.sound;
-
-        if (sound)
-        {
-            sound.off(SoundEvents.GLOBAL_MUTE, this.globalMute, this);
-        }
-    }
-
-});
-
-module.exports = Video;
+var Clamp = require('../../math/Clamp');var Class = require('../../utils/Class');var Components = require('../components');var Events = require('../events');var GameEvents = require('../../core/events/');var GameObject = require('../GameObject');var MATH_CONST = require('../../math/const');var SoundEvents = require('../../sound/events/');var UUID = require('../../utils/string/UUID');var VideoRender = require('./VideoRender');var Video = new Class({    Extends: GameObject,    Mixins: [        Components.Alpha,        Components.BlendMode,        Components.ComputedSize,        Components.Depth,        Components.Flip,        Components.GetBounds,        Components.Mask,        Components.Origin,        Components.Pipeline,        Components.PostPipeline,        Components.ScrollFactor,        Components.TextureCrop,        Components.Tint,        Components.Transform,        Components.Visible,        VideoRender    ],    initialize:    function Video (scene, x, y, key)    {        GameObject.call(this, scene, 'Video');        this.video;        this.videoTexture;        this.videoTextureSource;        this.snapshotTexture;        this.flipY = false;        this._key = UUID();        this.touchLocked = false;        this.playWhenUnlocked = false;        this.frameReady = false;        this.isStalled = false;        this.failedPlayAttempts = 0;        this.metadata;        this.retry = 0;        this.retryInterval = 500;        this._systemMuted = false;        this._codeMuted = false;        this._systemPaused = false;        this._codePaused = false;        this._callbacks = {            ended: this.completeHandler.bind(this),            legacy: this.legacyPlayHandler.bind(this),            playing: this.playingHandler.bind(this),            seeked: this.seekedHandler.bind(this),            seeking: this.seekingHandler.bind(this),            stalled: this.stalledHandler.bind(this),            suspend: this.stalledHandler.bind(this),            waiting: this.stalledHandler.bind(this)        };        this._loadCallbackHandler = this.loadErrorHandler.bind(this);        this._metadataCallbackHandler = this.metadataHandler.bind(this);        this._crop = this.resetCropObject();        this.markers = {};        this._markerIn = 0;        this._markerOut = 0;        this._playingMarker = false;        this._lastUpdate = 0;        this.cacheKey = '';        this.isSeeking = false;        this._playCalled = false;        this._getFrame = false;        this._rfvCallbackId = 0;        var game = scene.sys.game;        this._device = game.device.video;        this.setPosition(x, y);        this.setSize(256, 256);        this.initPipeline();        this.initPostPipeline(true);        game.events.on(GameEvents.PAUSE, this.globalPause, this);        game.events.on(GameEvents.RESUME, this.globalResume, this);        var sound = scene.sys.sound;        if (sound)        {            sound.on(SoundEvents.GLOBAL_MUTE, this.globalMute, this);        }        if (key)        {            this.load(key);        }    },    addedToScene: function ()    {        this.scene.sys.updateList.add(this);    },    removedFromScene: function ()    {        this.scene.sys.updateList.remove(this);    },    load: function (key)    {        var video = this.scene.sys.cache.video.get(key);        if (video)        {            this.cacheKey = key;            this.loadHandler(video.url, video.noAudio, video.crossOrigin);        }        else        {            console.warn('No video in cache for key: ' + key);        }        return this;    },    changeSource: function (key, autoplay, loop, markerIn, markerOut)    {        if (autoplay === undefined) { autoplay = true; }        if (loop === undefined) { loop = false; }        if (this.cacheKey !== key)        {            this.load(key);            if (autoplay)            {                this.play(loop, markerIn, markerOut);            }        }    },    getVideoKey: function ()    {        return this.cacheKey;    },    loadURL: function (urls, noAudio, crossOrigin)    {        if (noAudio === undefined) { noAudio = false; }        var urlConfig = this._device.getVideoURL(urls);        if (!urlConfig)        {            console.warn('No supported video format found for ' + urls);        }        else        {            this.cacheKey = '';            this.loadHandler(urlConfig.url, noAudio, crossOrigin);        }        return this;    },    loadMediaStream: function (stream, noAudio, crossOrigin)    {        return this.loadHandler(null, noAudio, crossOrigin, stream);    },    loadHandler: function (url, noAudio, crossOrigin, stream)    {        if (!noAudio) { noAudio = false; }        var video = this.video;        if (video)        {            this.removeLoadEventHandlers();            this.stop();        }        else        {            video = document.createElement('video');            video.controls = false;            video.setAttribute('playsinline', 'playsinline');            video.setAttribute('preload', 'auto');            video.setAttribute('disablePictureInPicture', 'true');        }        if (noAudio)        {            video.muted = true;            video.defaultMuted = true;            video.setAttribute('autoplay', 'autoplay');        }        else        {            video.muted = false;            video.defaultMuted = false;            video.removeAttribute('autoplay');        }        if (!crossOrigin)        {            video.removeAttribute('crossorigin');        }        else        {            video.setAttribute('crossorigin', crossOrigin);        }        if (stream)        {            if ('srcObject' in video)            {                try                {                    video.srcObject = stream;                }                catch (err)                {                    if (err.name !== 'TypeError')                    {                        throw err;                    }                    video.src = URL.createObjectURL(stream);                }            }            else            {                video.src = URL.createObjectURL(stream);            }        }        else        {            video.src = url;        }        this.retry = 0;        this.video = video;        this._playCalled = false;        video.load();        this.addLoadEventHandlers();        var texture = this.scene.sys.textures.get(this._key);        this.setTexture(texture);        return this;    },    requestVideoFrame: function (now, metadata)    {        var video = this.video;        if (!video)        {            return;        }        var width = metadata.width;        var height = metadata.height;        var texture = this.videoTexture;        var textureSource = this.videoTextureSource;        var newVideo = (!texture || textureSource.source !== video);        if (newVideo)        {            this._codePaused = video.paused;            this._codeMuted = video.muted;            if (!texture)            {                texture = this.scene.sys.textures.create(this._key, video, width, height);                texture.add('__BASE', 0, 0, 0, width, height);                this.setTexture(texture);                this.videoTexture = texture;                this.videoTextureSource = texture.source[0];                this.videoTextureSource.setFlipY(this.flipY);                this.emit(Events.VIDEO_TEXTURE, this, texture);            }            else            {                textureSource.source = video;                textureSource.width = width;                textureSource.height = height;                texture.get().setSize(width, height);            }            this.setSizeToFrame();            this.updateDisplayOrigin();        }        else        {            textureSource.update();        }        this.isStalled = false;        this.metadata = metadata;        var currentTime = metadata.mediaTime;        if (newVideo)        {            this._lastUpdate = currentTime;            this.emit(Events.VIDEO_CREATED, this, width, height);            if (!this.frameReady)            {                this.frameReady = true;                this.emit(Events.VIDEO_PLAY, this);            }        }        if (this._playingMarker)        {            if (currentTime >= this._markerOut)            {                if (video.loop)                {                    video.currentTime = this._markerIn;                    this.emit(Events.VIDEO_LOOP, this);                }                else                {                    this.stop(false);                    this.emit(Events.VIDEO_COMPLETE, this);                }            }        }        else if (currentTime < this._lastUpdate)        {            this.emit(Events.VIDEO_LOOP, this);        }        this._lastUpdate = currentTime;        if (this._getFrame)        {            this.removeEventHandlers();            video.pause();            this._getFrame = false;        }        else        {            this._rfvCallbackId = this.video.requestVideoFrameCallback(this.requestVideoFrame.bind(this));        }    },    play: function (loop, markerIn, markerOut)    {        if (markerIn === undefined) { markerIn = -1; }        if (markerOut === undefined) { markerOut = MATH_CONST.MAX_SAFE_INTEGER; }        var video = this.video;        if (!video || this.isPlaying())        {            if (!video)            {                console.warn('Video not loaded');            }            return this;        }        if (loop === undefined) { loop = video.loop; }        video.loop = loop;        this._markerIn = markerIn;        this._markerOut = markerOut;        this._playingMarker = (markerIn > -1 && markerOut > markerIn && markerOut < MATH_CONST.MAX_SAFE_INTEGER);        if (!this._playCalled)        {            this._getFrame = false;            this._rfvCallbackId = video.requestVideoFrameCallback(this.requestVideoFrame.bind(this));            this._playCalled = true;            this.createPlayPromise();        }        return this;    },    getFirstFrame: function ()    {        var video = this.video;        if (!video || this.isPlaying())        {            if (!video)            {                console.warn('Video not loaded');            }            return this;        }        if (!this._playCalled)        {            this._getFrame = true;            this._rfvCallbackId = video.requestVideoFrameCallback(this.requestVideoFrame.bind(this));            this.createPlayPromise();        }        return this;    },    addLoadEventHandlers: function ()    {        var video = this.video;        if (video)        {            video.addEventListener('error', this._loadCallbackHandler);            video.addEventListener('abort', this._loadCallbackHandler);            video.addEventListener('loadedmetadata', this._metadataCallbackHandler);        }    },    removeLoadEventHandlers: function ()    {        var video = this.video;        if (video)        {            video.removeEventListener('error', this._loadCallbackHandler);            video.removeEventListener('abort', this._loadCallbackHandler);        }    },    addEventHandlers: function ()    {        var video = this.video;        if (video)        {            var callbacks = this._callbacks;            for (var callback in callbacks)            {                video.addEventListener(callback, callbacks[callback]);            }        }    },    removeEventHandlers: function ()    {        var video = this.video;        if (video)        {            var callbacks = this._callbacks;            for (var callback in callbacks)            {                video.removeEventListener(callback, callbacks[callback]);            }        }    },    createPlayPromise: function (catchError)    {        if (catchError === undefined) { catchError = true; }        var video = this.video;        var playPromise = video.play();        if (playPromise !== undefined)        {            var success = this.playSuccess.bind(this);            var error = this.playError.bind(this);            if (!catchError)            {                var _this = this;                error = function ()                {                    _this.failedPlayAttempts++;                };            }            playPromise.then(success).catch(error);        }        else        {            video.addEventListener('playing', this._callbacks.legacy);            if (!catchError)            {                this.failedPlayAttempts++;            }        }    },    addMarker: function (key, markerIn, markerOut)    {        if (!isNaN(markerIn) && markerIn >= 0 && !isNaN(markerOut) && markerOut > markerIn)        {            this.markers[key] = [ markerIn, markerOut ];        }        return this;    },    playMarker: function (key, loop)    {        var marker = this.markers[key];        if (marker)        {            this.play(loop, marker[0], marker[1]);        }        return this;    },    removeMarker: function (key)    {        delete this.markers[key];        return this;    },    snapshot: function (width, height)    {        if (width === undefined) { width = this.width; }        if (height === undefined) { height = this.height; }        return this.snapshotArea(0, 0, this.width, this.height, width, height);    },    snapshotArea: function (x, y, srcWidth, srcHeight, destWidth, destHeight)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (srcWidth === undefined) { srcWidth = this.width; }        if (srcHeight === undefined) { srcHeight = this.height; }        if (destWidth === undefined) { destWidth = srcWidth; }        if (destHeight === undefined) { destHeight = srcHeight; }        var video = this.video;        var snap = this.snapshotTexture;        if (!snap)        {            snap = this.scene.sys.textures.createCanvas(UUID(), destWidth, destHeight);            this.snapshotTexture = snap;            if (video)            {                snap.context.drawImage(video, x, y, srcWidth, srcHeight, 0, 0, destWidth, destHeight);            }        }        else        {            snap.setSize(destWidth, destHeight);            if (video)            {                snap.context.drawImage(video, x, y, srcWidth, srcHeight, 0, 0, destWidth, destHeight);            }        }        return snap.update();    },    saveSnapshotTexture: function (key)    {        if (this.snapshotTexture)        {            this.scene.sys.textures.renameTexture(this.snapshotTexture.key, key);        }        else        {            this.snapshotTexture = this.scene.sys.textures.createCanvas(key, this.width, this.height);        }        return this.snapshotTexture;    },    playSuccess: function ()    {        if (!this._playCalled)        {            return;        }        this.addEventHandlers();        this._codePaused = false;        if (this.touchLocked)        {            this.touchLocked = false;            this.emit(Events.VIDEO_UNLOCKED, this);        }        var sound = this.scene.sys.sound;        if (sound && sound.mute)        {            this.setMute(true);        }        if (this._markerIn > -1)        {            this.video.currentTime = this._markerIn;        }    },    playError: function (error)    {        var name = error.name;        if (name === 'NotAllowedError')        {            this.touchLocked = true;            this.playWhenUnlocked = true;            this.failedPlayAttempts = 1;            this.emit(Events.VIDEO_LOCKED, this);        }        else if (name === 'NotSupportedError')        {            this.stop(false);            this.emit(Events.VIDEO_UNSUPPORTED, this, error);        }        else        {            this.stop(false);            this.emit(Events.VIDEO_ERROR, this, error);        }    },    legacyPlayHandler: function ()    {        var video = this.video;        if (video)        {            this.playSuccess();            video.removeEventListener('playing', this._callbacks.legacy);        }    },    playingHandler: function ()    {        this.isStalled = false;        this.emit(Events.VIDEO_PLAYING, this);    },    loadErrorHandler: function (event)    {        this.stop(false);        this.emit(Events.VIDEO_ERROR, this, event);    },    metadataHandler: function (event)    {        this.emit(Events.VIDEO_METADATA, this, event);    },    setSizeToFrame: function (frame)    {        if (!frame) { frame = this.frame; }        this.width = frame.realWidth;        this.height = frame.realHeight;        if (this.scaleX !== 1)        {            this.scaleX = this.displayWidth / this.width;        }        if (this.scaleY !== 1)        {            this.scaleY = this.displayHeight / this.height;        }        var input = this.input;        if (input && !input.customHitArea)        {            input.hitArea.width = this.width;            input.hitArea.height = this.height;        }        return this;    },    stalledHandler: function (event)    {        this.isStalled = true;        this.emit(Events.VIDEO_STALLED, this, event);    },    completeHandler: function ()    {        this._playCalled = false;        this.emit(Events.VIDEO_COMPLETE, this);    },    preUpdate: function (time, delta)    {        var video = this.video;        if (!video || !this._playCalled)        {            return;        }        if (this.touchLocked && this.playWhenUnlocked)        {            this.retry += delta;            if (this.retry >= this.retryInterval)            {                this.createPlayPromise(false);                this.retry = 0;            }        }    },    seekTo: function (value)    {        var video = this.video;        if (video)        {            var duration = video.duration;            if (duration !== Infinity && !isNaN(duration))            {                var seekTime = duration * value;                this.setCurrentTime(seekTime);            }        }        return this;    },    getCurrentTime: function ()    {        return (this.video) ? this.video.currentTime : 0;    },    setCurrentTime: function (value)    {        var video = this.video;        if (video)        {            if (typeof value === 'string')            {                var op = value[0];                var num = parseFloat(value.substr(1));                if (op === '+')                {                    value = video.currentTime + num;                }                else if (op === '-')                {                    value = video.currentTime - num;                }            }            video.currentTime = value;        }        return this;    },    seekingHandler: function ()    {        this.isSeeking = true;        this.emit(Events.VIDEO_SEEKING, this);    },    seekedHandler: function ()    {        this.isSeeking = false;        this.emit(Events.VIDEO_SEEKED, this);    },    getProgress: function ()    {        var video = this.video;        if (video)        {            var duration = video.duration;            if (duration !== Infinity && !isNaN(duration))            {                return video.currentTime / duration;            }        }        return -1;    },    getDuration: function ()    {        return (this.video) ? this.video.duration : 0;    },    setMute: function (value)    {        if (value === undefined) { value = true; }        this._codeMuted = value;        var video = this.video;        if (video)        {            video.muted = (this._systemMuted) ? true : value;        }        return this;    },    isMuted: function ()    {        return this._codeMuted;    },    globalMute: function (soundManager, value)    {        this._systemMuted = value;        var video = this.video;        if (video)        {            video.muted = (this._codeMuted) ? true : value;        }    },    globalPause: function ()    {        this._systemPaused = true;        if (this.video && !this.video.ended)        {            this.removeEventHandlers();            this.video.pause();        }    },    globalResume: function ()    {        this._systemPaused = false;        if (this.video && !this._codePaused && !this.video.ended)        {            this.createPlayPromise();        }    },    setPaused: function (value)    {        if (value === undefined) { value = true; }        var video = this.video;        this._codePaused = value;        if (video && !video.ended)        {            if (value)            {                if (!video.paused)                {                    this.removeEventHandlers();                    video.pause();                }            }            else if (!value)            {                if (!this._playCalled)                {                    this.play();                }                else if (video.paused && !this._systemPaused)                {                    this.createPlayPromise();                }            }        }        return this;    },    pause: function ()    {        return this.setPaused(true);    },    resume: function ()    {        return this.setPaused(false);    },    getVolume: function ()    {        return (this.video) ? this.video.volume : 1;    },    setVolume: function (value)    {        if (value === undefined) { value = 1; }        if (this.video)        {            this.video.volume = Clamp(value, 0, 1);        }        return this;    },    getPlaybackRate: function ()    {        return (this.video) ? this.video.playbackRate : 1;    },    setPlaybackRate: function (rate)    {        if (this.video)        {            this.video.playbackRate = rate;        }        return this;    },    getLoop: function ()    {        return (this.video) ? this.video.loop : false;    },    setLoop: function (value)    {        if (value === undefined) { value = true; }        if (this.video)        {            this.video.loop = value;        }        return this;    },    isPlaying: function ()    {        return (this.video) ? !(this.video.paused || this.video.ended) : false;    },    isPaused: function ()    {        return ((this.video && this._playCalled && this.video.paused) || this._codePaused || this._systemPaused);    },    saveTexture: function (key, flipY)    {        if (flipY === undefined) { flipY = false; }        if (this.videoTexture)        {            this.scene.sys.textures.renameTexture(this._key, key);            this.videoTextureSource.setFlipY(flipY);        }        this._key = key;        this.flipY = flipY;        return (this.videoTexture) ? true : false;    },    stop: function (emitStopEvent)    {        if (emitStopEvent === undefined) { emitStopEvent = true; }        var video = this.video;        if (video)        {            this.removeEventHandlers();            video.cancelVideoFrameCallback(this._rfvCallbackId);            video.pause();        }        this.retry = 0;        this._playCalled = false;        if (emitStopEvent)        {            this.emit(Events.VIDEO_STOP, this);        }        return this;    },    removeVideoElement: function ()    {        var video = this.video;        if (!video)        {            return;        }        if (video.parentNode)        {            video.parentNode.removeChild(video);        }        while (video.hasChildNodes())        {            video.removeChild(video.firstChild);        }        video.removeAttribute('autoplay');        video.removeAttribute('src');        this.video = null;    },    preDestroy: function ()    {        this.stop(false);        this.removeLoadEventHandlers();        this.removeVideoElement();        var game = this.scene.sys.game.events;        game.off(GameEvents.PAUSE, this.globalPause, this);        game.off(GameEvents.RESUME, this.globalResume, this);        var sound = this.scene.sys.sound;        if (sound)        {            sound.off(SoundEvents.GLOBAL_MUTE, this.globalMute, this);        }    }});module.exports = Video;

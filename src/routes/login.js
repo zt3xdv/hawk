@@ -1,5 +1,7 @@
 import Alerts from '../utils/Alerts.js';
 import Cache from '../utils/Cache.js';
+import { setupTurnstile } from '../utils/Utils.js';
+import { TURNSTILE } from '../utils/Constants.js';
 
 export function renderLogin() {
   const app = document.getElementById('app');
@@ -14,6 +16,8 @@ export function renderLogin() {
     <input type="text" id="username" placeholder="Username" required>
     <input type="password" id="password" placeholder="Password" required>
     <br>
+    <div id="turnstile-container"></div>
+    <br>
     <button class="btn" type="submit">Login</button>
     <br>
     <small class="accent">By logging in you accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
@@ -22,6 +26,12 @@ export function renderLogin() {
   <p>New here? <a href="/register">Register</a></p>
   </div>
   `;
+  
+  if (TURNSTILE) {
+    setupTurnstile((token) => {
+      window.turnstileToken = token;
+    });
+  }
 
   document.getElementById('loginForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -31,7 +41,7 @@ export function renderLogin() {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password, turnstile: window.turnstileToken })
     });
     const data = await res.json();
     if (res.ok) {

@@ -1,31 +1,1 @@
-var LineStyleCanvas = require('../LineStyleCanvas');
-var SetTransform = require('../../../renderer/canvas/utils/SetTransform');
-
-var LineCanvasRenderer = function (renderer, src, camera, parentMatrix)
-{
-    camera.addToRenderList(src);
-
-    var ctx = renderer.currentContext;
-
-    if (SetTransform(renderer, ctx, src, camera, parentMatrix))
-    {
-        var dx = src._displayOriginX;
-        var dy = src._displayOriginY;
-
-        if (src.isStroked)
-        {
-            LineStyleCanvas(ctx, src);
-
-            ctx.beginPath();
-
-            ctx.moveTo(src.geom.x1 - dx, src.geom.y1 - dy);
-            ctx.lineTo(src.geom.x2 - dx, src.geom.y2 - dy);
-
-            ctx.stroke();
-        }
-
-        ctx.restore();
-    }
-};
-
-module.exports = LineCanvasRenderer;
+var LineStyleCanvas = require('../LineStyleCanvas');var SetTransform = require('../../../renderer/canvas/utils/SetTransform');var LineCanvasRenderer = function (renderer, src, camera, parentMatrix){    camera.addToRenderList(src);    var ctx = renderer.currentContext;    if (SetTransform(renderer, ctx, src, camera, parentMatrix))    {        var dx = src._displayOriginX;        var dy = src._displayOriginY;        if (src.isStroked)        {            LineStyleCanvas(ctx, src);            ctx.beginPath();            ctx.moveTo(src.geom.x1 - dx, src.geom.y1 - dy);            ctx.lineTo(src.geom.x2 - dx, src.geom.y2 - dy);            ctx.stroke();        }        ctx.restore();    }};module.exports = LineCanvasRenderer;

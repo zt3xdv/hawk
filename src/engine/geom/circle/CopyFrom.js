@@ -1,6 +1,1 @@
-var CopyFrom = function (source, dest)
-{
-    return dest.setTo(source.x, source.y, source.radius);
-};
-
-module.exports = CopyFrom;
+var CopyFrom = function (source, dest){    return dest.setTo(source.x, source.y, source.radius);};module.exports = CopyFrom;

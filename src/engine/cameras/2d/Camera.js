@@ -1,350 +1,1 @@
-var BaseCamera = require('./BaseCamera');
-var CenterOn = require('../../geom/rectangle/CenterOn');
-var Clamp = require('../../math/Clamp');
-var Class = require('../../utils/Class');
-var Components = require('../../gameobjects/components');
-var Effects = require('./effects');
-var Events = require('./events');
-var Linear = require('../../math/Linear');
-var Rectangle = require('../../geom/rectangle/Rectangle');
-var Vector2 = require('../../math/Vector2');
-
-var Camera = new Class({
-
-    Extends: BaseCamera,
-
-    Mixins: [
-        Components.PostPipeline
-    ],
-
-    initialize:
-
-    function Camera (x, y, width, height)
-    {
-        BaseCamera.call(this, x, y, width, height);
-
-        this.initPostPipeline();
-
-        this.inputEnabled = true;
-
-        this.fadeEffect = new Effects.Fade(this);
-
-        this.flashEffect = new Effects.Flash(this);
-
-        this.shakeEffect = new Effects.Shake(this);
-
-        this.panEffect = new Effects.Pan(this);
-
-        this.rotateToEffect = new Effects.RotateTo(this);
-
-        this.zoomEffect = new Effects.Zoom(this);
-
-        this.lerp = new Vector2(1, 1);
-
-        this.followOffset = new Vector2();
-
-        this.deadzone = null;
-
-        this._follow = null;
-    },
-
-    setDeadzone: function (width, height)
-    {
-        if (width === undefined)
-        {
-            this.deadzone = null;
-        }
-        else
-        {
-            if (this.deadzone)
-            {
-                this.deadzone.width = width;
-                this.deadzone.height = height;
-            }
-            else
-            {
-                this.deadzone = new Rectangle(0, 0, width, height);
-            }
-
-            if (this._follow)
-            {
-                var originX = this.width / 2;
-                var originY = this.height / 2;
-
-                var fx = this._follow.x - this.followOffset.x;
-                var fy = this._follow.y - this.followOffset.y;
-
-                this.midPoint.set(fx, fy);
-
-                this.scrollX = fx - originX;
-                this.scrollY = fy - originY;
-            }
-
-            CenterOn(this.deadzone, this.midPoint.x, this.midPoint.y);
-        }
-
-        return this;
-    },
-
-    fadeIn: function (duration, red, green, blue, callback, context)
-    {
-        return this.fadeEffect.start(false, duration, red, green, blue, true, callback, context);
-    },
-
-    fadeOut: function (duration, red, green, blue, callback, context)
-    {
-        return this.fadeEffect.start(true, duration, red, green, blue, true, callback, context);
-    },
-
-    fadeFrom: function (duration, red, green, blue, force, callback, context)
-    {
-        return this.fadeEffect.start(false, duration, red, green, blue, force, callback, context);
-    },
-
-    fade: function (duration, red, green, blue, force, callback, context)
-    {
-        return this.fadeEffect.start(true, duration, red, green, blue, force, callback, context);
-    },
-
-    flash: function (duration, red, green, blue, force, callback, context)
-    {
-        return this.flashEffect.start(duration, red, green, blue, force, callback, context);
-    },
-
-    shake: function (duration, intensity, force, callback, context)
-    {
-        return this.shakeEffect.start(duration, intensity, force, callback, context);
-    },
-
-    pan: function (x, y, duration, ease, force, callback, context)
-    {
-        return this.panEffect.start(x, y, duration, ease, force, callback, context);
-    },
-
-    rotateTo: function (radians, shortestPath, duration, ease, force, callback, context)
-    {
-        return this.rotateToEffect.start(radians, shortestPath, duration, ease, force, callback, context);
-    },
-
-    zoomTo: function (zoom, duration, ease, force, callback, context)
-    {
-        return this.zoomEffect.start(zoom, duration, ease, force, callback, context);
-    },
-
-    preRender: function ()
-    {
-        this.renderList.length = 0;
-
-        var width = this.width;
-        var height = this.height;
-
-        var halfWidth = width * 0.5;
-        var halfHeight = height * 0.5;
-
-        var zoomX = this.zoomX;
-        var zoomY = this.zoomY;
-        var matrix = this.matrix;
-
-        this.renderRoundPixels = (this.roundPixels && Number.isInteger(zoomX) && Number.isInteger(zoomY));
-
-        var originX = width * this.originX;
-        var originY = height * this.originY;
-
-        var follow = this._follow;
-        var deadzone = this.deadzone;
-
-        var sx = this.scrollX;
-        var sy = this.scrollY;
-
-        if (deadzone)
-        {
-            CenterOn(deadzone, this.midPoint.x, this.midPoint.y);
-        }
-
-        var emitFollowEvent = false;
-
-        if (follow && !this.panEffect.isRunning)
-        {
-            var lerp = this.lerp;
-
-            var fx = follow.x - this.followOffset.x;
-            var fy = follow.y - this.followOffset.y;
-
-            if (deadzone)
-            {
-                if (fx < deadzone.x)
-                {
-                    sx = Linear(sx, sx - (deadzone.x - fx), lerp.x);
-                }
-                else if (fx > deadzone.right)
-                {
-                    sx = Linear(sx, sx + (fx - deadzone.right), lerp.x);
-                }
-
-                if (fy < deadzone.y)
-                {
-                    sy = Linear(sy, sy - (deadzone.y - fy), lerp.y);
-                }
-                else if (fy > deadzone.bottom)
-                {
-                    sy = Linear(sy, sy + (fy - deadzone.bottom), lerp.y);
-                }
-            }
-            else
-            {
-                sx = Linear(sx, fx - originX, lerp.x);
-                sy = Linear(sy, fy - originY, lerp.y);
-            }
-
-            emitFollowEvent = true;
-        }
-
-        if (this.roundPixels)
-        {
-            sx = Math.floor(sx);
-            sy = Math.floor(sy);
-        }
-
-        if (this.useBounds)
-        {
-            sx = this.clampX(sx);
-            sy = this.clampY(sy);
-        }
-
-        this.scrollX = sx;
-        this.scrollY = sy;
-
-        var midX = sx + halfWidth;
-        var midY = sy + halfHeight;
-
-        this.midPoint.set(midX, midY);
-
-        var displayWidth = Math.floor((width / zoomX) + 0.5);
-        var displayHeight = Math.floor((height / zoomY) + 0.5);
-
-        var vwx = Math.floor((midX - (displayWidth / 2)) + 0.5);
-        var vwy = Math.floor((midY - (displayHeight / 2)) + 0.5);
-
-        this.worldView.setTo(vwx, vwy, displayWidth, displayHeight);
-
-        matrix.applyITRS(
-            Math.floor(this.x + originX + 0.5),
-            Math.floor(this.y + originY + 0.5),
-            this.rotation,
-            zoomX, zoomY
-        );
-
-        matrix.translate(-originX, -originY);
-
-        this.shakeEffect.preRender();
-
-        if (emitFollowEvent)
-        {
-            this.emit(Events.FOLLOW_UPDATE, this, follow);
-        }
-    },
-
-    setLerp: function (x, y)
-    {
-        if (x === undefined) { x = 1; }
-        if (y === undefined) { y = x; }
-
-        this.lerp.set(x, y);
-
-        return this;
-    },
-
-    setFollowOffset: function (x, y)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-
-        this.followOffset.set(x, y);
-
-        return this;
-    },
-
-    startFollow: function (target, roundPixels, lerpX, lerpY, offsetX, offsetY)
-    {
-        if (roundPixels === undefined) { roundPixels = false; }
-        if (lerpX === undefined) { lerpX = 1; }
-        if (lerpY === undefined) { lerpY = lerpX; }
-        if (offsetX === undefined) { offsetX = 0; }
-        if (offsetY === undefined) { offsetY = offsetX; }
-
-        this._follow = target;
-
-        this.roundPixels = roundPixels;
-
-        lerpX = Clamp(lerpX, 0, 1);
-        lerpY = Clamp(lerpY, 0, 1);
-
-        this.lerp.set(lerpX, lerpY);
-
-        this.followOffset.set(offsetX, offsetY);
-
-        var originX = this.width / 2;
-        var originY = this.height / 2;
-
-        var fx = target.x - offsetX;
-        var fy = target.y - offsetY;
-
-        this.midPoint.set(fx, fy);
-
-        this.scrollX = fx - originX;
-        this.scrollY = fy - originY;
-
-        if (this.useBounds)
-        {
-            this.scrollX = this.clampX(this.scrollX);
-            this.scrollY = this.clampY(this.scrollY);
-        }
-
-        return this;
-    },
-
-    stopFollow: function ()
-    {
-        this._follow = null;
-
-        return this;
-    },
-
-    resetFX: function ()
-    {
-        this.rotateToEffect.reset();
-        this.panEffect.reset();
-        this.shakeEffect.reset();
-        this.flashEffect.reset();
-        this.fadeEffect.reset();
-
-        return this;
-    },
-
-    update: function (time, delta)
-    {
-        if (this.visible)
-        {
-            this.rotateToEffect.update(time, delta);
-            this.panEffect.update(time, delta);
-            this.zoomEffect.update(time, delta);
-            this.shakeEffect.update(time, delta);
-            this.flashEffect.update(time, delta);
-            this.fadeEffect.update(time, delta);
-        }
-    },
-
-    destroy: function ()
-    {
-        this.resetFX();
-
-        BaseCamera.prototype.destroy.call(this);
-
-        this._follow = null;
-
-        this.deadzone = null;
-    }
-
-});
-
-module.exports = Camera;
+var BaseCamera = require('./BaseCamera');var CenterOn = require('../../geom/rectangle/CenterOn');var Clamp = require('../../math/Clamp');var Class = require('../../utils/Class');var Components = require('../../gameobjects/components');var Effects = require('./effects');var Events = require('./events');var Linear = require('../../math/Linear');var Rectangle = require('../../geom/rectangle/Rectangle');var Vector2 = require('../../math/Vector2');var Camera = new Class({    Extends: BaseCamera,    Mixins: [        Components.PostPipeline    ],    initialize:    function Camera (x, y, width, height)    {        BaseCamera.call(this, x, y, width, height);        this.initPostPipeline();        this.inputEnabled = true;        this.fadeEffect = new Effects.Fade(this);        this.flashEffect = new Effects.Flash(this);        this.shakeEffect = new Effects.Shake(this);        this.panEffect = new Effects.Pan(this);        this.rotateToEffect = new Effects.RotateTo(this);        this.zoomEffect = new Effects.Zoom(this);        this.lerp = new Vector2(1, 1);        this.followOffset = new Vector2();        this.deadzone = null;        this._follow = null;    },    setDeadzone: function (width, height)    {        if (width === undefined)        {            this.deadzone = null;        }        else        {            if (this.deadzone)            {                this.deadzone.width = width;                this.deadzone.height = height;            }            else            {                this.deadzone = new Rectangle(0, 0, width, height);            }            if (this._follow)            {                var originX = this.width / 2;                var originY = this.height / 2;                var fx = this._follow.x - this.followOffset.x;                var fy = this._follow.y - this.followOffset.y;                this.midPoint.set(fx, fy);                this.scrollX = fx - originX;                this.scrollY = fy - originY;            }            CenterOn(this.deadzone, this.midPoint.x, this.midPoint.y);        }        return this;    },    fadeIn: function (duration, red, green, blue, callback, context)    {        return this.fadeEffect.start(false, duration, red, green, blue, true, callback, context);    },    fadeOut: function (duration, red, green, blue, callback, context)    {        return this.fadeEffect.start(true, duration, red, green, blue, true, callback, context);    },    fadeFrom: function (duration, red, green, blue, force, callback, context)    {        return this.fadeEffect.start(false, duration, red, green, blue, force, callback, context);    },    fade: function (duration, red, green, blue, force, callback, context)    {        return this.fadeEffect.start(true, duration, red, green, blue, force, callback, context);    },    flash: function (duration, red, green, blue, force, callback, context)    {        return this.flashEffect.start(duration, red, green, blue, force, callback, context);    },    shake: function (duration, intensity, force, callback, context)    {        return this.shakeEffect.start(duration, intensity, force, callback, context);    },    pan: function (x, y, duration, ease, force, callback, context)    {        return this.panEffect.start(x, y, duration, ease, force, callback, context);    },    rotateTo: function (radians, shortestPath, duration, ease, force, callback, context)    {        return this.rotateToEffect.start(radians, shortestPath, duration, ease, force, callback, context);    },    zoomTo: function (zoom, duration, ease, force, callback, context)    {        return this.zoomEffect.start(zoom, duration, ease, force, callback, context);    },    preRender: function ()    {        this.renderList.length = 0;        var width = this.width;        var height = this.height;        var halfWidth = width * 0.5;        var halfHeight = height * 0.5;        var zoomX = this.zoomX;        var zoomY = this.zoomY;        var matrix = this.matrix;        this.renderRoundPixels = (this.roundPixels && Number.isInteger(zoomX) && Number.isInteger(zoomY));        var originX = width * this.originX;        var originY = height * this.originY;        var follow = this._follow;        var deadzone = this.deadzone;        var sx = this.scrollX;        var sy = this.scrollY;        if (deadzone)        {            CenterOn(deadzone, this.midPoint.x, this.midPoint.y);        }        var emitFollowEvent = false;        if (follow && !this.panEffect.isRunning)        {            var lerp = this.lerp;            var fx = follow.x - this.followOffset.x;            var fy = follow.y - this.followOffset.y;            if (deadzone)            {                if (fx < deadzone.x)                {                    sx = Linear(sx, sx - (deadzone.x - fx), lerp.x);                }                else if (fx > deadzone.right)                {                    sx = Linear(sx, sx + (fx - deadzone.right), lerp.x);                }                if (fy < deadzone.y)                {                    sy = Linear(sy, sy - (deadzone.y - fy), lerp.y);                }                else if (fy > deadzone.bottom)                {                    sy = Linear(sy, sy + (fy - deadzone.bottom), lerp.y);                }            }            else            {                sx = Linear(sx, fx - originX, lerp.x);                sy = Linear(sy, fy - originY, lerp.y);            }            emitFollowEvent = true;        }        if (this.roundPixels)        {            sx = Math.floor(sx);            sy = Math.floor(sy);        }        if (this.useBounds)        {            sx = this.clampX(sx);            sy = this.clampY(sy);        }        this.scrollX = sx;        this.scrollY = sy;        var midX = sx + halfWidth;        var midY = sy + halfHeight;        this.midPoint.set(midX, midY);        var displayWidth = Math.floor((width / zoomX) + 0.5);        var displayHeight = Math.floor((height / zoomY) + 0.5);        var vwx = Math.floor((midX - (displayWidth / 2)) + 0.5);        var vwy = Math.floor((midY - (displayHeight / 2)) + 0.5);        this.worldView.setTo(vwx, vwy, displayWidth, displayHeight);        matrix.applyITRS(            Math.floor(this.x + originX + 0.5),            Math.floor(this.y + originY + 0.5),            this.rotation,            zoomX, zoomY        );        matrix.translate(-originX, -originY);        this.shakeEffect.preRender();        if (emitFollowEvent)        {            this.emit(Events.FOLLOW_UPDATE, this, follow);        }    },    setLerp: function (x, y)    {        if (x === undefined) { x = 1; }        if (y === undefined) { y = x; }        this.lerp.set(x, y);        return this;    },    setFollowOffset: function (x, y)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        this.followOffset.set(x, y);        return this;    },    startFollow: function (target, roundPixels, lerpX, lerpY, offsetX, offsetY)    {        if (roundPixels === undefined) { roundPixels = false; }        if (lerpX === undefined) { lerpX = 1; }        if (lerpY === undefined) { lerpY = lerpX; }        if (offsetX === undefined) { offsetX = 0; }        if (offsetY === undefined) { offsetY = offsetX; }        this._follow = target;        this.roundPixels = roundPixels;        lerpX = Clamp(lerpX, 0, 1);        lerpY = Clamp(lerpY, 0, 1);        this.lerp.set(lerpX, lerpY);        this.followOffset.set(offsetX, offsetY);        var originX = this.width / 2;        var originY = this.height / 2;        var fx = target.x - offsetX;        var fy = target.y - offsetY;        this.midPoint.set(fx, fy);        this.scrollX = fx - originX;        this.scrollY = fy - originY;        if (this.useBounds)        {            this.scrollX = this.clampX(this.scrollX);            this.scrollY = this.clampY(this.scrollY);        }        return this;    },    stopFollow: function ()    {        this._follow = null;        return this;    },    resetFX: function ()    {        this.rotateToEffect.reset();        this.panEffect.reset();        this.shakeEffect.reset();        this.flashEffect.reset();        this.fadeEffect.reset();        return this;    },    update: function (time, delta)    {        if (this.visible)        {            this.rotateToEffect.update(time, delta);            this.panEffect.update(time, delta);            this.zoomEffect.update(time, delta);            this.shakeEffect.update(time, delta);            this.flashEffect.update(time, delta);            this.fadeEffect.update(time, delta);        }    },    destroy: function ()    {        this.resetFX();        BaseCamera.prototype.destroy.call(this);        this._follow = null;        this.deadzone = null;    }});module.exports = Camera;

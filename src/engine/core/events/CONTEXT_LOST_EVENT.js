@@ -1,1 +1,1 @@
-module.exports = 'contextlost';
+module.exports = 'contextlost';

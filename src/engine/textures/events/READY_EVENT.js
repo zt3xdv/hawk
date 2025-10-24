@@ -1,1 +1,1 @@
-module.exports = 'ready';
+module.exports = 'ready';

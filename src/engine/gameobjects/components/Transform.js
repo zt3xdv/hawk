@@ -1,344 +1,1 @@
-var MATH_CONST = require('../../math/const');
-var TransformMatrix = require('./TransformMatrix');
-var TransformXY = require('../../math/TransformXY');
-var WrapAngle = require('../../math/angle/Wrap');
-var WrapAngleDegrees = require('../../math/angle/WrapDegrees');
-var Vector2 = require('../../math/Vector2');
-
-var _FLAG = 4; 
-
-var Transform = {
-
-    hasTransformComponent: true,
-
-    _scaleX: 1,
-
-    _scaleY: 1,
-
-    _rotation: 0,
-
-    x: 0,
-
-    y: 0,
-
-    z: 0,
-
-    w: 0,
-
-    scale: {
-
-        get: function ()
-        {
-            return (this._scaleX + this._scaleY) / 2;
-        },
-
-        set: function (value)
-        {
-            this._scaleX = value;
-            this._scaleY = value;
-
-            if (value === 0)
-            {
-                this.renderFlags &= ~_FLAG;
-            }
-            else
-            {
-                this.renderFlags |= _FLAG;
-            }
-        }
-
-    },
-
-    scaleX: {
-
-        get: function ()
-        {
-            return this._scaleX;
-        },
-
-        set: function (value)
-        {
-            this._scaleX = value;
-
-            if (value === 0)
-            {
-                this.renderFlags &= ~_FLAG;
-            }
-            else if (this._scaleY !== 0)
-            {
-                this.renderFlags |= _FLAG;
-            }
-        }
-
-    },
-
-    scaleY: {
-
-        get: function ()
-        {
-            return this._scaleY;
-        },
-
-        set: function (value)
-        {
-            this._scaleY = value;
-
-            if (value === 0)
-            {
-                this.renderFlags &= ~_FLAG;
-            }
-            else if (this._scaleX !== 0)
-            {
-                this.renderFlags |= _FLAG;
-            }
-        }
-
-    },
-
-    angle: {
-
-        get: function ()
-        {
-            return WrapAngleDegrees(this._rotation * MATH_CONST.RAD_TO_DEG);
-        },
-
-        set: function (value)
-        {
-
-            this.rotation = WrapAngleDegrees(value) * MATH_CONST.DEG_TO_RAD;
-        }
-    },
-
-    rotation: {
-
-        get: function ()
-        {
-            return this._rotation;
-        },
-
-        set: function (value)
-        {
-
-            this._rotation = WrapAngle(value);
-        }
-    },
-
-    setPosition: function (x, y, z, w)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = x; }
-        if (z === undefined) { z = 0; }
-        if (w === undefined) { w = 0; }
-
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.w = w;
-
-        return this;
-    },
-
-    copyPosition: function (source)
-    {
-        if (source.x !== undefined) { this.x = source.x; }
-        if (source.y !== undefined) { this.y = source.y; }
-        if (source.z !== undefined) { this.z = source.z; }
-        if (source.w !== undefined) { this.w = source.w; }
-
-        return this;
-    },
-
-    setRandomPosition: function (x, y, width, height)
-    {
-        if (x === undefined) { x = 0; }
-        if (y === undefined) { y = 0; }
-        if (width === undefined) { width = this.scene.sys.scale.width; }
-        if (height === undefined) { height = this.scene.sys.scale.height; }
-
-        this.x = x + (Math.random() * width);
-        this.y = y + (Math.random() * height);
-
-        return this;
-    },
-
-    setRotation: function (radians)
-    {
-        if (radians === undefined) { radians = 0; }
-
-        this.rotation = radians;
-
-        return this;
-    },
-
-    setAngle: function (degrees)
-    {
-        if (degrees === undefined) { degrees = 0; }
-
-        this.angle = degrees;
-
-        return this;
-    },
-
-    setScale: function (x, y)
-    {
-        if (x === undefined) { x = 1; }
-        if (y === undefined) { y = x; }
-
-        this.scaleX = x;
-        this.scaleY = y;
-
-        return this;
-    },
-
-    setX: function (value)
-    {
-        if (value === undefined) { value = 0; }
-
-        this.x = value;
-
-        return this;
-    },
-
-    setY: function (value)
-    {
-        if (value === undefined) { value = 0; }
-
-        this.y = value;
-
-        return this;
-    },
-
-    setZ: function (value)
-    {
-        if (value === undefined) { value = 0; }
-
-        this.z = value;
-
-        return this;
-    },
-
-    setW: function (value)
-    {
-        if (value === undefined) { value = 0; }
-
-        this.w = value;
-
-        return this;
-    },
-
-    getLocalTransformMatrix: function (tempMatrix)
-    {
-        if (tempMatrix === undefined) { tempMatrix = new TransformMatrix(); }
-
-        return tempMatrix.applyITRS(this.x, this.y, this._rotation, this._scaleX, this._scaleY);
-    },
-
-    getWorldTransformMatrix: function (tempMatrix, parentMatrix)
-    {
-        if (tempMatrix === undefined) { tempMatrix = new TransformMatrix(); }
-
-        var parent = this.parentContainer;
-
-        if (!parent)
-        {
-            return this.getLocalTransformMatrix(tempMatrix);
-        }
-
-        var destroyParentMatrix = false;
-
-        if (!parentMatrix)
-        {
-            parentMatrix = new TransformMatrix();
-
-            destroyParentMatrix = true;
-        }
-
-        tempMatrix.applyITRS(this.x, this.y, this._rotation, this._scaleX, this._scaleY);
-
-        while (parent)
-        {
-            parentMatrix.applyITRS(parent.x, parent.y, parent._rotation, parent._scaleX, parent._scaleY);
-
-            parentMatrix.multiply(tempMatrix, tempMatrix);
-
-            parent = parent.parentContainer;
-        }
-
-        if (destroyParentMatrix)
-        {
-            parentMatrix.destroy();
-        }
-
-        return tempMatrix;
-    },
-
-    getLocalPoint: function (x, y, point, camera)
-    {
-        if (!point) { point = new Vector2(); }
-        if (!camera) { camera = this.scene.sys.cameras.main; }
-
-        var csx = camera.scrollX;
-        var csy = camera.scrollY;
-
-        var px = x + (csx * this.scrollFactorX) - csx;
-        var py = y + (csy * this.scrollFactorY) - csy;
-
-        if (this.parentContainer)
-        {
-            this.getWorldTransformMatrix().applyInverse(px, py, point);
-        }
-        else
-        {
-            TransformXY(px, py, this.x, this.y, this.rotation, this.scaleX, this.scaleY, point);
-        }
-
-        if (this._originComponent)
-        {
-            point.x += this._displayOriginX;
-            point.y += this._displayOriginY;
-        }
-
-        return point;
-    },
-
-    getWorldPoint: function (point, tempMatrix, parentMatrix)
-    {
-        if (point === undefined) { point = new Vector2(); }
-
-        var parent = this.parentContainer;
-
-        if (!parent)
-        {
-            point.x = this.x;
-            point.y = this.y;
-
-            return point;
-        }
-
-        var worldTransform = this.getWorldTransformMatrix(tempMatrix, parentMatrix);
-
-        point.x = worldTransform.tx;
-        point.y = worldTransform.ty;
-
-        return point;
-    },
-
-    getParentRotation: function ()
-    {
-        var rotation = 0;
-
-        var parent = this.parentContainer;
-
-        while (parent)
-        {
-            rotation += parent.rotation;
-
-            parent = parent.parentContainer;
-        }
-
-        return rotation;
-    }
-
-};
-
-module.exports = Transform;
+var MATH_CONST = require('../../math/const');var TransformMatrix = require('./TransformMatrix');var TransformXY = require('../../math/TransformXY');var WrapAngle = require('../../math/angle/Wrap');var WrapAngleDegrees = require('../../math/angle/WrapDegrees');var Vector2 = require('../../math/Vector2');var _FLAG = 4; var Transform = {    hasTransformComponent: true,    _scaleX: 1,    _scaleY: 1,    _rotation: 0,    x: 0,    y: 0,    z: 0,    w: 0,    scale: {        get: function ()        {            return (this._scaleX + this._scaleY) / 2;        },        set: function (value)        {            this._scaleX = value;            this._scaleY = value;            if (value === 0)            {                this.renderFlags &= ~_FLAG;            }            else            {                this.renderFlags |= _FLAG;            }        }    },    scaleX: {        get: function ()        {            return this._scaleX;        },        set: function (value)        {            this._scaleX = value;            if (value === 0)            {                this.renderFlags &= ~_FLAG;            }            else if (this._scaleY !== 0)            {                this.renderFlags |= _FLAG;            }        }    },    scaleY: {        get: function ()        {            return this._scaleY;        },        set: function (value)        {            this._scaleY = value;            if (value === 0)            {                this.renderFlags &= ~_FLAG;            }            else if (this._scaleX !== 0)            {                this.renderFlags |= _FLAG;            }        }    },    angle: {        get: function ()        {            return WrapAngleDegrees(this._rotation * MATH_CONST.RAD_TO_DEG);        },        set: function (value)        {            this.rotation = WrapAngleDegrees(value) * MATH_CONST.DEG_TO_RAD;        }    },    rotation: {        get: function ()        {            return this._rotation;        },        set: function (value)        {            this._rotation = WrapAngle(value);        }    },    setPosition: function (x, y, z, w)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = x; }        if (z === undefined) { z = 0; }        if (w === undefined) { w = 0; }        this.x = x;        this.y = y;        this.z = z;        this.w = w;        return this;    },    copyPosition: function (source)    {        if (source.x !== undefined) { this.x = source.x; }        if (source.y !== undefined) { this.y = source.y; }        if (source.z !== undefined) { this.z = source.z; }        if (source.w !== undefined) { this.w = source.w; }        return this;    },    setRandomPosition: function (x, y, width, height)    {        if (x === undefined) { x = 0; }        if (y === undefined) { y = 0; }        if (width === undefined) { width = this.scene.sys.scale.width; }        if (height === undefined) { height = this.scene.sys.scale.height; }        this.x = x + (Math.random() * width);        this.y = y + (Math.random() * height);        return this;    },    setRotation: function (radians)    {        if (radians === undefined) { radians = 0; }        this.rotation = radians;        return this;    },    setAngle: function (degrees)    {        if (degrees === undefined) { degrees = 0; }        this.angle = degrees;        return this;    },    setScale: function (x, y)    {        if (x === undefined) { x = 1; }        if (y === undefined) { y = x; }        this.scaleX = x;        this.scaleY = y;        return this;    },    setX: function (value)    {        if (value === undefined) { value = 0; }        this.x = value;        return this;    },    setY: function (value)    {        if (value === undefined) { value = 0; }        this.y = value;        return this;    },    setZ: function (value)    {        if (value === undefined) { value = 0; }        this.z = value;        return this;    },    setW: function (value)    {        if (value === undefined) { value = 0; }        this.w = value;        return this;    },    getLocalTransformMatrix: function (tempMatrix)    {        if (tempMatrix === undefined) { tempMatrix = new TransformMatrix(); }        return tempMatrix.applyITRS(this.x, this.y, this._rotation, this._scaleX, this._scaleY);    },    getWorldTransformMatrix: function (tempMatrix, parentMatrix)    {        if (tempMatrix === undefined) { tempMatrix = new TransformMatrix(); }        var parent = this.parentContainer;        if (!parent)        {            return this.getLocalTransformMatrix(tempMatrix);        }        var destroyParentMatrix = false;        if (!parentMatrix)        {            parentMatrix = new TransformMatrix();            destroyParentMatrix = true;        }        tempMatrix.applyITRS(this.x, this.y, this._rotation, this._scaleX, this._scaleY);        while (parent)        {            parentMatrix.applyITRS(parent.x, parent.y, parent._rotation, parent._scaleX, parent._scaleY);            parentMatrix.multiply(tempMatrix, tempMatrix);            parent = parent.parentContainer;        }        if (destroyParentMatrix)        {            parentMatrix.destroy();        }        return tempMatrix;    },    getLocalPoint: function (x, y, point, camera)    {        if (!point) { point = new Vector2(); }        if (!camera) { camera = this.scene.sys.cameras.main; }        var csx = camera.scrollX;        var csy = camera.scrollY;        var px = x + (csx * this.scrollFactorX) - csx;        var py = y + (csy * this.scrollFactorY) - csy;        if (this.parentContainer)        {            this.getWorldTransformMatrix().applyInverse(px, py, point);        }        else        {            TransformXY(px, py, this.x, this.y, this.rotation, this.scaleX, this.scaleY, point);        }        if (this._originComponent)        {            point.x += this._displayOriginX;            point.y += this._displayOriginY;        }        return point;    },    getWorldPoint: function (point, tempMatrix, parentMatrix)    {        if (point === undefined) { point = new Vector2(); }        var parent = this.parentContainer;        if (!parent)        {            point.x = this.x;            point.y = this.y;            return point;        }        var worldTransform = this.getWorldTransformMatrix(tempMatrix, parentMatrix);        point.x = worldTransform.tx;        point.y = worldTransform.ty;        return point;    },    getParentRotation: function ()    {        var rotation = 0;        var parent = this.parentContainer;        while (parent)        {            rotation += parent.rotation;            parent = parent.parentContainer;        }        return rotation;    }};module.exports = Transform;
