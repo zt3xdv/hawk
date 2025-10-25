@@ -4,20 +4,19 @@ import Options from './utils/Options.js';
 
 export default class Game {
   constructor(domElement) {
-    domElement.style.overflow = "hidden";
-    document.fonts.load('48px Hawk');
-    
     const config = {
       banner: false,
       parent: domElement,
       width: window.innerWidth,
       height: window.innerHeight,
       pixelArt: true,
-      /*render: {
+      render: {
         roundPixels: true,
         preserveDrawingBuffer: true,
+        antialias: false,
+        antialiasGL: false,
         powerPreference: "high-performance",
-      },*/
+      },
       physics: {
         default: 'arcade',
         arcade: {

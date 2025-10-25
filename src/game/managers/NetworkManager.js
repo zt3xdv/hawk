@@ -105,7 +105,7 @@ export default class NetworkManager {
       }
     });
     this.ws.addEventListener('close', () => {
-      this.scene.errorModal.throwError("Disconnected from server.");
+      this.scene.errorModal.throwError("Disconnected from server.<br></br>Websocket closed connection.");
     });
   }
 

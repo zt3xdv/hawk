@@ -1,4 +1,5 @@
 import http from 'http';
+import https from 'https';
 import express from 'express';
 import path from 'path';
 import authRoutes from './src/routes/server/auth.js';
@@ -18,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const server = http.createServer(app);
+const server = config.https.enabled ? https.createServer({ cert: config.https.cert, key: config.https.key }, app) : http.createServer(app);
 const socketServer = new SocketServer({ server });
 app.hawkServers = [];
 
@@ -61,5 +62,5 @@ app.get(/.*/, async (req, res) => {
 });
 
 server.listen(config.port, () => {
-  log("http", "HTTP server listening on port " + config.port);
+  log(config.https.enabled ? "https" : "http", (config.https.enabled ? "HTTPs" : "HTTP") + " server listening on port " + config.port);
 });

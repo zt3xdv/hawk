@@ -70,7 +70,7 @@ export default class GameScene extends HawkEngine.Scene {
   }
 
   update(time, delta) {
-    this.fpsElement.innerHTML = "FPS - " + Math.floor(this.game.loop.actualFps) + "<br>" + this.game.renderer.constructor.name;
+    this.fpsElement.innerHTML = "Engine - HawkEngine<br>" + this.game.renderer.constructor.name + " v" + this.game.renderer.gl.VERSION;
       
     const direction = this.inputManager.getDirection();
     

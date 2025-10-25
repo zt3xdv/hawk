@@ -6,6 +6,7 @@ import PlayerModel from '../models/PlayerModel.js';
 import { log, uuid } from '../utils/Utils.js';
 import { DEV } from '../utils/Constants.js';
 import { pack, unpack } from 'msgpackr';
+import config from '../../config.json' with { type: 'json' };
 
 class HawkServer {
   constructor(server, serverData) {
@@ -28,7 +29,7 @@ class HawkServer {
     return {
       ...this.data,
       players: Object.keys(this.players).length,
-      path: this.path
+      path: (config.https.enabled ? "wss" : "ws") + "://" + config.host + this.path
     };
   }
 

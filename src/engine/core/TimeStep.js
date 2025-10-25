@@ -35,3 +35,5 @@ var TimeStep = new Class({
     this.stop();
   },
 });
+
+module.exports = TimeStep;

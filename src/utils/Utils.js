@@ -104,6 +104,14 @@ export function getAssets() {
         frameWidth: 32,
         frameHeight: 32
       }
+    },
+    {
+      type: "bitmapfont",
+      key: "hawkpixelated",
+      url: {
+        image: Cache.getBlob("assets/fonts/at02.png").dataUrl,
+        xml: Cache.getBlob("assets/fonts/at02.xml").dataUrl,
+      }
     }
   ];
 }
@@ -121,6 +129,8 @@ export function loadPack(scene, packArray) {
       loader.audio(key, url);
     } else if (type === 'json') {
       loader.json(key, url);
+    } else if (type === 'bitmapfont') {
+      loader.bitmapFont(key, url.image, url.xml);
     } else {
       loader.file(key, { type: type || 'image', url });
     }

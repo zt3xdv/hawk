@@ -1,6 +1,7 @@
 import ChatBubbleManager from '../managers/ChatBubbleManager.js';
 import { estimateReadTime } from '../utils/Utils.js';
 import { PLAYER_SPEED } from '../../utils/Constants.js';
+import HawkEngine from '../../../dist/engine/main.js';
 
 export default class Player {
   constructor(scene, id, uuid, username, display_name, x, y, avatar) {
@@ -35,8 +36,9 @@ export default class Player {
       img.src = avatar;
     }
 
-    this.nameText = scene.add.text(Math.floor(x - 16), Math.floor(y - 32), display_name || '', { fontFamily: 'Hawk', fontSize: '16px', color: '#ffffff' }).setDepth(10248);
-
+    this.nameText = scene.add.bitmapText(Math.floor(x - 16), Math.floor(y - 32), 'hawkpixelated', display_name || '', 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10248);
+    this.nameText.setCharacterTint(0, -1, true, 0xFFFFFF);
+    
     this._positionTween = null;
     this._smoothDuration = 100;
 

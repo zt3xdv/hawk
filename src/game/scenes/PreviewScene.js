@@ -10,7 +10,7 @@ export default class PreviewScene extends HawkEngine.Scene {
     this.player = null;
     this.timed = 6000;
     
-    this.messages = ["WE REALLY NEED", "WS FOR SUBDOMAINS", "REALYYYYYYYYYY"];
+    this.messages = ["we need ws upgrades", "for web proxies", "but anyways", "david doesnt add anything far of panel"];
     this.msgIndex = this.messages.length - 1;
   }
 
@@ -33,6 +33,7 @@ export default class PreviewScene extends HawkEngine.Scene {
       this.player.sprite.on('drag', (pointer, dragX, dragY) => {
         this.player.setPosition(dragX, dragY);
       });
+      this.player.chat.setTyping(true);
     })();
   }
 

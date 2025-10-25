@@ -14,9 +14,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('DOMContentLoaded', async () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-      .then(registration => {
-        console.log('Service worker registered sucessfully.');
-      })
+      .then(registration => {})
       .catch(error => {
         console.error('Error registering service worker:', error);
       });
@@ -28,6 +26,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   const loading = document.getElementById("loading");
+  loading.querySelector("#tip-title").innerHTML = "DID YOU KNOW";
+  
   function randomTip() {
     loading.querySelector("#tip").innerHTML = getRandomFromArray(TIPS);
   }
@@ -71,7 +71,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   } else {
     await Cache.load(ASSETS_VERSION, [
       "assets/entities/bee.png",
-      "assets/fonts/at01.ttf",
+      "assets/fonts/at02.png",
+      "assets/fonts/at02.xml",
       "assets/game/props.png",
       "assets/game/plants.png",
       "assets/game/building.png",

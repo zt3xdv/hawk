@@ -35,7 +35,7 @@ export const API = {
 
 export const DISCORD_SERVER = "https://discord.gg/P8yrhaeCgy";
 
-export const DEV = true;
+export const DEV = false;
 export const TURNSTILE = true;
 
 export const CONTRIBUTORS = [

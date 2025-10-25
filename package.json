@@ -1,7 +1,7 @@
 {
   "name": "hawk",
   "version": "0.0.1-beta",
-  "assets": "0.0.2-release",
+  "assets": "0.1.2-release",
   "module": "index.js",
   "type": "module",
   "scripts": {
@@ -28,6 +28,7 @@
     "express": "^5.1.0",
     "mime-types": "^3.0.1",
     "msgpackr": "^1.11.5",
+    "phaser3spectorjs": "^0.0.8",
     "pngjs": "^7.0.0",
     "ws": "^8.18.3"
   },

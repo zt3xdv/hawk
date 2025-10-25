@@ -3,9 +3,6 @@ import PreviewScene from './scenes/PreviewScene.js';
 
 export default class Preview {
   constructor(domElement) {
-    domElement.style.overflow = "hidden";
-    document.fonts.load('48px Hawk');
-
     const config = {
       banner: false,
       parent: domElement,

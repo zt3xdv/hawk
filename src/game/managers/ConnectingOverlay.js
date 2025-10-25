@@ -1,10 +1,10 @@
+import HawkEngine from '../../../dist/engine/main.js';
+
 export default class ConnectingOverlay {
   constructor(scene, opts = {}) {
     this.scene = scene;
     this.textString = opts.text || 'Connecting...';
     this.fontSize = opts.fontSize || 32;
-    this.fontFamily = opts.fontFamily || 'Hawk';
-    this.color = opts.color || '#ffffff';
     this.depth = typeof opts.depth === 'number' ? opts.depth : 10248;
 
     this.container = null;
@@ -20,14 +20,9 @@ export default class ConnectingOverlay {
     const bg = this.scene.add.rectangle(0, 0, width, height, 0x222222)
       .setOrigin(0, 0);
 
-    const style = {
-      fontFamily: this.fontFamily,
-      fontSize: `${this.fontSize}px`,
-      color: this.color
-    };
     const textX = Math.floor(width / 2);
     const textY = Math.floor(height / 2);
-    const text = this.scene.add.text(textX, textY, this.textString, style)
+    const text = this.scene.add.bitmapText(textX, textY, 'hawkpixelated', this.textString, this.fontSize, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT)
       .setOrigin(0.5, 0.5);
 
     this.container = this.scene.add.container(0, 0, [bg, text])

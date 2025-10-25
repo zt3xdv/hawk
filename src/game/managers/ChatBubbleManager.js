@@ -1,3 +1,5 @@
+import HawkEngine from '../../../dist/engine/main.js';
+
 export default class ChatBubbleManager {
   constructor(scene, getXFn, getYFn, options = {}) {
     this.scene = scene;
@@ -18,6 +20,104 @@ export default class ChatBubbleManager {
     this._typingBubble = null;
     this._typingTween = null;
     this._typingDelayedCall = null;
+  }
+
+  _wrapAndTruncateByWords(text, style, maxWidth, maxLines = 10) {
+    if (!text) return '';
+    const tmp = this.scene.add.bitmapText(0, 0, 'hawkpixelated', '', parseInt(style.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000001);
+    tmp.setOrigin(0, 0);
+
+    const words = text.split(/\s+/);
+    const lines = [];
+    let currentLine = '';
+
+    const pushLine = (line) => {
+      lines.push(line);
+      currentLine = '';
+    };
+
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      const testLine = currentLine ? (currentLine + ' ' + w) : w;
+      tmp.setText(testLine);
+      const b = tmp.getBounds();
+      if (b.width <= maxWidth) {
+        currentLine = testLine;
+      } else {
+        tmp.setText(w);
+        const wb = tmp.getBounds();
+        if (wb.width > maxWidth) {
+          let partial = '';
+          for (let c = 0; c < w.length; c++) {
+            const tCandidate = partial + w[c];
+            tmp.setText(tCandidate);
+            if (tmp.getBounds().width > maxWidth) break;
+            partial = tCandidate;
+          }
+          if (currentLine) pushLine(currentLine);
+          if (partial.length) {
+            pushLine(partial);
+          }
+          const remaining = w.slice(partial.length);
+          if (remaining.length) {
+            currentLine = remaining;
+          } else {
+            currentLine = '';
+          }
+        } else {
+          if (currentLine) {
+            pushLine(currentLine);
+          }
+          currentLine = w;
+        }
+      }
+
+      if (lines.length >= maxLines) {
+        break;
+      }
+    }
+
+    if (currentLine) pushLine(currentLine);
+
+    if (lines.length > maxLines) {
+      lines.length = maxLines;
+    }
+
+    let reconstructed = lines.join('\n');
+    tmp.setText(reconstructed);
+    let finalBounds = tmp.getBounds();
+    const consumedWordsCount = (() => {
+      if (!reconstructed) return 0;
+      const used = reconstructed.replace(/\n/g, ' ').trim();
+      return used ? used.split(/\s+/).length : 0;
+    })();
+    if (consumedWordsCount < words.length) {
+      let last = lines[lines.length - 1] || '';
+      tmp.setText(last + '...');
+      while (tmp.getBounds().width > maxWidth && last.length > 0) {
+        const parts = last.split(/\s+/);
+        parts.pop();
+        last = parts.join(' ');
+        tmp.setText(last + '...');
+        if (parts.length === 0) break;
+      }
+      if (tmp.getBounds().width > maxWidth) {
+        let lastChars = last;
+        while (lastChars.length > 0) {
+          lastChars = lastChars.slice(0, -1);
+          tmp.setText(lastChars + '...');
+          if (tmp.getBounds().width <= maxWidth) {
+            last = lastChars;
+            break;
+          }
+        }
+      }
+      lines[lines.length - 1] = (last.trim() ? last.trim() + '...' : '...');
+    }
+
+    const result = lines.join('\n');
+    tmp.destroy();
+    return result;
   }
 
   say(message, isCommand = false, duration = undefined) {
@@ -47,10 +147,10 @@ export default class ChatBubbleManager {
 
     const textStyle = { fontFamily: 'Hawk', fontSize: '16px', color: (!isCommand ? '#aaaaaa' : 'yellow') };
 
-    const tmpText = this.scene.add.text(0, 0, message, textStyle).setDepth(10000001);
+    const finalText = this._wrapAndTruncateByWords(message, textStyle, this._bubbleMaxWidth);
+
+    const tmpText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', finalText, parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000001);
     tmpText.setOrigin(0, 0);
-    tmpText.setPadding(0);
-    tmpText.setWordWrapWidth(this._bubbleMaxWidth, true);
 
     const bounds = tmpText.getBounds();
     const textWidth = Math.ceil(bounds.width);
@@ -66,9 +166,10 @@ export default class ChatBubbleManager {
     const cRadius = 6;
     bg.fillRoundedRect(0, 0, bgWidth, bgHeight, cRadius);
 
-    const msgText = this.scene.add.text(this._bubblePaddingX, this._bubblePaddingY, message, textStyle).setDepth(10000003);
+    const msgText = this.scene.add.bitmapText(this._bubblePaddingX, this._bubblePaddingY, 'hawkpixelated', finalText, parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000003);
     msgText.setOrigin(0, 0);
-    msgText.setWordWrapWidth(this._bubbleMaxWidth, true);
+    msgText.setCharacterTint(0, -1, true, 0x808080);
+    //msgText.setWordWrapWidth(this._bubbleMaxWidth, true);
 
     const cloud = this.scene.add.graphics();
     cloud.fillStyle(0x000000, 0.6);
@@ -111,173 +212,158 @@ export default class ChatBubbleManager {
     return bubble;
   }
 
-setTyping(on, duration = undefined) {
-  if (on) {
-    if (this._typingBubble) {
-      if (this._typingDelayedCall) {
-        try { this._typingDelayedCall.remove(false); } catch (e) {}
-        this._delayedCalls.delete(this._typingDelayedCall);
-        this._typingDelayedCall = null;
+  setTyping(on, duration = undefined) {
+    if (on) {
+      if (this._typingBubble) {
+        if (this._typingDelayedCall) {
+          try { this._typingDelayedCall.remove(false); } catch (e) {}
+          this._delayedCalls.delete(this._typingDelayedCall);
+          this._typingDelayedCall = null;
+        }
+        if (typeof duration === 'number' && duration >= 0) {
+          const dc = this.scene.time.delayedCall(duration, () => { this.setTyping(false); });
+          this._typingDelayedCall = dc;
+          this._delayedCalls.add(dc);
+        }
+        return;
       }
+
+      const textStyle = { fontFamily: 'Hawk', fontSize: '16px', color: '#aaaaaa' };
+      const message = '...';
+      const tmpText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', message, parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000001);
+      tmpText.setOrigin(0, 0);
+      
+      const bounds = tmpText.getBounds();
+      const textWidth = Math.ceil(bounds.width);
+      const textHeight = Math.ceil(bounds.height);
+      tmpText.destroy();
+
+      const bgWidth = textWidth + this._bubblePaddingX * 2;
+      const bgHeight = textHeight + this._bubblePaddingY * 2;
+
+      const container = this.scene.add.container(0, 0).setDepth(10000010);
+
+      const bg = this.scene.add.graphics();
+      bg.fillStyle(0x000000, 0.6);
+      const cRadius = 6;
+      bg.fillRoundedRect(0, 0, bgWidth, bgHeight, cRadius);
+
+      const dotAreaX = this._bubblePaddingX;
+      const dotAreaY = this._bubblePaddingY;
+      const availableW = bgWidth - this._bubblePaddingX * 2;
+      const centerY = dotAreaY;
+
+      const dotCount = 3;
+      const spacing = 2;
+
+      const randGrayBetween = () => {
+        const v = Math.floor(0xAA + Math.random() * (0xFF - 0xAA + 1));
+        const hexStr = v.toString(16).padStart(2, '0');
+        return `#${hexStr}${hexStr}${hexStr}`;
+      };
+
+      const dots = [];
+      for (let i = 0; i < dotCount; i++) {
+        const color = randGrayBetween();
+        const dotText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', '.', parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000011 + i);
+        dotText.setCharacterTint(0, -1, true, 0xFFFFFF);
+        dotText.setOrigin(0.5, 0.5);
+        const x = (spacing * (i + 1)) + dotAreaX - 0.5;
+        const y = dotAreaY + Math.floor(textHeight / 2);
+        dotText.x = x;
+        dotText.y = y;
+
+        dotText.setScale(1, 1);
+        dotText.setAlpha(1);
+        container.add(dotText);
+        dots.push({ text: dotText });
+      }
+
+      const cloud = this.scene.add.graphics();
+      cloud.fillStyle(0x000000, 0.6);
+      container.add([bg, cloud]);
+      container.sendToBack(bg);
+
+      const spriteX = Math.round(this.getX());
+      const spriteY = Math.round(this.getY());
+      const baseX = Math.round(spriteX - Math.floor(bgWidth / 2));
+      const baseY = Math.round(spriteY - this.bubblePosFPlayer - bgHeight);
+      container.x = Math.floor(baseX);
+      container.y = Math.floor(baseY);
+
+      const typingBubble = {
+        container,
+        bg,
+        dots,
+        cloud,
+        width: bgWidth,
+        height: bgHeight
+      };
+
+      this._typingBubble = typingBubble;
+
+      this._clampBubbleToCameraAndPoint(typingBubble);
+
+      const tweens = [];
+      const pulseDuration = 500;
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i];
+        const tw = this.scene.tweens.add({
+          targets: d.text,
+          alpha: { from: 0.4, to: 1 },
+          ease: 'Sine.easeInOut',
+          duration: pulseDuration,
+          yoyo: true,
+          repeat: -1,
+          delay: i * (pulseDuration / 3)
+        });
+        tweens.push(tw);
+      }
+      this._typingTween = { tweens };
+
       if (typeof duration === 'number' && duration >= 0) {
         const dc = this.scene.time.delayedCall(duration, () => { this.setTyping(false); });
         this._typingDelayedCall = dc;
         this._delayedCalls.add(dc);
       }
+
+      this._updateBubbleStack();
+      return;
+    } else {
+      if (!this._typingBubble) return;
+
+      if (this._typingDelayedCall) {
+        try { this._typingDelayedCall.remove(false); } catch (e) {}
+        this._delayedCalls.delete(this._typingDelayedCall);
+        this._typingDelayedCall = null;
+      }
+
+      if (this._typingTween && Array.isArray(this._typingTween.tweens)) {
+        for (const tw of this._typingTween.tweens) {
+          try { tw.remove(false); } catch (e) {}
+        }
+        this._typingTween = null;
+      }
+
+      const tb = this._typingBubble;
+      try {
+        this.scene.tweens.add({
+          targets: [tb.container],
+          alpha: { from: 1, to: 0 },
+          duration: 120,
+          onComplete: () => {
+            if (tb.container && !tb.container.destroyed) tb.container.destroy();
+          }
+        });
+      } catch (e) {
+        if (tb.container && !tb.container.destroyed) tb.container.destroy();
+      }
+
+      this._typingBubble = null;
+      this._updateBubbleStack();
       return;
     }
-
-    // medidas base usando texto temporal para mantener tamaño de burbuja
-    const textStyle = { fontFamily: 'Hawk', fontSize: '16px', color: '#aaaaaa' };
-    const message = '...';
-    const tmpText = this.scene.add.text(0, 0, message, textStyle).setDepth(10000001);
-    tmpText.setOrigin(0, 0);
-    tmpText.setPadding(0);
-    tmpText.setWordWrapWidth(this._bubbleMaxWidth, true);
-    const bounds = tmpText.getBounds();
-    const textWidth = Math.ceil(bounds.width);
-    const textHeight = Math.ceil(bounds.height);
-    tmpText.destroy();
-
-    const bgWidth = textWidth + this._bubblePaddingX * 2;
-    const bgHeight = textHeight + this._bubblePaddingY * 2;
-
-    const container = this.scene.add.container(0, 0).setDepth(10000010);
-
-    const bg = this.scene.add.graphics();
-    bg.fillStyle(0x000000, 0.6);
-    const cRadius = 6;
-    bg.fillRoundedRect(0, 0, bgWidth, bgHeight, cRadius);
-
-    // area para los tres caracteres "."
-const dotAreaX = this._bubblePaddingX;
-const dotAreaY = this._bubblePaddingY;
-const availableW = bgWidth - this._bubblePaddingX * 2;
-const centerY = dotAreaY;
-
-const dotCount = 3;
-// Calcular el espaciado para que se distribuyan los puntos
-// a lo largo del área disponible
-const spacing = availableW / (dotCount + 1); // <-- Usar un cálculo más preciso
-
-
-    // función para generar color aleatorio entre #aaa y #fff
-    const randGrayBetween = () => {
-      const v = Math.floor(0xAA + Math.random() * (0xFF - 0xAA + 1));
-      const hexStr = v.toString(16).padStart(2, '0');
-      return `#${hexStr}${hexStr}${hexStr}`;
-    };
-
-    // crear tres Text con el carácter "." (no cambiamos tamaño) y colores aleatorios
-    const dots = [];
-    for (let i = 0; i < dotCount; i++) {
-      const color = randGrayBetween();
-      const dotText = this.scene.add.text(0, 0, '.', { fontFamily: 'Hawk', fontSize: textStyle.fontSize, color }).setDepth(10000011 + i);
-      dotText.setOrigin(0.5, 0.5);
-      // calcular posición relativa dentro de la burbuja
-const x = (dotAreaX + spacing) * (i + 1); // <-- Nuevo cálculo
-const y = dotAreaY + Math.floor(textHeight / 2);
-dotText.x = x;
-dotText.y = y;
-
-      // aseguramos escala 1 y alpha inicial 1 (no cambian de tamaño)
-      dotText.setScale(1, 1);
-      dotText.setAlpha(1);
-      container.add(dotText);
-      dots.push({ text: dotText });
-    }
-
-    // nube y contenedor
-    const cloud = this.scene.add.graphics();
-    cloud.fillStyle(0x000000, 0.6);
-    container.add([bg, cloud]);
-    container.sendToBack(bg);
-
-    const spriteX = Math.round(this.getX());
-    const spriteY = Math.round(this.getY());
-    const baseX = Math.round(spriteX - Math.floor(bgWidth / 2));
-    const baseY = Math.round(spriteY - this.bubblePosFPlayer - bgHeight);
-    container.x = Math.floor(baseX);
-    container.y = Math.floor(baseY);
-
-    const typingBubble = {
-      container,
-      bg,
-      dots,
-      cloud,
-      width: bgWidth,
-      height: bgHeight
-    };
-
-    this._typingBubble = typingBubble;
-
-    this._clampBubbleToCameraAndPoint(typingBubble);
-
-    // Animación: cada punto cambia suavemente su alpha/brightness cada 500ms (sin escalar)
-    const tweens = [];
-    const pulseDuration = 500;
-    for (let i = 0; i < dots.length; i++) {
-      const d = dots[i];
-const tw = this.scene.tweens.add({
-    targets: d.text,
-    alpha: { from: 0.4, to: 1 },
-    ease: 'Sine.easeInOut',
-    duration: pulseDuration,
-    yoyo: true,
-    repeat: -1,
-    delay: i * (pulseDuration / 3)
-});
-      tweens.push(tw);
-    }
-    // Guardar referencia para limpieza
-    this._typingTween = { tweens };
-
-    if (typeof duration === 'number' && duration >= 0) {
-      const dc = this.scene.time.delayedCall(duration, () => { this.setTyping(false); });
-      this._typingDelayedCall = dc;
-      this._delayedCalls.add(dc);
-    }
-
-    this._updateBubbleStack();
-    return;
-  } else {
-    if (!this._typingBubble) return;
-
-    if (this._typingDelayedCall) {
-      try { this._typingDelayedCall.remove(false); } catch (e) {}
-      this._delayedCalls.delete(this._typingDelayedCall);
-      this._typingDelayedCall = null;
-    }
-
-    // remover tweens creados
-    if (this._typingTween && Array.isArray(this._typingTween.tweens)) {
-      for (const tw of this._typingTween.tweens) {
-        try { tw.remove(false); } catch (e) {}
-      }
-      this._typingTween = null;
-    }
-
-    const tb = this._typingBubble;
-    try {
-      this.scene.tweens.add({
-        targets: [tb.container],
-        alpha: { from: 1, to: 0 },
-        duration: 120,
-        onComplete: () => {
-          if (tb.container && !tb.container.destroyed) tb.container.destroy();
-        }
-      });
-    } catch (e) {
-      if (tb.container && !tb.container.destroyed) tb.container.destroy();
-    }
-
-    this._typingBubble = null;
-    this._updateBubbleStack();
-    return;
   }
-}
-
-
 
   _clampBubbleToCameraAndPoint(bubble) {
     if (!this.scene.cameras || !this.scene.cameras.main) return;
@@ -462,3 +548,4 @@ const tw = this.scene.tweens.add({
     this._repositionBubbles();
   }
 }
+
