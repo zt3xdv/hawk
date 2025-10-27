@@ -3,6 +3,7 @@ import Cache from "./utils/Cache.js";
 import { DISCORD_SERVER, VERSION, ASSETS_VERSION, API, AUTHOR } from "./utils/ConstantsPackage.js";
 import { getAuth, apiPost } from './game/utils/Utils.js';
 import { routes, getPathFromLocation } from './routes/routes.js';
+import { renderDmChat } from './routes/dmChat.js';
 
 let currentNav = null;
 let currentFooter = null;
@@ -82,20 +83,33 @@ export function navigate(path) {
   router();
 }
 
+window.router = {
+  navigateTo: navigate
+};
+
 window.addEventListener('popstate', () => {
   router();
 });
 
 export function router() {
+  const fullPath = window.location.pathname;
   const path = getPathFromLocation();
-  const route = routes[path] || {};
+  let route = routes[path] || {};
+  let routeParams = {};
+
+  if (fullPath.startsWith('/dms/') && fullPath !== '/dms') {
+    const userId = fullPath.split('/')[2];
+    route = { auth: true, title: 'Chat', fn: () => renderDmChat(userId) };
+    routeParams.userId = userId;
+  }
+
   const isAuthenticated = !!localStorage.getItem('loggedIn');
 
   if (path === '/') {
     if (isAuthenticated) {
       window.history.replaceState({}, '', '/dashboard');
     } else {
-      window.history.replaceState({}, '', '/login');
+      window.history.replaceState({}, '', '/auth');
     }
   }
 
@@ -105,11 +119,11 @@ export function router() {
   }
 
   if (route.auth && !isAuthenticated) {
-    window.history.replaceState({}, '', '/login');
+    window.history.replaceState({}, '', '/auth');
     return router();
   }
 
-  if (!route.auth && isAuthenticated && (path === '/login' || path === '/register')) {
+  if (!route.auth && isAuthenticated && path === '/auth') {
     window.history.replaceState({}, '', '/dashboard');
     return router();
   }
@@ -128,6 +142,9 @@ export function router() {
   setTimeout(() => {
     mountShell();
     clearMain();
+    
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.classList.remove('no-scroll');
     
     route.fn();
     

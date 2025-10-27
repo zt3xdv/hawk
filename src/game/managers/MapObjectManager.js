@@ -12,7 +12,7 @@ import Crate from '../objects/Crate.js';
 import Outdoor from '../objects/Outdoor.js';
 import HawkEngine from '../../../dist/engine/main.js';
 
-const CHUNK_SIZE = 500;
+const CHUNK_SIZE = 512;
 const PAD = 64;
 
 export default class MapObjectManager {
@@ -137,19 +137,43 @@ export default class MapObjectManager {
     this.loadedChunks = new Set();
     this.serverIdIndex = new Map();
     this.playerChunk = null;
+    this.chunkSize = CHUNK_SIZE;
   }
 
   loadJsonMap(jsonArray = []) {
-    this.allElementsByChunk.clear();
     jsonArray.forEach(el => {
       if (typeof el.x !== 'number' || typeof el.y !== 'number' || !el.id) return;
       const cx = Math.floor(el.x / CHUNK_SIZE);
       const cy = Math.floor(el.y / CHUNK_SIZE);
       const key = `${cx}:${cy}`;
       if (!this.allElementsByChunk.has(key)) this.allElementsByChunk.set(key, []);
-      this.allElementsByChunk.get(key).push(el);
+      
+      const existing = this.allElementsByChunk.get(key).find(item => 
+        item.options?.serverId && item.options.serverId === el.options?.serverId
+      );
+      
+      if (!existing) {
+        this.allElementsByChunk.get(key).push(el);
+      }
     });
-    this.playerChunk = null;
+  }
+
+  loadChunksData(chunksData = []) {
+    chunksData.forEach(chunk => {
+      if (chunk.objects && Array.isArray(chunk.objects)) {
+        this.loadJsonMap(chunk.objects);
+      }
+      
+      const [cx, cy] = chunk.key.split(/[,:]/).map(Number);
+      this.loadChunkByCoords(cx, cy);
+    });
+  }
+
+  unloadChunksData(chunkKeys = []) {
+    chunkKeys.forEach(key => {
+      const [cx, cy] = key.split(/[,:]/).map(Number);
+      this.unloadChunkByCoords(cx, cy);
+    });
   }
 
   _chunkKey(cx, cy) { return `${cx}:${cy}`; }
@@ -164,6 +188,11 @@ export default class MapObjectManager {
     if (!element.idBase) element.idBase = `${id}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     this.list.push(element);
     if (element.serverId) this.serverIdIndex.set(element.serverId, element);
+    
+    if (this.scene.events) {
+      this.scene.events.emit('objectCreated', element);
+    }
+    
     return element;
   }
 
@@ -180,56 +209,68 @@ export default class MapObjectManager {
   }
 
   exportElement(element) {
+    const collision = element.image?.body ? {
+      width: element.image.body.width,
+      height: element.image.body.height,
+      offsetX: element.image.body.offset?.x || 0,
+      offsetY: element.image.body.offset?.y || 0
+    } : null;
+    
     return {
       x: element.x,
       y: element.y,
       id: element.typeId,
       options: {
         ...element.typeOptions,
-        serverId: element.serverId
+        serverId: element.serverId,
+        collision: collision
       }
     };
   }
 
   destroy(element) {
     try {
-      const index = this.list.findIndex(item => item.idBase === element.idBase);
-      if (index > -1) {
-        const item = this.list[index];
-        if (typeof item.destroy === 'function') {
-          try { item.destroy(); } catch (err) {}
+      const len = this.list.length;
+      for (let i = 0; i < len; i++) {
+        if (this.list[i].idBase === element.idBase) {
+          const item = this.list[i];
+          if (typeof item.destroy === 'function') {
+            try { item.destroy(); } catch (err) {}
+          }
+          try { if (item.image && typeof item.image.destroy === 'function') item.image.destroy(); } catch(e){}
+          this.list.splice(i, 1);
+          if (item.serverId) this.serverIdIndex.delete(item.serverId);
+          break;
         }
-        try { if (item.image && typeof item.image.destroy === 'function') item.image.destroy(); } catch(e){}
-        this.list.splice(index, 1);
-        if (item.serverId) this.serverIdIndex.delete(item.serverId);
       }
     } catch (e) {}
   }
   
   destroyByServerId(serverId) {
     try {
-      const index = this.list.findIndex(item => item.serverId == serverId);
-      if (index > -1) {
-        const item = this.list[index];
-        if (typeof item.destroy === 'function') {
-          try { item.destroy(); } catch (err) {}
+      const len = this.list.length;
+      for (let i = 0; i < len; i++) {
+        if (this.list[i].serverId == serverId) {
+          const item = this.list[i];
+          if (typeof item.destroy === 'function') {
+            try { item.destroy(); } catch (err) {}
+          }
+          try { if (item.image && typeof item.image.destroy === 'function') item.image.destroy(); } catch(e){}
+          this.list.splice(i, 1);
+          if (item.serverId) this.serverIdIndex.delete(item.serverId);
+          break;
         }
-        try { if (item.image && typeof item.image.destroy === 'function') item.image.destroy(); } catch(e){}
-        this.list.splice(index, 1);
-        if (item.serverId) this.serverIdIndex.delete(item.serverId);
       }
     } catch (e) {}
   }
   
   moveByServerId(serverId, x, y) {
-    try {
-      const index = this.list.findIndex(item => item.serverId == serverId);
-      if (index > -1) {
-        const item = this.list[index];
-        
+    const item = this.serverIdIndex.get(serverId);
+    if (item) {
+      try {
         item.setPosition(x, y);
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
   }
 
   destroyAll() {
@@ -248,71 +289,73 @@ export default class MapObjectManager {
         if (el.options && el.options.serverId && this.serverIdIndex.has(el.options.serverId)) return;
         const obj = this.create(el.id, this.scene, el.x, el.y, el.options || {});
         created.push(obj);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Error creating object in chunk:', e);
+      }
     });
     this.loadedChunks.add(key);
+    if (created.length > 0) {
+      console.log(`Loaded chunk ${key}: ${created.length} objects`);
+    }
     return created.length;
   }
 
   unloadChunkByCoords(cx, cy) {
     const key = this._chunkKey(cx, cy);
     if (!this.loadedChunks.has(key)) return 0;
-    const x0 = cx * CHUNK_SIZE;
-    const x1 = (cx + 1) * CHUNK_SIZE;
-    const y0 = cy * CHUNK_SIZE;
-    const y1 = (cy + 1) * CHUNK_SIZE;
+    const x0 = cx * this.chunkSize;
+    const x1 = (cx + 1) * this.chunkSize;
+    const y0 = cy * this.chunkSize;
+    const y1 = (cy + 1) * this.chunkSize;
     const toRemove = this.list.filter(item => item.x >= x0 && item.x < x1 && item.y >= y0 && item.y < y1);
     toRemove.forEach(item => this.destroy(item));
     this.loadedChunks.delete(key);
+    if (toRemove.length > 0) {
+      console.log(`Unloaded chunk ${key}: ${toRemove.length} objects`);
+    }
     return toRemove.length;
   }
 
-  _updateChunks() {
-    const player = this.scene?.player?.sprite;
-    if (!player || typeof player.x !== 'number' || typeof player.y !== 'number') return;
-    const pcx = Math.floor(player.x / CHUNK_SIZE);
-    const pcy = Math.floor(player.y / CHUNK_SIZE);
-    const newPlayerChunk = `${pcx}:${pcy}`;
-    if (newPlayerChunk === this.playerChunk) return;
-    const desired = new Set();
-    const radiusChunks = Math.round(this.scene.getCameraInfo().maxSize / 500);
-    for (let dx = -radiusChunks; dx <= radiusChunks; dx++) {
-      for (let dy = -radiusChunks; dy <= radiusChunks; dy++) {
-        desired.add(this._chunkKey(pcx + dx, pcy + dy));
-      }
-    }
-    for (const k of desired) {
-      if (!this.loadedChunks.has(k)) {
-        const [cx, cy] = k.split(':').map(Number);
-        this.loadChunkByCoords(cx, cy);
-      }
-    }
-    for (const k of Array.from(this.loadedChunks)) {
-      if (!desired.has(k)) {
-        const [cx, cy] = k.split(':').map(Number);
-        this.unloadChunkByCoords(cx, cy);
-      }
-    }
-    this.playerChunk = newPlayerChunk;
-  }
-
   update(scene, time, delta) {
-    this._updateChunks();
     const cam = this.scene.cameras.main;
     const view = cam.worldView;
-    const viewPadded = new HawkEngine.Geom.Rectangle(view.x - PAD, view.y - PAD, view.width + PAD * 2, view.height + PAD * 2);
-    this.list.forEach(element => {
-      if (!element) return;
+    
+    if (!this._lastView || 
+        Math.abs(this._lastView.x - view.x) > 10 || 
+        Math.abs(this._lastView.y - view.y) > 10) {
+      this._lastView = { x: view.x, y: view.y, width: view.width, height: view.height };
+      this._viewPadded = new HawkEngine.Geom.Rectangle(
+        view.x - PAD, 
+        view.y - PAD, 
+        view.width + PAD * 2, 
+        view.height + PAD * 2
+      );
+    }
+    
+    const len = this.list.length;
+    for (let i = 0; i < len; i++) {
+      const element = this.list[i];
+      if (!element) continue;
+      
       const child = element.image || element.sprite || element;
-      if (!child || !child.getBounds) return;
-      const inView = HawkEngine.Geom.Intersects.RectangleToRectangle(viewPadded, child.getBounds());
-      if (typeof child.setVisible === 'function') child.setVisible(inView);
-      if (child.body && typeof child.body.enable !== 'undefined') child.body.enable = inView;
+      if (!child || !child.getBounds) continue;
+      
+      const inView = HawkEngine.Geom.Intersects.RectangleToRectangle(this._viewPadded, child.getBounds());
+      
+      if (child.visible !== inView && typeof child.setVisible === 'function') {
+        child.setVisible(inView);
+      }
+      
+      if (child.body && typeof child.body.enable !== 'undefined' && child.body.enable !== inView) {
+        child.body.enable = inView;
+      }
+      
       element.active = inView;
+      
       if (inView && typeof element.update === 'function') {
         try { element.update(time, delta); } catch(e) {}
       }
-    });
+    }
   }
 
   loadChunk({ cx, cy }) { return this.loadChunkByCoords(cx, cy); }

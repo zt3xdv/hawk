@@ -3,10 +3,11 @@ import fs from 'fs/promises';
 import { existsSync, mkdirSync } from 'fs';
 import UserModel from '../models/UserModel.js';
 import PlayerModel from '../models/PlayerModel.js';
+import ModerationModel from '../models/ModerationModel.js';
 import { log, uuid } from '../utils/Utils.js';
 import { DEV } from '../utils/Constants.js';
 import { pack, unpack } from 'msgpackr';
-import config from '../../config.json' with { type: 'json' };
+import ChunkManager from './ChunkManager.js';
 
 class HawkServer {
   constructor(server, serverData) {
@@ -15,8 +16,12 @@ class HawkServer {
 
     this.players = {};
     this.map = [];
+    this.mapObjects = {};
+    this.tiles = [];
 
-    this.time = 720;
+    this.chunkManager = new ChunkManager(512);
+
+    this.time = 0;
     this.__counterStarted = false;
 
     this.dev = DEV;
@@ -29,7 +34,7 @@ class HawkServer {
     return {
       ...this.data,
       players: Object.keys(this.players).length,
-      path: (config.https.enabled ? "wss" : "ws") + "://" + config.host + this.path
+      path: this.path
     };
   }
 
@@ -64,6 +69,10 @@ class HawkServer {
 
   _isVisibleTo(source, target) {
     if (!source || !target || !source.loggedIn || !target.loggedIn) return false;
+    
+    if (ModerationModel.isHidden(source.uuid, target.uuid)) return false;
+    if (ModerationModel.isHidden(target.uuid, source.uuid)) return false;
+    
     const d = this._distance(source, target);
     return d <= target.viewRange;
   }
@@ -110,14 +119,19 @@ class HawkServer {
   _broadcastMovement(playerId) {
     const p = this.players[playerId];
     if (!p || !p.loggedIn) return;
+    
     for (const viewerId of p.visible) {
       const viewer = this.players[viewerId];
+      if (!viewer) continue;
+      
       const sockViewer = viewer?.ws;
       if (sockViewer && sockViewer.readyState === WebSocket.OPEN) {
         this._send(sockViewer, 'playerMoved', { id: p.id, x: p.x, y: p.y });
       }
     }
   }
+
+
 
   async create() {
     const startMs = Date.now();
@@ -132,6 +146,7 @@ class HawkServer {
 
     const DATA_DIR = 'data';
     const MAP_FILE = join(DATA_DIR, 'map.json');
+    const TILES_FILE = join(DATA_DIR, 'tiles.json');
 
     if (!existsSync(DATA_DIR)) {
       mkdirSync(DATA_DIR, { recursive: true });
@@ -140,12 +155,27 @@ class HawkServer {
     try {
       const content = await fs.readFile(MAP_FILE, 'utf8');
       this.map = JSON.parse(content);
+      
+      this.map.forEach((obj, index) => {
+        const objId = obj.options?.serverId || `obj_${index}`;
+        obj.options = obj.options || {};
+        obj.options.serverId = objId;
+        this.mapObjects[objId] = obj;
+        this.chunkManager.addObjectToChunk(objId, obj.x, obj.y);
+      });
     } catch (err) {
       this.map = [];
     }
+    
+    try {
+      const tilesContent = await fs.readFile(TILES_FILE, 'utf8');
+      this.tiles = JSON.parse(tilesContent);
+    } catch (err) {
+      this.tiles = [];
+    }
 
     this.wss.on('connection', (ws, req) => {
-      const socketId = uuid(); // usa uuid() desde Utils.js
+      const socketId = uuid();
       ws._id = socketId;
 
       this.players[socketId] = new PlayerModel({ id: socketId });
@@ -169,48 +199,71 @@ class HawkServer {
             return ws.close();
           }
 
+          if (ModerationModel.isBanned(user.id)) {
+            const ban = ModerationModel.getUserBan(user.id);
+            this._send(ws, 'loginError', { error: `You are banned. Reason: ${ban.reason}` });
+            return ws.close();
+          }
+
+          if (ModerationModel.isTimedOut(user.id)) {
+            const timeout = ModerationModel.getUserTimeout(user.id);
+            const remaining = Math.ceil((timeout.expiresAt - Date.now()) / 1000 / 60);
+            this._send(ws, 'loginError', { error: `You are timed out for ${remaining} more minutes. Reason: ${timeout.reason}` });
+            return ws.close();
+          }
+
           const p = this.players[socketId];
           p.uuid = user.id;
           p.display_name = user.displayName;
           p.username = username;
-          const { x = 0, y = 0 } = user.game?.lastPosition ?? {};
-          p.x = (x !== 0) ? x : 312;
-          p.y = (y !== 0) ? y : 536;
+          
+          const positionData = user.game?.lastPosition ?? {};
+          const { x = 0, y = 0 } = positionData;
+          p.x = (x !== 0) ? x : 512;
+          p.y = (y !== 0) ? y : 512;
 
           p.loggedIn = true;
           p.viewRange = clientRange;
           p.avatar = user.game?.avatar ?? null;
           p.visible = p.visible || new Set();
 
-          p.loadedChunks = p.loadedChunks || new Set();
-          p.seenChunks = p.seenChunks || new Set();
+          p.loadedChunks = new Set();
+          p.currentChunk = null;
 
-          this._send(ws, 'map', { map: this.map });
+          const playerChunk = this.chunkManager.addPlayerToChunk(socketId, p.x, p.y);
+          p.currentChunk = playerChunk;
 
+          const visibleChunks = this.chunkManager.getVisibleChunks(p.x, p.y, p.viewRange);
+          const chunksData = [];
           const nearby = {};
-          for (const [otherId, other] of Object.entries(this.players)) {
-            if (otherId === socketId) continue;
-            if (!other.loggedIn) continue;
 
-            const d = this._distance(p, other);
-            const pSeesOther = d <= p.viewRange;
-            const otherSeesP = d <= other.viewRange;
-
-            if (pSeesOther) {
-              nearby[otherId] = this._sanitizePlayer(other);
-              p.visible.add(otherId);
-            }
-
-            if (otherSeesP) {
-              other.visible = other.visible || new Set();
-              if (!other.visible.has(socketId)) {
-                other.visible.add(socketId);
-                const sockOther = other.ws;
-                if (sockOther && sockOther.readyState === WebSocket.OPEN) this._sendPlayerTo(sockOther, p);
+          for (const chunkKey of visibleChunks) {
+            p.loadedChunks.add(chunkKey);
+            const chunkData = this.chunkManager.getChunkData(chunkKey, this.mapObjects);
+            
+            for (const playerId of chunkData.players) {
+              if (playerId === socketId) continue;
+              const other = this.players[playerId];
+              if (other && other.loggedIn) {
+                nearby[playerId] = this._sanitizePlayer(other);
+                p.visible.add(playerId);
+                
+                other.visible = other.visible || new Set();
+                if (!other.visible.has(socketId)) {
+                  other.visible.add(socketId);
+                  const sockOther = other.ws;
+                  if (sockOther && sockOther.readyState === WebSocket.OPEN) {
+                    this._sendPlayerTo(sockOther, p);
+                  }
+                }
               }
             }
+            
+            chunksData.push(chunkData);
           }
 
+          this._send(ws, 'chunks', { chunks: chunksData });
+          this._send(ws, 'tiles', { tiles: this.tiles });
           this._send(ws, 'loggedIn', { player: p, players: nearby });
           this._send(ws, 'time', { time: this.time });
           return;
@@ -229,8 +282,36 @@ class HawkServer {
         if (type === 'playerMovement') {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
+          
           p.x = data.x;
           p.y = data.y;
+          
+          const oldChunk = p.currentChunk;
+          const newChunk = this.chunkManager.getChunkKey(p.x, p.y);
+          
+          if (oldChunk !== newChunk) {
+            this.chunkManager.removePlayerFromChunk(socketId, oldChunk);
+            this.chunkManager.addPlayerToChunk(socketId, p.x, p.y);
+            p.currentChunk = newChunk;
+            
+            const visibleChunks = this.chunkManager.getVisibleChunks(p.x, p.y, p.viewRange);
+            const newChunks = visibleChunks.filter(key => !p.loadedChunks.has(key));
+            const removedChunks = Array.from(p.loadedChunks).filter(key => !visibleChunks.includes(key));
+            
+            if (newChunks.length > 0) {
+              const chunksData = newChunks.map(key => {
+                p.loadedChunks.add(key);
+                return this.chunkManager.getChunkData(key, this.mapObjects);
+              });
+              this._send(ws, 'loadChunks', { chunks: chunksData });
+            }
+            
+            if (removedChunks.length > 0) {
+              removedChunks.forEach(key => p.loadedChunks.delete(key));
+              this._send(ws, 'unloadChunks', { chunks: removedChunks });
+            }
+          }
+          
           this._recalcVisibilityFor(socketId);
           this._broadcastMovement(socketId);
           return;
@@ -247,6 +328,8 @@ class HawkServer {
 
           for (const viewerId of p.visible) {
             const viewer = this.players[viewerId];
+            if (!viewer) continue;
+            
             const sockViewer = viewer?.ws;
             if (sockViewer && sockViewer.readyState === WebSocket.OPEN) this._send(sockViewer, 'chatmessage', payload);
           }
@@ -272,45 +355,113 @@ class HawkServer {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
           
+          const objId = data.options?.serverId || uuid();
+          data.options = data.options || {};
+          data.options.serverId = objId;
+          
+          this.mapObjects[objId] = data;
+          this.chunkManager.addObjectToChunk(objId, data.x, data.y);
+          
           for (const viewerId of p.visible) {
             const viewer = this.players[viewerId];
             const sockViewer = viewer?.ws;
-            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) this._send(sockViewer, 'createElement', data);
+            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) {
+              this._send(sockViewer, 'createElement', data);
+            }
           }
+          
           this.map.push(data);
           await fs.writeFile(MAP_FILE, JSON.stringify(this.map, null, 2), 'utf8');
           return;
         }
+
         if (this.dev && type === 'deleteElement') {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
           
-          for (const viewerId of p.visible) {
-            const viewer = this.players[viewerId];
-            const sockViewer = viewer?.ws;
-            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) this._send(sockViewer, 'deleteElement', data);
+          const objId = data.options?.serverId;
+          if (objId && this.mapObjects[objId]) {
+            const obj = this.mapObjects[objId];
+            const chunkKey = this.chunkManager.getChunkKey(obj.x, obj.y);
+            this.chunkManager.removeObjectFromChunk(objId, chunkKey);
+            delete this.mapObjects[objId];
           }
-          const index = this.map.findIndex(item => item.options?.serverId === data.options?.serverId);
-          if (index > -1) this.map.splice(index, 1);
-          await fs.writeFile(MAP_FILE, JSON.stringify(this.map, null, 2), 'utf8');
-          return;
-        }
-        if (this.dev && type === 'moveElement') {
-          const p = this.players[socketId];
-          if (!p || !p.loggedIn) return;
           
           for (const viewerId of p.visible) {
             const viewer = this.players[viewerId];
             const sockViewer = viewer?.ws;
-            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) this._send(sockViewer, 'moveElement', data);
+            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) {
+              this._send(sockViewer, 'deleteElement', data);
+            }
           }
-          const index = this.map.findIndex(item => item.options?.serverId === data.options?.serverId);
+          
+          const index = this.map.findIndex(item => item.options?.serverId === objId);
+          if (index > -1) this.map.splice(index, 1);
+          await fs.writeFile(MAP_FILE, JSON.stringify(this.map, null, 2), 'utf8');
+          return;
+        }
+
+        if (this.dev && type === 'moveElement') {
+          const p = this.players[socketId];
+          if (!p || !p.loggedIn) return;
+          
+          const objId = data.options?.serverId;
+          if (objId && this.mapObjects[objId]) {
+            const obj = this.mapObjects[objId];
+            const oldChunkKey = this.chunkManager.getChunkKey(obj.x, obj.y);
+            const newChunkKey = this.chunkManager.getChunkKey(data.x, data.y);
+            
+            if (oldChunkKey !== newChunkKey) {
+              this.chunkManager.removeObjectFromChunk(objId, oldChunkKey);
+              this.chunkManager.addObjectToChunk(objId, data.x, data.y);
+            }
+            
+            obj.x = data.x;
+            obj.y = data.y;
+          }
+          
+          for (const viewerId of p.visible) {
+            const viewer = this.players[viewerId];
+            const sockViewer = viewer?.ws;
+            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) {
+              this._send(sockViewer, 'moveElement', data);
+            }
+          }
+          
+          const index = this.map.findIndex(item => item.options?.serverId === objId);
           if (index > -1) {
             const el = this.map[index];
             el.x = data.x;
             el.y = data.y;
           }
           await fs.writeFile(MAP_FILE, JSON.stringify(this.map, null, 2), 'utf8');
+          return;
+        }
+        
+        if (this.dev && type === 'setTile') {
+          const p = this.players[socketId];
+          if (!p || !p.loggedIn) return;
+          
+          const { x, y, type: tileType } = data;
+          if (typeof x !== 'number' || typeof y !== 'number' || !tileType) return;
+          
+          const existingIndex = this.tiles.findIndex(t => t.x === x && t.y === y);
+          if (existingIndex > -1) {
+            this.tiles[existingIndex].type = tileType;
+          } else {
+            this.tiles.push({ x, y, type: tileType });
+          }
+          
+          for (const viewerId of p.visible) {
+            const viewer = this.players[viewerId];
+            const sockViewer = viewer?.ws;
+            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) {
+              this._send(sockViewer, 'setTile', data);
+            }
+          }
+          
+          const TILES_FILE = join(DATA_DIR, 'tiles.json');
+          await fs.writeFile(TILES_FILE, JSON.stringify(this.tiles, null, 2), 'utf8');
           return;
         }
       });
@@ -325,10 +476,16 @@ class HawkServer {
             await UserModel.saveUsers();
           }
 
+          if (p.currentChunk) {
+            this.chunkManager.removePlayerFromChunk(socketId, p.currentChunk);
+          }
+
           for (const viewerId of p.visible) {
             const viewer = this.players[viewerId];
             const sockViewer = viewer?.ws;
-            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) this._send(sockViewer, 'removePlayer', socketId);
+            if (sockViewer && sockViewer.readyState === WebSocket.OPEN) {
+              this._send(sockViewer, 'removePlayer', socketId);
+            }
             const other = this.players[viewerId];
             if (other && other.visible) other.visible.delete(socketId);
           }

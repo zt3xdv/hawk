@@ -28,6 +28,9 @@
     "express": "^5.1.0",
     "mime-types": "^3.0.1",
     "msgpackr": "^1.11.5",
+    "passport": "^0.7.0",
+    "passport-discord": "^0.1.4",
+    "passport-google-oauth20": "^2.0.0",
     "phaser3spectorjs": "^0.0.8",
     "pngjs": "^7.0.0",
     "ws": "^8.18.3"

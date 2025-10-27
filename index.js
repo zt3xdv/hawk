@@ -5,8 +5,12 @@ import path from 'path';
 import authRoutes from './src/routes/server/auth.js';
 import friendsRoutes from './src/routes/server/friends.js';
 import gameRoutes from './src/routes/server/game.js';
+import messagesRoutes from './src/routes/server/messages.js';
+import moderationRoutes from './src/routes/server/moderation.js';
 import HawkServer from './src/server/Hawk.js';
 import SocketServer from './src/server/Socket.js';
+import MessageSocket from './src/server/MessageSocket.js';
+import ModerationModel from './src/models/ModerationModel.js';
 import config from './config.json' with { type: 'json' };
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -21,6 +25,7 @@ const __dirname = dirname(__filename);
 const app = express();
 const server = config.https.enabled ? https.createServer({ cert: config.https.cert, key: config.https.key }, app) : http.createServer(app);
 const socketServer = new SocketServer({ server });
+const messageSocket = new MessageSocket(socketServer);
 app.hawkServers = [];
 
 SERVERS.forEach(s => {
@@ -37,6 +42,8 @@ app.use(express.static(join(__dirname, 'dist')));
 authRoutes.setApp(app);
 friendsRoutes.setApp(app);
 gameRoutes.setApp(app);
+messagesRoutes.setApp(app);
+moderationRoutes.setApp(app);
 
 app.get(/.*/, async (req, res) => {
   try {
@@ -61,6 +68,7 @@ app.get(/.*/, async (req, res) => {
   }
 });
 
-server.listen(config.port, () => {
+server.listen(config.port, async () => {
   log(config.https.enabled ? "https" : "http", (config.https.enabled ? "HTTPs" : "HTTP") + " server listening on port " + config.port);
+  await ModerationModel.loadData();
 });

@@ -4,6 +4,7 @@ import NetworkManager from '../managers/NetworkManager.js';
 import ConnectingOverlay from '../managers/ConnectingOverlay.js';
 import LightManager from '../managers/LightManager.js';
 import MapObjectManager from '../managers/MapObjectManager.js';
+import TileManager from '../managers/TileManager.js';
 import Floor from '../objects/Floor.js';
 import Random from '../utils/Random.js';
 import ErrorModal from '../ui/ErrorModal.js';
@@ -46,10 +47,12 @@ export default class GameScene extends HawkEngine.Scene {
     this.connectingOverlay = new ConnectingOverlay(this);
     this.connectingOverlay.show();
     
-    this.floor             = new Floor(this, {
+    this.tileManager = new TileManager(this, {
       mapPixelWidth: this.mapSize.width,
       mapPixelHeight: this.mapSize.height,
+      tileSize: 32
     });
+    
     this.lightManager      = new LightManager(this, {
       startAtMinutes: 12
     });
@@ -61,9 +64,15 @@ export default class GameScene extends HawkEngine.Scene {
     this.lightManager.create();
     this.random = new Random(12344);
     this.mapObjects = new MapObjectManager(this);
-
+    
     this.collisionGroup = this.physics.add.group({
       immovable: true
+    });
+    
+    this.input.on('pointerdown', (pointer) => {
+      if (this.dev && this.inputManager.currentEditorMode !== 'idle') {
+        this.inputManager.handleEditorClick(pointer.worldX, pointer.worldY);
+      }
     });
     
     this.game.events.emit('gameLoad');
@@ -105,6 +114,7 @@ export default class GameScene extends HawkEngine.Scene {
 
       this.player.update();
       this.player.updateMovement(direction);
+      
       this.movementTimer += delta;
 
       if (this.movementTimer >= SEND_INTERVAL) {
@@ -131,6 +141,8 @@ export default class GameScene extends HawkEngine.Scene {
     this.lightManager.update(time, delta);
     this.mapObjects.update(time, delta);
   }
+  
+
 
   zoomIn() {
     const cam = this.cameras.main;

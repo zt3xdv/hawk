@@ -8,6 +8,7 @@ import Cache from '../utils/Cache.js';
 export function renderDashboard() {
   const app = document.getElementById('app');
   app.innerHTML = `
+<div class="auth">
   <div class="main-header">
     <button class="btn" id="discord">
       <span><canv-icon src="${Cache.getBlob('assets/icons/flag.png').dataUrl}"></canv-icon>Join our <strong>Discord</strong> server</span>
@@ -22,6 +23,7 @@ export function renderDashboard() {
   <hr>
   <div style="margin-bottom: 10px;" id="preview"></div>
   <button class="btn" id="play">
+    <div id="play-button">
     <div id="title">
       <div class="btn-text" style="display:none">Play on <strong id="server-name"></strong></div>
       <div class="btn-spinner">Loading... <span class="loader"></span></div>
@@ -32,6 +34,7 @@ export function renderDashboard() {
         <span class="bar bar2"></span>
         <span class="bar bar3"></span>
       </div>
+    </div>
     </div>
   </button>
   <div id="server-dropdown-menu"></div>
@@ -46,6 +49,7 @@ export function renderDashboard() {
 
     <ul id="ruleList" style="margin:12px 0 0 0;padding:0;list-style:none;display:grid;gap:8px"></ul>
   </div>
+</div>
   `;
 
   const previewEl = document.getElementById('preview');

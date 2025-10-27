@@ -4,6 +4,9 @@ import Options from './utils/Options.js';
 
 export default class Game {
   constructor(domElement) {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isLowEnd = navigator.hardwareConcurrency <= 4 || navigator.deviceMemory <= 4;
+    
     const config = {
       banner: false,
       parent: domElement,
@@ -12,16 +15,23 @@ export default class Game {
       pixelArt: true,
       render: {
         roundPixels: true,
-        preserveDrawingBuffer: true,
+        preserveDrawingBuffer: false,
         antialias: false,
         antialiasGL: false,
-        powerPreference: "high-performance",
+        powerPreference: isMobile || isLowEnd ? "default" : "high-performance",
+        batchSize: isMobile ? 1024 : 2048,
+        maxTextures: isMobile ? 8 : 16,
       },
       physics: {
         default: 'arcade',
         arcade: {
-          debug: Options.get("debug")
+          debug: Options.get("debug"),
+          fps: isMobile || isLowEnd ? 30 : 60
         }
+      },
+      fps: {
+        target: isMobile || isLowEnd ? 30 : 60,
+        forceSetTimeOut: isMobile
       },
       scene: [
         GameScene
@@ -29,15 +39,18 @@ export default class Game {
     };
 
     this.game = new HawkEngine.Game(config);
+    this.resizeTimeout = null;
     
     window.addEventListener('resize', () => {
-      this._onResize();
+      if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+      this.resizeTimeout = setTimeout(() => this._onResize(), 200);
     });
   }
   
   _onResize() {
-    const newWidth = (window.innerWidth * window.devicePixelRatio) / 2;
-    const newHeight = (window.innerHeight * window.devicePixelRatio) / 2;
+    const scale = Math.min(window.devicePixelRatio, 2);
+    const newWidth = (window.innerWidth * scale) / 2;
+    const newHeight = (window.innerHeight * scale) / 2;
     this.game.scale.resize(newWidth, newHeight);
     this.game.renderer.resize(newWidth, newHeight);
   }

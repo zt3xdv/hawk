@@ -1,4 +1,6 @@
 import Cache from '../utils/Cache.js';
+import { apiPost } from '../utils/Utils.js';
+import { API } from '../utils/Constants.js';
 
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
@@ -44,33 +46,15 @@ export async function validateAndConvertImage(file, { maxBytes = 5_000_000 } = {
   return resizeImageTo32(img);
 }
 
-async function postAvatar(base64Image, username = null, password = null, { timeoutMs = 15000 } = {}) {
+async function postAvatar(base64Image, username = null, password = null) {
   if (!base64Image) throw new Error("No image to upload");
   const payload = { image: base64Image, username: username ?? null, password: password ?? null };
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  let res;
   try {
-    res = await fetch("/api/avatar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
+    const data = await apiPost(API.avatar, payload);
+    if (data.error) throw new Error(data.error);
+    return data;
   } catch (err) {
-    if (err.name === "AbortError") throw new Error("Upload timed out");
-    throw new Error("Network error while uploading avatar");
-  } finally {
-    clearTimeout(id);
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Server error ${res.status}${text ? `: ${text}` : ""}`);
-  }
-  try {
-    return await res.json();
-  } catch {
-    return null;
+    throw new Error(err.message || "Network error while uploading avatar");
   }
 }
 
@@ -150,7 +134,7 @@ export function renderAvatar() {
       if (!base64) throw new Error("Could not convert image");
       const username = localStorage.getItem("username");
       const password = localStorage.getItem("password");
-      await postAvatar(base64, username, password, { timeoutMs: 15000 });
+      await postAvatar(base64, username, password);
       messageEl.textContent = "Avatar uploaded successfully";
     } catch (err) {
       messageEl.textContent = err.message || "Upload error";

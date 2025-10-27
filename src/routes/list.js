@@ -6,6 +6,7 @@ export const routes = {
 '/profile':          { auth: true,  title: 'Profile', description: 'View and edit your public profile.' },
 '/profile-settings': { auth: true,  title: 'Profile Settings', description: 'Manage data and security settings.' },
 '/people':           { auth: true,  title: 'People', description: 'Manage friends, and send game invites.' },
+'/dms':              { auth: true,  title: 'Messages', description: 'Send and receive direct messages with other users.' },
 '/about':            { auth: false,  title: 'About', description: 'Overview of Hawk, its mission, and team.' },
 '/help':             { auth: false,  title: 'Help', description: 'Controls, and some help.' },
 '/privacypolicy':    { auth: false,  title: 'Privacy Policy', description: 'Details on how Hawk collects, uses, and protects data.' },

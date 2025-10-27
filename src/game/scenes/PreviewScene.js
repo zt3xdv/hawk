@@ -8,10 +8,6 @@ export default class PreviewScene extends HawkEngine.Scene {
   constructor() {
     super({ key: 'DashScene' });
     this.player = null;
-    this.timed = 6000;
-    
-    this.messages = ["we need ws upgrades", "for web proxies", "but anyways", "david doesnt add anything far of panel"];
-    this.msgIndex = this.messages.length - 1;
   }
 
   preload() {
@@ -39,15 +35,6 @@ export default class PreviewScene extends HawkEngine.Scene {
 
   update(time, delta) {
     if (!this.player) return;
-    
-    this.timed += delta;
-    if (this.timed >= 6000) {
-      this.timed = 0;
-      this.msgIndex = (this.msgIndex + 1) % this.messages.length;
-      
-      this.player.say(this.messages[this.msgIndex], false);
-    }
-    
     this.player.update({ x: 0, y: 0 });
   }
 }

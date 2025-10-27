@@ -1,5 +1,4 @@
 import HawkEngine from '../../../dist/engine/main.js';
-import Editable from '../utils/Editable.js';
 
 export default class MapObject {
   static _nextId = 1;
@@ -55,7 +54,6 @@ export default class MapObject {
       .setImmovable(true);
 
     this.image.setData('id', this.id);
-    if (scene.dev) Editable.setEditable(this, this.scene);
   }
 
   update(time, delta) {

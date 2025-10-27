@@ -11,8 +11,12 @@ class UserModel {
       lastPosition: {
         x: 0,
         y: 0
+      },
+      partyLastPosition: {
+        x: 0,
+        y: 0
       }
-    }, avatar, bio) {
+    }, avatar, bio, roles = ['player'], hiddenPlayers = [], oauthProvider = null, oauthId = null) {
         this.id = id;
         this.displayName = displayName;
         this.username = username;
@@ -20,19 +24,35 @@ class UserModel {
         this.game = game;
         this.avatar = avatar;
         this.bio = bio;
+        this.roles = roles;
+        this.hiddenPlayers = hiddenPlayers;
+        this.oauthProvider = oauthProvider;
+        this.oauthId = oauthId;
     }
 
     static async loadUsers() {
         try {
             const data = await fs.readFile(this.DATA_PATH, 'utf8');
             const jsonData = JSON.parse(data);
-            this.users = jsonData.map(user => new UserModel(user.id, user.display_name, user.username, user.password, user.game, user.avatar, user.bio));
+            this.users = jsonData.map(user => new UserModel(
+                user.id, 
+                user.display_name, 
+                user.username, 
+                user.password, 
+                user.game, 
+                user.avatar, 
+                user.bio,
+                user.roles || ['player'],
+                user.hiddenPlayers || [],
+                user.oauthProvider || null,
+                user.oauthId || null
+            ));
         } catch (error) {
-            if (err.code === 'ENOENT') {
+            if (error.code === 'ENOENT') {
                 this.users = [];
                 await this.saveUsers();
             } else {
-                console.error('Error loading users from file:', err);
+                console.error('Error loading users from file:', error);
             }
         }
     }
@@ -47,6 +67,10 @@ class UserModel {
                 game: user.game,
                 avatar: user.avatar,
                 bio: user.bio,
+                roles: user.roles || ['player'],
+                hiddenPlayers: user.hiddenPlayers || [],
+                oauthProvider: user.oauthProvider || null,
+                oauthId: user.oauthId || null
             }));
             await fs.writeFile(this.DATA_PATH, JSON.stringify(jsonData, null, 2));
         } catch (error) {
@@ -56,7 +80,21 @@ class UserModel {
 
     static async createUser(displayName, username, password) {
         const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
-        const newUser = new UserModel(uuid(), displayName, username, hashedPassword);
+        const defaultGame = {
+            lastPosition: { x: 0, y: 0 },
+            partyLastPosition: { x: 0, y: 0 }
+        };
+        const newUser = new UserModel(
+            uuid(), 
+            displayName, 
+            username, 
+            hashedPassword, 
+            defaultGame, 
+            null, 
+            '', 
+            ['player'], 
+            []
+        );
         this.users.push(newUser);
         await this.saveUsers();
         return newUser;
@@ -102,6 +140,36 @@ class UserModel {
 
     static getAllUsers() {
         return this.users;
+    }
+
+    static async createOAuthUser(displayName, username, oauthProvider, oauthId, extraData = {}) {
+        const randomPassword = Math.random().toString(36).slice(-16) + Math.random().toString(36).slice(-16);
+        const hashedPassword = await bcrypt.hash(randomPassword, this.SALT_ROUNDS);
+        
+        const defaultGame = {
+            lastPosition: { x: 0, y: 0 },
+            partyLastPosition: { x: 0, y: 0 }
+        };
+        const newUser = new UserModel(
+            uuid(), 
+            displayName, 
+            username, 
+            hashedPassword,
+            defaultGame, 
+            extraData.avatar || null, 
+            '', 
+            ['player'], 
+            [],
+            oauthProvider,
+            oauthId
+        );
+        this.users.push(newUser);
+        await this.saveUsers();
+        return newUser;
+    }
+
+    static getUserByOAuthId(provider, oauthId) {
+        return this.users.find(user => user.oauthProvider === provider && user.oauthId === oauthId);
     }
 }
 

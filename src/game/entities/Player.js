@@ -1,6 +1,6 @@
 import ChatBubbleManager from '../managers/ChatBubbleManager.js';
 import { estimateReadTime } from '../utils/Utils.js';
-import { PLAYER_SPEED } from '../../utils/Constants.js';
+import { PLAYER_SPEED_WALK, PLAYER_SPEED_RUN } from '../../utils/Constants.js';
 import HawkEngine from '../../../dist/engine/main.js';
 
 export default class Player {
@@ -23,6 +23,34 @@ export default class Player {
     this.sprite.body.debugShowBody = false;
     this.sprite.body.roundPixels = true;
 
+    this.sprite.setInteractive(/*{ 
+      cursor: 'pointer',
+      useHandCursor: true,
+      pixelPerfect: false
+    }*/);
+    this.sprite.setData('playerId', id);
+    this.sprite.setData('playerUuid', uuid);
+    this.sprite.setData('playerData', {
+      id,
+      uuid,
+      username,
+      display_name,
+      avatar
+    });
+    
+    this.sprite.on('pointerdown', () => {
+      const scene = this.scene;
+      if (scene && scene.inputManager && scene.inputManager.playerInfoModal) {
+        scene.inputManager.playerInfoModal.showPlayer(uuid, {
+          id,
+          uuid,
+          username,
+          display_name,
+          avatar
+        });
+      }
+    });
+
     if (avatar) {
       const img = new Image();
       img.onload = () => {
@@ -40,7 +68,9 @@ export default class Player {
     this.nameText.setCharacterTint(0, -1, true, 0xFFFFFF);
     
     this._positionTween = null;
-    this._smoothDuration = 100;
+    this._smoothDuration = 150;
+    this._targetPosition = { x: x, y: y };
+    this._interpolationSpeed = 0.25;
 
     this.chat = new ChatBubbleManager(scene, () => this.sprite.x, () => this.sprite.y, {
       bubblePaddingX: 6,
@@ -58,47 +88,70 @@ export default class Player {
   }
 
   updateMovement(direction) {
-    this.sprite.body.setVelocity(Math.floor(direction.x * PLAYER_SPEED), Math.floor(direction.y * PLAYER_SPEED));
-    this.nameText.setPosition(Math.floor(this.sprite.x - Math.floor(this.sprite.width / 2)), Math.floor(this.sprite.y - 30));
-    this.sprite.setDepth(this.sprite.y + 16);
+    const speed = direction.running ? PLAYER_SPEED_RUN : PLAYER_SPEED_WALK;
+    const vx = Math.floor(direction.x * speed);
+    const vy = Math.floor(direction.y * speed);
+    
+    if (this.sprite.body.velocity.x !== vx || this.sprite.body.velocity.y !== vy) {
+      this.sprite.body.setVelocity(vx, vy);
+    }
+    
+    const newX = Math.floor(this.sprite.x - Math.floor(this.sprite.width / 2));
+    const newY = Math.floor(this.sprite.y - 30);
+    
+    if (this.nameText.x !== newX || this.nameText.y !== newY) {
+      this.nameText.setPosition(newX, newY);
+    }
+    
+    const newDepth = this.sprite.y + 16;
+    if (this.sprite.depth !== newDepth) {
+      this.sprite.setDepth(newDepth);
+    }
   }
 
   setPosition(x, y, smooth = false) {
-    if (this._positionTween) {
-      this._positionTween.stop();
-      this._positionTween = null;
-    }
-
-    const duration = smooth ? this._smoothDuration : 0;
-
-    if (!duration) {
+    if (!smooth) {
       this.sprite.setPosition(x, y);
       if (this.nameText) this.nameText.setPosition(Math.floor(x - 16), Math.floor(y - 25));
       if (this.sprite.body) this.sprite.body.reset(x, y);
-      this.chat.update();
+      this._targetPosition.x = x;
+      this._targetPosition.y = y;
+      if (this.chat && this.chat.needsUpdate) this.chat.update();
       return;
     }
 
-    this._positionTween = this.scene.tweens.add({
-      targets: [this.sprite, this.nameText],
-      props: {
-        x: { value: x, ease: 'Linear' },
-        y: { value: (target) => (target === this.nameText ? y - 20 : y), ease: 'Linear' }
-      },
-      duration,
+    this._targetPosition.x = x;
+    this._targetPosition.y = y;
+    
+    const dx = x - this.sprite.x;
+    const dy = y - this.sprite.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance > 200) {
+      this.sprite.setPosition(x, y);
+      if (this.sprite.body) this.sprite.body.reset(x, y);
+      if (this.nameText) this.nameText.setPosition(Math.floor(x - 16), Math.floor(y - 25));
+      return;
+    }
+    
+    this.scene.tweens.add({
+      targets: this.sprite,
+      x: x,
+      y: y,
+      duration: this._smoothDuration,
+      ease: 'Linear',
       onUpdate: () => {
-        this.sprite.x = Math.round(this.sprite.x);
-        this.sprite.y = Math.round(this.sprite.y);
-        this.nameText.x = Math.round(this.nameText.x);
-        this.nameText.y = Math.round(this.nameText.y);
-        this.chat.update();
+        if (this.sprite.body) {
+          this.sprite.body.reset(this.sprite.x, this.sprite.y);
+        }
+        if (this.nameText) {
+          this.nameText.setPosition(Math.floor(this.sprite.x - 16), Math.floor(this.sprite.y - 25));
+        }
       },
       onComplete: () => {
-        this.sprite.setPosition(x, y);
-        if (this.nameText) this.nameText.setPosition(Math.floor(x - 16), Math.floor(y - 20));
-        if (this.sprite.body) this.sprite.body.reset(x, y);
-        this._positionTween = null;
-        this.chat.update();
+        if (this.sprite.body) {
+          this.sprite.body.reset(x, y);
+        }
       }
     });
   }

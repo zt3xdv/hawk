@@ -6,8 +6,12 @@ import { verifyTurnstile } from '../../utils/Utils.js';
 import fs from 'fs';
 import path from 'path';
 import config from '../../../config.json' with { type: 'json' };
+import passport from 'passport';
+import setupOAuth from '../../utils/OAuth.js';
 
 const router = new Router();
+
+setupOAuth();
 
 function inRange(value = '', min, max) {
   return typeof value === 'string' && value.length >= min && value.length <= max;
@@ -75,15 +79,19 @@ router.post('/api/auth/register', async (req, res) => {
       }
     }
 
-    if (!validUsername(username) || !inRange(password, PASSWORD.MIN, PASSWORD.MAX)) {
-      return res.status(400).json({ error: 'Invalid credentials.' });
-    }
-
     const normUsername = normalizeUsername(username);
 
     await UserModel.loadUsers();
     const user = UserModel.getUserByUsername(normUsername);
     if (!user) return res.status(401).json({ error: 'Invalid credentials.' });
+
+    if (!user.oauthProvider && !validUsername(username)) {
+      return res.status(401).json({ error: 'Invalid credentials.' });
+    }
+
+    if (!inRange(password, PASSWORD.MIN, PASSWORD.MAX)) {
+      return res.status(401).json({ error: 'Invalid credentials.' });
+    }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Invalid credentials.' });
@@ -100,15 +108,15 @@ router.post('/api/auth/register', async (req, res) => {
         return res.status(400).json({ error: 'Please fill all fields.' });
     }
 
-    if (!validUsername(username)) {
-      return res.status(400).json({ error: 'Invalid credentials.' });
-    }
-
     const normUsername = normalizeUsername(username);
 
     await UserModel.loadUsers();
     const user = UserModel.getUserByUsername(normUsername);
     if (!user) return res.json({ valid: false });
+
+    if (!user.oauthProvider && !validUsername(username)) {
+      return res.status(400).json({ error: 'Invalid credentials.' });
+    }
 
     try {
       const match = await bcrypt.compare(password, user.password);
@@ -119,19 +127,27 @@ router.post('/api/auth/register', async (req, res) => {
     }
 }).post('/api/auth/profile', async (req, res) => {
     await router.parse(req, res);
-    const { id } = req.body;
-    if (!id) {
-        return res.status(400).json({ error: 'Please fill all fields.' });
+    const { id, username } = req.body;
+    if (!id && !username) {
+        return res.status(400).json({ error: 'Please provide id or username.' });
     }
 
     await UserModel.loadUsers();
-    const user = UserModel.getUserById(id);
+    const user = id ? UserModel.getUserById(id) : UserModel.getUserByUsername(normalizeUsername(username));
     if (!user) return res.json({ valid: false });
 
     return res.json({
       id: user.id,
       displayName: user.displayName,
+      display_name: user.displayName,
       username: user.username,
+      bio: user.bio || '',
+      avatar: user.avatar || '',
+      roles: user.roles || ['player'],
+      game: {
+        avatar: user.game?.avatar || '',
+        lastPosition: user.game?.lastPosition || { x: 0, y: 0 }
+      }
     });
 }).post('/api/avatar', async (req, res) => {
     await router.parse(req, res);
@@ -140,15 +156,15 @@ router.post('/api/auth/register', async (req, res) => {
         return res.status(400).json({ error: 'Please fill all fields.' });
     }
 
-    if (!validUsername(username)) {
-        return res.status(400).json({ error: 'Invalid credentials.' });
-    }
-
     const normUsername = normalizeUsername(username);
 
     await UserModel.loadUsers();
     const user = UserModel.getUserByUsername(normUsername);
     if (!user) return res.status(401).json({ error: 'Invalid credentials.' });
+
+    if (!user.oauthProvider && !validUsername(username)) {
+        return res.status(400).json({ error: 'Invalid credentials.' });
+    }
 
     const match = password === user.password;
     if (!match) return res.status(401).json({ error: 'Invalid credentials.' });
@@ -169,15 +185,15 @@ router.post('/api/auth/register', async (req, res) => {
         return res.status(400).json({ error: 'Please fill all fields.' });
     }
 
-    if (!validUsername(username)) {
-        return res.status(400).json({ error: 'Invalid credentials.' });
-    }
-
     const normUsername = normalizeUsername(username);
 
     await UserModel.loadUsers();
     const user = UserModel.getUserByUsername(normUsername);
     if (!user) return res.status(401).json({ error: 'Invalid credentials.' });
+
+    if (!user.oauthProvider && !validUsername(username)) {
+        return res.status(400).json({ error: 'Invalid credentials.' });
+    }
 
     const match = password === user.password;
     if (!match) return res.status(401).json({ error: 'Invalid credentials.' });
@@ -211,7 +227,17 @@ router.post('/api/auth/register', async (req, res) => {
     }
   }
   try {
-    const mimeType = user.avatar.match(/^data:([^;]+);base64,/)[1];
+    const matchResult = user.avatar.match(/^data:([^;]+);base64,/);
+    if (!matchResult) {
+      const genericAvatarPath = path.join('assets/assets/generic-profile.png');
+      const genericAvatarBuffer = fs.readFileSync(genericAvatarPath);
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+      });
+      return res.end(genericAvatarBuffer);
+    }
+    
+    const mimeType = matchResult[1];
     const avatar = user.avatar.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(avatar, 'base64');
     res.writeHead(200, {
@@ -233,7 +259,13 @@ router.post('/api/auth/register', async (req, res) => {
         return res.status(400).json({ error: 'Invalid key.' });
     }
 
-    if (!validUsername(username)) {
+    const normUsername = normalizeUsername(username);
+
+    await UserModel.loadUsers();
+    const user = UserModel.getUserByUsername(normUsername);
+    if (!user) return res.status(401).json({ error: 'Invalid credentials.' });
+
+    if (!user.oauthProvider && !validUsername(username)) {
         return res.status(400).json({ error: 'Invalid credentials.' });
     }
 
@@ -258,12 +290,6 @@ router.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: `Bio must be between ${BIO.MIN} and ${BIO.MAX} characters.` });
         }
     }
-
-    const normUsername = normalizeUsername(username);
-
-    await UserModel.loadUsers();
-    const user = UserModel.getUserByUsername(normUsername);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials.' });
 
     const match = password === user.password;
     if (!match) return res.status(401).json({ error: 'Invalid credentials.' });
@@ -290,6 +316,49 @@ router.post('/api/auth/register', async (req, res) => {
         console.error('Error updating profile:', err);
         return res.status(500).json({ error: 'Failed to update profile.' });
     }
+}).get('/api/auth/google', (req, res, next) => {
+    if (!config.oauth?.google?.enabled) {
+        return res.status(400).json({ error: 'Google OAuth is disabled.' });
+    }
+    passport.authenticate('google', { scope: ['profile', 'email'], session: false })(req, res, next);
+}).get('/api/auth/google/callback', (req, res, next) => {
+    if (!config.oauth?.google?.enabled) {
+        return res.status(400).json({ error: 'Google OAuth is disabled.' });
+    }
+    passport.authenticate('google', { session: false }, (err, user) => {
+        if (err || !user) {
+            return res.redirect('/auth?error=google_auth_failed');
+        }
+        const credentials = {
+            username: user.username,
+            password: user.password
+        };
+        return res.redirect(`/auth?oauth=success&username=${encodeURIComponent(credentials.username)}&token=${encodeURIComponent(credentials.password)}`);
+    })(req, res, next);
+}).get('/api/auth/discord', (req, res, next) => {
+    if (!config.oauth?.discord?.enabled) {
+        return res.status(400).json({ error: 'Discord OAuth is disabled.' });
+    }
+    passport.authenticate('discord', { session: false })(req, res, next);
+}).get('/api/auth/discord/callback', (req, res, next) => {
+    if (!config.oauth?.discord?.enabled) {
+        return res.status(400).json({ error: 'Discord OAuth is disabled.' });
+    }
+    passport.authenticate('discord', { session: false }, (err, user) => {
+        if (err || !user) {
+            return res.redirect('/auth?error=discord_auth_failed');
+        }
+        const credentials = {
+            username: user.username,
+            password: user.password
+        };
+        return res.redirect(`/auth?oauth=success&username=${encodeURIComponent(credentials.username)}&token=${encodeURIComponent(credentials.password)}`);
+    })(req, res, next);
+}).get('/api/oauth/status', (req, res) => {
+    res.json({
+        google: config.oauth?.google?.enabled || false,
+        discord: config.oauth?.discord?.enabled || false
+    });
 });
 
 export default router;

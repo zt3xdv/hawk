@@ -9,5 +9,19 @@
     "enabled": false,
     "cert": "HTTPS_CERTIFICATE",
     "key": "HTTPS_KEY"
+  },
+  "oauth": {
+    "google": {
+      "enabled": false,
+      "clientId": "GOOGLE_CLIENT_ID",
+      "clientSecret": "GOOGLE_CLIENT_SECRET",
+      "callbackURL": "http://127.0.0.1:3000/api/auth/google/callback"
+    },
+    "discord": {
+      "enabled": false,
+      "clientId": "DISCORD_CLIENT_ID",
+      "clientSecret": "DISCORD_CLIENT_SECRET",
+      "callbackURL": "http://127.0.0.1:3000/api/auth/discord/callback"
+    }
   }
 }

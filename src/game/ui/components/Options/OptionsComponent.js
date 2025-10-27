@@ -65,6 +65,7 @@ export default class OptionsComponent extends HudComponent {
       li.addEventListener('click', () => {
         opt.execute();
       });
+      
       this.el.appendChild(li);
     });
 

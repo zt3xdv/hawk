@@ -1,5 +1,6 @@
 import { toBase64, loadImageFromDataUrl, fitAndDrawImageToCanvas, validateAndConvertImage, postJson, escapeHtml } from "../utils/Utils.js";
 import Cache from '../utils/Cache.js';
+import { API } from '../utils/Constants.js';
 
 export async function renderProfileSettings() {
   const app = document.getElementById("app");
@@ -105,7 +106,7 @@ export async function renderProfileSettings() {
     const password = localStorage.getItem("password");
     if (!username || !password) return null;
     try {
-      const data = await postJson("/api/auth/check", { username, password });
+      const data = await postJson(API.check, { username, password });
       return data || null;
     } catch {
       return null;
@@ -122,21 +123,16 @@ export async function renderProfileSettings() {
     settingsIdEl.textContent = `ID: ${escapeHtml(String(id))}`;
     if (id) {
       try {
-        const res = await fetch(`/api/pavatar/${encodeURIComponent(id)}`);
-        if (res.ok) {
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const imgEl = new Image();
-          imgEl.src = url;
-          imgEl.onload = () => {
-            fitAndDrawImageToCanvas(imgEl, settingsAvatarPreview, Math.min(settingsAvatarPreview.width, settingsAvatarPreview.height));
-            fitAndDrawImageToCanvas(imgEl, settingsAvatarPreviewSmall, Math.min(settingsAvatarPreviewSmall.width, settingsAvatarPreviewSmall.height));
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
-          };
-        } else {
+        const imgEl = new Image();
+        imgEl.src = `${API.pavatar}/${encodeURIComponent(id)}`;
+        imgEl.onload = () => {
+          fitAndDrawImageToCanvas(imgEl, settingsAvatarPreview, Math.min(settingsAvatarPreview.width, settingsAvatarPreview.height));
+          fitAndDrawImageToCanvas(imgEl, settingsAvatarPreviewSmall, Math.min(settingsAvatarPreviewSmall.width, settingsAvatarPreviewSmall.height));
+        };
+        imgEl.onerror = () => {
           ctxMain.clearRect(0,0,settingsAvatarPreview.width, settingsAvatarPreview.height);
           ctxSmall.clearRect(0,0,settingsAvatarPreviewSmall.width, settingsAvatarPreviewSmall.height);
-        }
+        };
       } catch {
         ctxMain.clearRect(0,0,settingsAvatarPreview.width, settingsAvatarPreview.height);
         ctxSmall.clearRect(0,0,settingsAvatarPreviewSmall.width, settingsAvatarPreviewSmall.height);
@@ -153,7 +149,7 @@ export async function renderProfileSettings() {
       return;
     }
     try {
-      const res = await postJson("/api/user/edit", {
+      const res = await postJson(API.userEdit, {
         username: currentUsername,
         password: currentPassword,
         key,
@@ -215,7 +211,7 @@ export async function renderProfileSettings() {
       const base64 = await validateAndConvertImage(file);
       const username = localStorage.getItem("username");
       const password = localStorage.getItem("password");
-      const res = await postJson("/api/pavatar", { image: base64, username, password });
+      const res = await postJson(API.pavatar, { image: base64, username, password });
       showMessage(settingsAvatarMsg, (res && (res.message || "Avatar uploaded successfully")) || "Avatar uploaded");
       const fresh = await authCheck();
       if (fresh) {

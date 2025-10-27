@@ -1,5 +1,6 @@
-import { DISCORD_SERVER } from "../utils/Constants.js";
+import { DISCORD_SERVER, API } from "../utils/Constants.js";
 import Cache from '../utils/Cache.js';
+import { apiGet } from '../utils/Utils.js';
 
 export function renderPing() {
   const app = document.getElementById('app');
@@ -25,22 +26,18 @@ export function renderPing() {
   pingButton.addEventListener('click', async () => {
     const startTime = new Date().getTime();
     try {
-      const response = await fetch('/api/game/servers');
-      if (response.ok) {
-        const endTime = new Date().getTime();
-        const pingTime = endTime - startTime;
-        let pingLevel;
-        if (pingTime < 100) {
-          pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/goodping.png').dataUrl}"></canv-icon>`;
-        } else if (pingTime < 300) {
-          pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/idelping.png').dataUrl}"></canv-icon>`;
-        } else {
-          pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/badping.png').dataUrl}"></canv-icon>`;
-        }
-        pingResult.innerHTML = `${pingLevel} Ping: ${pingTime} ms`;
+      const response = await apiGet(API.gameServers);
+      const endTime = new Date().getTime();
+      const pingTime = endTime - startTime;
+      let pingLevel;
+      if (pingTime < 100) {
+        pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/goodping.png').dataUrl}"></canv-icon>`;
+      } else if (pingTime < 300) {
+        pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/idelping.png').dataUrl}"></canv-icon>`;
       } else {
-        pingResult.innerText = 'Error checking your ping';
+        pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/badping.png').dataUrl}"></canv-icon>`;
       }
+      pingResult.innerHTML = `${pingLevel} Ping: ${pingTime} ms`;
     } catch (error) {
       pingResult.innerText = 'Error checking your ping';
     }

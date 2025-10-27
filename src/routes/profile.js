@@ -1,5 +1,6 @@
-import { postJson, escapeHtml } from "../utils/Utils.js";
+import { postJson, escapeHtml, apiGet } from "../utils/Utils.js";
 import Cache from '../utils/Cache.js';
+import { API } from '../utils/Constants.js';
 
 export async function renderProfile() {
   const app = document.getElementById("app");
@@ -62,7 +63,7 @@ export async function renderProfile() {
     const password = localStorage.getItem("password");
     if (!username || !password) return null;
     try {
-      const data = await postJson("/api/auth/check", { username, password });
+      const data = await postJson(API.check, { username, password });
       return data || null;
     } catch {
       return null;
@@ -74,21 +75,12 @@ export async function renderProfile() {
       profileAvatar.src = "";
       return;
     }
-    try {
-      const res = await fetch(`/api/pavatar/${encodeURIComponent(id)}`);
-      if (!res.ok) { profileAvatar.src = ""; return; }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      profileAvatar.src = url;
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch {
-      profileAvatar.src = "";
-    }
+    profileAvatar.src = `${API.pavatar}/${encodeURIComponent(id)}`;
   }
 
   async function loadProfileById(id) {
     try {
-      const data = await postJson("/api/auth/profile", { id });
+      const data = await postJson(API.profile, { id });
       if (!data) return null;
       const uname = data.username || "";
       const dname = data.displayName || data.display_name || "";

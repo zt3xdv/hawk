@@ -8,7 +8,7 @@ export function renderPeople(dom, mini = false, closeBtn = false) {
   <div class="auth" ${closeBtn ? 'style="margin: 0 0;"' : ''}>
   <div class="header">
     <h3><canv-icon src="${Cache.getBlob('assets/icons/people.png').dataUrl}"></canv-icon>People</h3>
-    <span class="description">Send, recieve, accept friend requests.</span>
+    <span class="description">Search friends and manage friend requests.</span>
             <div class="friends-actions">
               <button id="refreshBtn" class="friends-ghost">Refresh</button>
               ${closeBtn ? '<button id="closeBtn" class="friends-ghost">Close</button>' : ''}
@@ -18,12 +18,12 @@ export function renderPeople(dom, mini = false, closeBtn = false) {
       <aside class="friends-sidebar mini">
         <div class="friends-card" style="padding-bottom:10px">
           <div style="margin-top:10px">
-            <div class="small" style="color:rgba(255,255,255,0.7)">Send friend request by username</div>
+            <div class="small" style="color:rgba(255,255,255,0.7)">Search friends by username</div>
             <div class="friends-send-row">
-              <input id="sendUserId" class="friends-input" placeholder="Username, ex cheese72" />
-              <button id="sendByIdBtn" class="friends-primary">Send</button>
+              <input id="searchUsername" class="friends-input" placeholder="Search username..." />
+              <button id="searchBtn" class="friends-primary">Search</button>
             </div>
-            <div id="sendResult" class="friends-empty" style="margin-top:8px"></div>
+            <div id="searchResult" class="friends-empty" style="margin-top:8px"></div>
           </div>
         </div>
 
@@ -33,18 +33,15 @@ export function renderPeople(dom, mini = false, closeBtn = false) {
       </aside>
 
       <section>
-        <div style="margin-bottom:8px">
-          <div class="friends-tabs" id="tabs">
-            <button class="friends-tab active" data-tab="friends">Friends</button>
-            <button class="friends-tab" data-tab="incoming">Incoming</button>
-            <button class="friends-tab" data-tab="sent">Sent</button>
-          </div>
+        <div id="incomingSection" class="friends-card" style="margin-bottom:16px">
+          <h4 style="margin:0 0 12px 0;color:rgba(255,255,255,0.9)">Incoming Requests</h4>
+          <div id="incomingPanel"></div>
         </div>
 
-        <div id="panelArea">
-          <div id="friendsPanel" class="friends-list friends-card"></div>
-          <div id="incomingPanel" class="friends-list friends-card" style="display:none"></div>
-          <div id="sentPanel" class="friends-list friends-card" style="display:none"></div>
+        <div class="friends-card">
+          <h4 style="margin:0 0 12px 0;color:rgba(255,255,255,0.9)">Friends</h4>
+          <div id="friendsPanel"></div>
+          <div id="friendsPagination" style="margin-top:12px;display:flex;justify-content:center;gap:8px;align-items:center"></div>
         </div>
       </section>
       </div>
@@ -58,17 +55,10 @@ export function renderPeople(dom, mini = false, closeBtn = false) {
     accountInfo.innerHTML = `<div><strong>@${escapeHtml(auth.username)}</strong></div><div class="accent small">Your username</div>`;
   }
 
-  qsa('#tabs .friends-tab').forEach(tab=>{
-    tab.addEventListener('click', ()=>{
-      qsa('#tabs .friends-tab').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      const name = tab.dataset.tab;
-      ['friends','incoming','sent'].forEach(n=>{
-        const el = document.getElementById(n + 'Panel');
-        if (el) el.style.display = (n === name) ? '' : 'none';
-      });
-    });
-  });
+  let allFriends = [];
+  let allIncoming = [];
+  let currentPage = 1;
+  const itemsPerPage = 10;
 
 async function loadAll() {
   setLoadingStates();
@@ -88,53 +78,78 @@ async function loadAll() {
   const pVal = (pRes.status === 'fulfilled' && pRes.value) ? pRes.value : null;
 
   let incoming = [];
-  let sent = [];
 
-  // incoming: ONLY from pVal (prefer pVal.incoming, else pVal.pending)
   if (pVal) {
     if (Array.isArray(pVal.incoming)) {
       incoming = pVal.incoming;
     } else if (Array.isArray(pVal.pending)) {
-      // pending represents requests that arrive to the user
       incoming = pVal.pending;
     }
   }
 
-  // sent: ONLY from rVal (prefer rVal.sent, else rVal.requests)
-  if (rVal) {
-    if (Array.isArray(rVal.sent)) {
-      sent = rVal.sent;
-    } else if (Array.isArray(rVal.requests)) {
-      // requests represents what the user sent
-      sent = rVal.requests;
-    }
-  }
+  allFriends = friends;
+  allIncoming = incoming;
+  currentPage = 1;
 
-  renderFriends(friends);
   renderIncoming(incoming);
-  renderSent(sent);
+  renderFriendsPage();
 }
 
   function setLoadingStates() {
     document.getElementById('friendsPanel').innerHTML = `<div class="friends-empty">Loading friends...</div>`;
     document.getElementById('incomingPanel').innerHTML = `<div class="friends-empty">Loading incoming...</div>`;
-    document.getElementById('sentPanel').innerHTML = `<div class="friends-empty">Loading sent...</div>`;
   }
 
   function showEmptyStates(msg) {
     document.getElementById('friendsPanel').innerHTML = `<div class="friends-empty">${escapeHtml(msg)}</div>`;
     document.getElementById('incomingPanel').innerHTML = `<div class="friends-empty">${escapeHtml(msg)}</div>`;
-    document.getElementById('sentPanel').innerHTML = `<div class="friends-empty">${escapeHtml(msg)}</div>`;
   }
 
-  function renderFriends(list) {
+  function renderFriendsPage() {
     const panel = document.getElementById('friendsPanel');
+    const paginationDiv = document.getElementById('friendsPagination');
     panel.innerHTML = '';
-    if (!Array.isArray(list) || !list.length) {
+    paginationDiv.innerHTML = '';
+
+    if (!Array.isArray(allFriends) || !allFriends.length) {
       panel.append(childEmpty('No friends yet.'));
       return;
     }
-    list.forEach(f => panel.append(renderFriendRow(f)));
+
+    const totalPages = Math.ceil(allFriends.length / itemsPerPage);
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    const pageItems = allFriends.slice(startIdx, endIdx);
+
+    pageItems.forEach(f => panel.append(renderFriendRow(f)));
+
+    if (totalPages > 1) {
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'friends-ghost';
+      prevBtn.textContent = 'Previous';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.addEventListener('click', () => {
+        currentPage--;
+        renderFriendsPage();
+      });
+
+      const pageInfo = document.createElement('span');
+      pageInfo.style.color = 'rgba(255,255,255,0.7)';
+      pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'friends-ghost';
+      nextBtn.textContent = 'Next';
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.addEventListener('click', () => {
+        currentPage++;
+        renderFriendsPage();
+      });
+
+      paginationDiv.appendChild(prevBtn);
+      paginationDiv.appendChild(pageInfo);
+      paginationDiv.appendChild(nextBtn);
+    }
   }
 
   async function renderIncoming(list) {
@@ -148,18 +163,6 @@ async function loadAll() {
       panel.append(await renderIncomingRow(r));
     }
   }
-
-async function renderSent(list) {
-  const panel = document.getElementById('sentPanel');
-  panel.innerHTML = '';
-  if (!Array.isArray(list) || !list.length) {
-    panel.append(childEmpty('No sent requests.'));
-    return;
-  }
-  for (const r of list) {
-    panel.append(await renderSentRow(r));
-  }
-}
 
   function childEmpty(text) {
     const d = document.createElement('div');
@@ -198,20 +201,55 @@ async function renderSent(list) {
     return wrapper;
   }
 
-  async function renderSentRow(r) {
-    const wrapper = document.createElement('div'); wrapper.className = 'friends-row';
-    const left = document.createElement('div');
-    const who = r.requestedId;
-    const whoData = await apiPost("/api/auth/profile", { id: who });
-    const whoName = whoData.username || "Unknown";
-    
-    left.innerHTML = `<div class="friends-name">To ${escapeHtml(String(whoName))}</div><div class="friends-meta">Request ID: ${escapeHtml(String(r.id || ''))}</div>`;
-    const controls = document.createElement('div'); controls.className = 'friends-controls';
-    const cancelBtn = document.createElement('button'); cancelBtn.className = 'friends-ghost'; cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', async ()=>{ await cancelRequest(r.id); });
-    controls.appendChild(cancelBtn);
-    wrapper.appendChild(left); wrapper.appendChild(controls);
-    return wrapper;
+  async function searchUser(username) {
+    const resultDiv = document.getElementById('searchResult');
+    if (!username) {
+      resultDiv.innerHTML = '';
+      return;
+    }
+
+    resultDiv.innerHTML = '<div class="friends-empty">Searching...</div>';
+
+    try {
+      const userData = await apiPost("/api/auth/profile", { username });
+      
+      if (!userData || !userData.username) {
+        resultDiv.innerHTML = '<div class="friends-empty">User not found.</div>';
+        return;
+      }
+
+      const isFriend = allFriends.some(f => f.username === userData.username);
+      
+      if (isFriend) {
+        resultDiv.innerHTML = `
+          <div class="friends-row">
+            <div>
+              <div class="friends-name">${escapeHtml(userData.display_name || userData.username)}</div>
+              <div class="friends-meta">@${escapeHtml(userData.username)} · Already a friend</div>
+            </div>
+          </div>
+        `;
+      } else {
+        resultDiv.innerHTML = `
+          <div class="friends-row">
+            <div>
+              <div class="friends-name">${escapeHtml(userData.display_name || userData.username)}</div>
+              <div class="friends-meta">@${escapeHtml(userData.username)}</div>
+            </div>
+            <div class="friends-controls">
+              <button id="sendRequestBtn" class="friends-primary">Send Request</button>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('sendRequestBtn').addEventListener('click', async () => {
+          await sendById(userData.username);
+          resultDiv.innerHTML = '<div class="friends-empty">Request sent!</div>';
+        });
+      }
+    } catch (error) {
+      resultDiv.innerHTML = '<div class="friends-empty">Error searching user.</div>';
+    }
   }
 
   async function sendById(username) {
@@ -219,7 +257,7 @@ async function renderSent(list) {
     const payload = { ...auth, targetUsername: username };
     const res = await apiPost(API.friendsSend, payload);
     const out = res && (res.error || res.message || JSON.stringify(res));
-    document.getElementById('sendResult').innerText = out || 'Sent';
+    document.getElementById('searchResult').innerText = out || 'Sent';
     await loadAll();
   }
 
@@ -235,25 +273,33 @@ async function renderSent(list) {
     await loadAll();
   }
 
-  async function cancelRequest(requestId) {
-    if (!requestId) return;
-    await apiPost(API.friendsCancel, { ...auth, requestId });
-    await loadAll();
-  }
-
   async function removeFriend(friendUsername) {
     if (!friendUsername) return;
     await apiPost(API.friendsRemove, { ...auth, friendUsername });
     await loadAll();
   }
 
-  document.getElementById('sendByIdBtn').addEventListener('click', async () => {
-    const id = document.getElementById('sendUserId').value.trim();
-    if (!id) return;
-    await sendById(id);
+  document.getElementById('searchBtn').addEventListener('click', async () => {
+    const username = document.getElementById('searchUsername').value.trim();
+    await searchUser(username);
+  });
+
+  document.getElementById('searchUsername').addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+      const username = document.getElementById('searchUsername').value.trim();
+      await searchUser(username);
+    }
   });
 
   document.getElementById('refreshBtn').addEventListener('click', loadAll);
+
+  if (closeBtn) {
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      if (typeof window.renderGame === 'function') {
+        window.renderGame();
+      }
+    });
+  }
 
   loadAll();
 }

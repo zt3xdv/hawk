@@ -20,6 +20,10 @@ export default class ChatBubbleManager {
     this._typingBubble = null;
     this._typingTween = null;
     this._typingDelayedCall = null;
+    
+    this.needsUpdate = false;
+    this._lastX = null;
+    this._lastY = null;
   }
 
   _wrapAndTruncateByWords(text, style, maxWidth, maxLines = 10) {
@@ -225,6 +229,8 @@ export default class ChatBubbleManager {
           this._typingDelayedCall = dc;
           this._delayedCalls.add(dc);
         }
+        
+        this._typingBubble.container.setVisible(this._bubbles.length === 0);
         return;
       }
 
@@ -460,7 +466,8 @@ export default class ChatBubbleManager {
   _updateBubbleStack() {
     if (this._typingBubble) {
       this._typingBubble.container.setDepth(10000020);
-      if (this._typingBubble.cloud) this._typingBubble.cloud.setVisible(true);
+      this._typingBubble.container.setVisible(this._bubbles.length === 0);
+      if (this._typingBubble.cloud) this._typingBubble.cloud.setVisible(this._bubbles.length === 0);
     }
 
     for (let i = 0; i < this._bubbles.length; i++) {
@@ -545,7 +552,17 @@ export default class ChatBubbleManager {
   }
 
   update() {
-    this._repositionBubbles();
+    const currentX = this.getX();
+    const currentY = this.getY();
+    
+    if (this._lastX !== currentX || this._lastY !== currentY) {
+      this._repositionBubbles();
+      this._lastX = currentX;
+      this._lastY = currentY;
+      this.needsUpdate = true;
+    } else {
+      this.needsUpdate = false;
+    }
   }
 }
 

@@ -18,7 +18,20 @@ export const BIO = {
   MAX: 200
 };
 
-export const PLAYER_SPEED = 200;
+export const PARTY_NAME = {
+  MIN: 3,
+  MAX: 32
+};
+
+export const PARTY_DESCRIPTION = {
+  MIN: 0,
+  MAX: 75
+};
+
+export const PARTY_MAX_ELEMENTS = 700;
+
+export const PLAYER_SPEED_WALK = 100;
+export const PLAYER_SPEED_RUN = 150;
 
 export const API = {
   friendsList: '/api/friends/list',
@@ -30,13 +43,21 @@ export const API = {
   friendsDeny: '/api/friends/deny',
   friendsStatus: '/api/friends/status',
   friendsRemove: '/api/friends/remove',
-  check: '/api/auth/check'
+  check: '/api/auth/check',
+  login: '/api/auth/login',
+  register: '/api/auth/register',
+  profile: '/api/auth/profile',
+  avatar: '/api/avatar',
+  pavatar: '/api/pavatar',
+  userEdit: '/api/user/edit',
+  gameServers: '/api/game/servers',
+  gameTurnstile: '/api/game/turnstile'
 };
 
 export const DISCORD_SERVER = "https://discord.gg/P8yrhaeCgy";
 
-export const DEV = false;
-export const TURNSTILE = true;
+export const DEV = true;
+export const TURNSTILE = false;
 
 export const CONTRIBUTORS = [
   {
