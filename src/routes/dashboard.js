@@ -5,9 +5,7 @@ import { requestInstall, isInstalled } from '../utils/Utils.js';
 import { DISCORD_SERVER } from '../utils/Constants.js';
 import Cache from '../utils/Cache.js';
 
-export function renderDashboard() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
+const html = `
 <div class="auth">
   <div class="main-header">
     <button class="btn" id="discord">
@@ -50,7 +48,11 @@ export function renderDashboard() {
     <ul id="ruleList" style="margin:12px 0 0 0;padding:0;list-style:none;display:grid;gap:8px"></ul>
   </div>
 </div>
-  `;
+`;
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = html;
 
   const previewEl = document.getElementById('preview');
   const preview = new Preview(previewEl);
@@ -185,3 +187,7 @@ export function renderDashboard() {
     setBtnLoading(false);
   });
 }
+
+export const options = { title: "Dashboard", auth: true, description: "Sign in, and play on the community." };
+
+export { html, render };

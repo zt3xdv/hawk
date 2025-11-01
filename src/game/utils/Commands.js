@@ -5,21 +5,32 @@ class Commands {
       id: '/rand',
       description: 'Random integer between two numbers: /rand min max',
       execute: (scene, chatlog, args) => {
-        if (!args || args.length < 2) {
-          chatlog.send('Usage: /rand min max', true);
-          return;
-        }
-        const a = Number(args[0]);
-        const b = Number(args[1]);
-        if (!Number.isFinite(a) || !Number.isFinite(b)) {
-          chatlog.send('Both min and max must be valid numbers.', true);
-          return;
-        }
-        let min = Math.ceil(Math.min(a, b));
-        let max = Math.floor(Math.max(a, b));
-        const val = Math.floor(Math.random() * (max - min + 1)) + min;
-        chatlog.send("Random number between " + String(min) + " and " + String(max) + ": " + String(val), true);
-      }
+  if (!args || args.length < 2) {
+    chatlog.send('Usage: /rand min max', true);
+    return;
+  }
+
+  const isWah = (str) => typeof str === 'string' && str.toLowerCase() === 'wah';
+
+  if (isWah(args[0]) && isWah(args[1])) {
+    const hCount = Math.floor(Math.random() * 11) + 5; // 5 a 15
+    const wah = 'wah' + 'h'.repeat(hCount);
+    chatlog.send("Random number between wah and wah: " + wah, true);
+    return;
+  }
+
+  const a = Number(args[0]);
+  const b = Number(args[1]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    chatlog.send('Both min and max must be valid numbers.', true);
+    return;
+  }
+
+  let min = Math.ceil(Math.min(a, b));
+  let max = Math.floor(Math.max(a, b));
+  const val = Math.floor(Math.random() * (max - min + 1)) + min;
+  chatlog.send("Random number between " + String(min) + " and " + String(max) + ": " + String(val), true);
+}
     },
     {
       name: 'randf',
@@ -61,6 +72,95 @@ class Commands {
       description: 'Show current time',
       execute: (scene, chatlog, args) => {
         chatlog.send("Time: " + scene.lightManager.getTimeF(), true);
+      }
+    },
+    {
+      name: 'shrug',
+      id: '/shrug',
+      description: 'Send a shrug emoticon',
+      execute: (scene, chatlog, args) => {
+        const text = args.join(' ');
+        const msg = text ? `${text} ¯\\_(ツ)_/¯` : '¯\\_(ツ)_/¯';
+        scene.networkManager.send('chat', { message: msg });
+      }
+    },
+    {
+      name: 'tableflip',
+      id: '/tableflip',
+      description: 'Flip a table',
+      execute: (scene, chatlog, args) => {
+        const text = args.join(' ');
+        const msg = text ? `${text} (╯°□°)╯︵ ┻━┻` : '(╯°□°)╯︵ ┻━┻';
+        scene.networkManager.send('chat', { message: msg });
+      }
+    },
+    {
+      name: 'flip',
+      id: '/flip',
+      description: 'Flip a table',
+      execute: (scene, chatlog, args) => {
+        const text = args.join(' ');
+        const msg = text ? `${text} (╯°□°)╯︵ ┻━┻` : '(╯°□°)╯︵ ┻━┻';
+        scene.networkManager.send('chat', { message: msg });
+      }
+    },
+    {
+      name: 'unflip',
+      id: '/unflip',
+      description: 'Put the table back',
+      execute: (scene, chatlog, args) => {
+        const text = args.join(' ');
+        const msg = text ? `${text} ┬─┬ノ( º _ ºノ)` : '┬─┬ノ( º _ ºノ)';
+        scene.networkManager.send('chat', { message: msg });
+      }
+    },
+    {
+      name: 'lenny',
+      id: '/lenny',
+      description: 'Send a lenny face',
+      execute: (scene, chatlog, args) => {
+        const text = args.join(' ');
+        const msg = text ? `${text} ( ͡° ͜ʖ ͡°)` : '( ͡° ͜ʖ ͡°)';
+        scene.networkManager.send('chat', { message: msg });
+      }
+    },
+    {
+      name: 'stuck',
+      id: '/stuck',
+      description: 'Teleport to spawn if you are stuck',
+      execute: (scene, chatlog, args) => {
+        if (!scene.player) {
+          chatlog.send('Error: Player not found', true);
+          return;
+        }
+        
+        const spawnX = 512;
+        const spawnY = 512;
+        
+        scene.player.sprite.x = spawnX;
+        scene.player.sprite.y = spawnY;
+        
+        chatlog.send('Teleported to spawn!', true);
+      }
+    },
+    {
+      name: 'clear',
+      id: '/clear',
+      description: 'Clear your chat',
+      execute: (scene, chatlog, args) => {
+        chatlog.clear();
+        chatlog.send('Chat cleared!', true);
+      }
+    },
+    {
+      name: 'help',
+      id: '/help',
+      description: 'Show available commands',
+      execute: (scene, chatlog, args) => {
+        chatlog.send('=== Available Commands ===', true);
+        Commands.commands.forEach(cmd => {
+          chatlog.send(`${cmd.id} - ${cmd.description}`, true);
+        });
       }
     }
   ];

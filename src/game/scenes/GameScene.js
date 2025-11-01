@@ -70,7 +70,8 @@ export default class GameScene extends HawkEngine.Scene {
     });
     
     this.input.on('pointerdown', (pointer) => {
-      if (this.dev && this.inputManager.currentEditorMode !== 'idle') {
+      const canEdit = this.dev || this.canEditMap;
+      if (canEdit && this.inputManager.currentEditorMode !== 'idle') {
         this.inputManager.handleEditorClick(pointer.worldX, pointer.worldY);
       }
     });

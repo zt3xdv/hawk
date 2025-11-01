@@ -14,12 +14,13 @@ class Options {
       desc: 'Use 12h time format (AM/PM)',
       category: 'general'
     },
-    editorOneTimeClick: {
-      default: false,
-      name: "One time click",
-      type: 'boolean',
-      desc: 'Click one time instead of clicking 2 times when editing a element',
-      category: 'development'
+    quality: {
+      default: "high",
+      name: "Render Quality",
+      type: 'select',
+      options: ["high", "medium", "low"],
+      desc: 'Requires restart',
+      category: 'render'
     },
     debug: {
       default: false,

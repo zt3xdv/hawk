@@ -15,7 +15,7 @@ export default class PreviewScene extends HawkEngine.Scene {
   }
 
   create() {
-    this.floor             = new Floor(this, {
+    this.floor = new Floor(this, {
       mapPixelWidth: 4 * 32,
       mapPixelHeight: 4 * 32
     });
@@ -26,9 +26,6 @@ export default class PreviewScene extends HawkEngine.Scene {
       
       this.player = new Player(this, id + "_b", id, data.username || "___", "", 64, 82, data.game.avatar || "");
       this.player.sprite.setInteractive({ draggable: true });
-      this.player.sprite.on('drag', (pointer, dragX, dragY) => {
-        this.player.setPosition(dragX, dragY);
-      });
       this.player.chat.setTyping(true);
     })();
   }

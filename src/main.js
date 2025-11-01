@@ -1,3 +1,4 @@
+import './styles/main.scss';
 import { router } from './router.js';
 import Features from './game/device/Features.js';
 import Cache from './utils/Cache.js';

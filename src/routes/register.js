@@ -3,30 +3,32 @@ import { DISPLAY_NAME, USERNAME, PASSWORD, TURNSTILE } from '../utils/Constants.
 import Cache from '../utils/Cache.js';
 import { setupTurnstile } from '../utils/Utils.js';
 
-export function renderRegister() {
+const html = `
+<div class="auth">
+<div class="header">
+  <h3><canv-icon src="${Cache.getBlob('assets/icons/unbanmember.png').dataUrl}"></canv-icon>Register</h3>
+  <span class="description">Create a new account.</span>
+</div>
+<hr>
+<form id="regForm" class="gap">
+  <input type="text" id="display_name" placeholder="Display Name" required>
+  <input type="text" id="username" placeholder="Username" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <br>
+  <div id="turnstile-container"></div>
+  <br>
+  <button class="btn" type="submit">Register</button>
+  <br>
+  <small class="accent">By creating a account your accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
+</form>
+<hr>
+<p>Already have a account? <a href="/login">Login</a></p>
+</div>
+`;
+
+function render() {
   const app = document.getElementById('app');
-  app.innerHTML = `
-  <div class="auth">
-  <div class="header">
-    <h3><canv-icon src="${Cache.getBlob('assets/icons/unbanmember.png').dataUrl}"></canv-icon>Register</h3>
-    <span class="description">Create a new account.</span>
-  </div>
-  <hr>
-  <form id="regForm" class="gap">
-    <input type="text" id="display_name" placeholder="Display Name" required>
-    <input type="text" id="username" placeholder="Username" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <br>
-    <div id="turnstile-container"></div>
-    <br>
-    <button class="btn" type="submit">Register</button>
-    <br>
-    <small class="accent">By creating a account your accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
-  </form>
-  <hr>
-  <p>Already have a account? <a href="/login">Login</a></p>
-  </div>
-  `;
+  app.innerHTML = html;
 
   if (TURNSTILE) {
     setupTurnstile((token) => {
@@ -106,3 +108,7 @@ export function renderRegister() {
     }
   });
 }
+
+export const options = { title: "Register", auth: false, description: "Create a Hawk account and join the community." };
+
+export { html, render };

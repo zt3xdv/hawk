@@ -15,21 +15,33 @@ const input = 'src/engine/main.js';
 const outDir = path.resolve('dist', 'engine');
 
 const basePlugins = [
-  resolve({ browser: true, extensions: ['.js'] }),
-  commonjs(),
-  json(),
-  progress({ clearLine: false })
+  resolve({ 
+    browser: true, 
+    extensions: ['.js'],
+    preferBuiltins: false
+  }),
+  commonjs({
+    sourceMap: false
+  }),
+  json()
 ];
+
+if (!isDev && !isFast) {
+  basePlugins.push(progress({ clearLine: false }));
+}
 
 if (isProd) {
   basePlugins.push(terser({
-  format: {
-    comments: false,
-    ecma: '2015'
-  },
-  keep_classnames: true,
-  keep_fnames: true
-}));
+    format: {
+      comments: false,
+      ecma: '2015'
+    },
+    keep_classnames: true,
+    keep_fnames: true,
+    compress: {
+      passes: 2
+    }
+  }));
 }
 
 const baseConfig = {
@@ -39,8 +51,12 @@ const baseConfig = {
     dir: outDir,
     format: 'esm',
     name: 'Hawk',
-    indent: false
-  }
+    indent: false,
+    sourcemap: false,
+    compact: isProd
+  },
+  cache: true,
+  treeshake: isProd ? true : false
 };
 
 async function runBuild() {
@@ -60,16 +76,25 @@ async function runWatch() {
     ...baseConfig,
     watch: {
       exclude: ['node_modules/**'],
-      chokidar: true,
-      clearScreen: false
+      chokidar: {
+        ignoreInitial: true,
+        ignorePermissionErrors: true,
+        usePolling: false,
+        interval: 100,
+        binaryInterval: 300,
+        awaitWriteFinish: false
+      },
+      clearScreen: false,
+      buildDelay: 0,
+      skipWrite: false
     }
   });
 
   watcher.on('event', event => {
     if (event.code === 'BUNDLE_START') {
-      console.log('Bundling...');
+      console.log('Bundling engine...');
     } else if (event.code === 'BUNDLE_END') {
-      console.log('Build complete.');
+      console.log(`Engine build complete in ${event.duration}ms`);
     } else if (event.code === 'ERROR' || event.code === 'FATAL') {
       console.error('Build error:', event.error);
     }

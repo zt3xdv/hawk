@@ -7,6 +7,7 @@ import friendsRoutes from './src/routes/server/friends.js';
 import gameRoutes from './src/routes/server/game.js';
 import messagesRoutes from './src/routes/server/messages.js';
 import moderationRoutes from './src/routes/server/moderation.js';
+import adminRoutes from './src/routes/server/admin.js';
 import HawkServer from './src/server/Hawk.js';
 import SocketServer from './src/server/Socket.js';
 import MessageSocket from './src/server/MessageSocket.js';
@@ -15,8 +16,7 @@ import config from './config.json' with { type: 'json' };
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { log } from './src/utils/Utils.js';
-import { readFile } from 'fs/promises';
-import { routes } from './src/routes/list.js';
+
 import { SERVERS } from './src/utils/Constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,28 +44,10 @@ friendsRoutes.setApp(app);
 gameRoutes.setApp(app);
 messagesRoutes.setApp(app);
 moderationRoutes.setApp(app);
+adminRoutes.setApp(app);
 
-app.get(/.*/, async (req, res) => {
-  try {
-    const htmlPath = path.join(__dirname, 'index.html');
-    const htmlContentRaw = await readFile(htmlPath, 'utf8');
-
-    const route = routes[req.path] || routes["404"];
-    const description = route?.description ? route.description : "Sign up and join our community!";
-    const title = route?.title ? ('Hawk - ' + route.title) : 'Hawk';
-    const ogImage = '/banner.png';
-
-    const htmlContent = htmlContentRaw
-      .replaceAll('route_description', description)
-      .replaceAll('route_title', title)
-      .replaceAll('route_ogimage', ogImage);
-
-    res.setHeader('Content-Type', 'text/html');
-    res.send(htmlContent);
-  } catch (error) {
-    console.error("Error processing files:", error);
-    res.status(500).send("Internal server error");
-  }
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 server.listen(config.port, async () => {

@@ -12,27 +12,31 @@ export default class MapObject {
     this.zoffset = zoffset;
     this.x = x;
     this.y = y;
+    this.isOverlapping = false;
 
+    this._textureKey = this._getCachedTexture(textureKey, uvStartPx, widthPx, heightPx);
+
+    this.image = scene.add.image(x, y, this._textureKey)
+      .setOrigin(0, 0)
+      .setDepth(this._calculateDepth(y));
+
+    this._setupPhysics();
+    this.image.setData('id', this.id);
+    this.image.setData('mapObject', this);
+  }
+
+  _getCachedTexture(textureKey, uvStartPx, widthPx, heightPx) {
     const cache = MapObject.textureCache;
     const uvKey = `${textureKey}|${uvStartPx.u},${uvStartPx.v}|${widthPx}x${heightPx}`;
     let cached = cache.get(uvKey);
 
     if (!cached) {
-      const baseSource = scene.textures.get(textureKey).getSourceImage();
       const newKey = `crop-${textureKey}-${uvStartPx.u}-${uvStartPx.v}-${widthPx}x${heightPx}`;
-      if (!scene.textures.exists(newKey)) {
-        scene.textures.createCanvas(newKey, widthPx, heightPx);
-        const canvasTexture = scene.textures.get(newKey);
-        const ctx = canvasTexture.getSourceImage().getContext('2d');
-        ctx.drawImage(
-          baseSource,
-          uvStartPx.u, uvStartPx.v,
-          widthPx, heightPx,
-          0, 0,
-          widthPx, heightPx
-        );
-        canvasTexture.refresh();
+      
+      if (!this.scene.textures.exists(newKey)) {
+        this._createCroppedTexture(textureKey, uvStartPx, widthPx, heightPx, newKey);
       }
+      
       cached = { key: newKey, refCount: 1 };
       cache.set(uvKey, cached);
     } else {
@@ -40,38 +44,70 @@ export default class MapObject {
     }
 
     this._cacheKey = uvKey;
-    this._textureKey = cached.key;
+    return cached.key;
+  }
 
-    this.image = scene.add.image(x, y, this._textureKey)
-      .setOrigin(0, 0)
-      .setDepth(y);
+  _createCroppedTexture(textureKey, uvStartPx, widthPx, heightPx, newKey) {
+    const baseSource = this.scene.textures.get(textureKey).getSourceImage();
+    this.scene.textures.createCanvas(newKey, widthPx, heightPx);
+    const canvasTexture = this.scene.textures.get(newKey);
+    const ctx = canvasTexture.getSourceImage().getContext('2d');
+    
+    ctx.drawImage(
+      baseSource,
+      uvStartPx.u, uvStartPx.v,
+      widthPx, heightPx,
+      0, 0,
+      widthPx, heightPx
+    );
+    
+    canvasTexture.refresh();
+  }
 
-    scene.physics.add.existing(this.image);
+  _setupPhysics() {
+    this.scene.physics.add.existing(this.image);
     this.image.body
       .setSize(0, 0)
-      .setBounce(1, 1)
+      .setBounce(0, 0)
       .setCollideWorldBounds(true)
       .setImmovable(true);
+  }
 
-    this.image.setData('id', this.id);
+  _calculateDepth(y) {
+    return y + this.height - this.zoffset;
   }
 
   update(time, delta) {
-    this.image.setDepth(this.image.y + this.height - this.zoffset);
+    this.image.setDepth(this._calculateDepth(this.image.y));
   }
 
   setPosition(x, y) {
     this.x = x;
     this.y = y;
-    
     this.image.setPosition(x, y);
-    this.image.setDepth(this.image.y + this.height - this.zoffset);
+    this.image.setDepth(this._calculateDepth(y));
   }
 
   destroy() {
-    if (this.image.body) {
-      this.scene.physics.world.disableBody(this.image.body);
+    if (this._cacheKey) {
+      const cached = MapObject.textureCache.get(this._cacheKey);
+      if (cached) {
+        cached.refCount--;
+        if (cached.refCount <= 0) {
+          MapObject.textureCache.delete(this._cacheKey);
+          if (this.scene.textures.exists(cached.key)) {
+            this.scene.textures.remove(cached.key);
+          }
+        }
+      }
     }
-    this.image.destroy();
+
+    if (this.image) {
+      if (this.image.body) {
+        this.scene.physics.world.disableBody(this.image.body);
+      }
+      this.image.destroy();
+      this.image = null;
+    }
   }
 }

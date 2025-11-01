@@ -3,99 +3,101 @@ import Cache from '../utils/Cache.js';
 import { setupTurnstile, apiPost } from '../utils/Utils.js';
 import { TURNSTILE, DISPLAY_NAME, USERNAME, PASSWORD, API } from '../utils/Constants.js';
 
-export function renderAuth() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-  <div class="auth">
-    <div id="welcome-screen" style="min-height:400px;display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity 0.6s ease">
-      <div style="text-align:center;font-size:28px;font-weight:600;color:#e5e5e5;letter-spacing:-0.5px;display:flex;gap:10px">
-        <span class="word-anim" style="opacity:0;transform:translateY(30px)">Welcome</span>
-        <span class="word-anim" style="opacity:0;transform:translateY(30px)">to</span>
-        <span class="word-anim" style="opacity:0;transform:translateY(30px)">Hawk</span>
-      </div>
-    </div>
-    <div id="auth-container" style="opacity:0;display:none;transition:opacity 0.6s ease">
-      <div class="header">
-        <h3><canv-icon id="auth-icon" src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon><span id="auth-title">Login</span></h3>
-        <span id="auth-description" class="description">Log in into Hawk.</span>
-      </div>
-      <hr>
-      <div id="oauth-buttons" style="display:none;margin-bottom:16px"></div>
-      <div id="oauth-divider" style="display:none;text-align:center;margin:16px 0;color:var(--muted);font-size:13px;position:relative">
-        <span style="background:var(--background-color);padding:0 12px;position:relative;z-index:1">OR</span>
-        <hr style="position:absolute;top:50%;left:0;right:0;margin:0;z-index:0">
-      </div>
-      <form id="authForm" class="gap">
-        <input type="text" id="display_name" placeholder="Display Name" style="display:none;width:100%;padding:12px 14px;background:var(--surface-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:14px;transition:all 0.2s">
-        <input type="text" id="username" placeholder="Username" required style="width:100%;padding:12px 14px;background:var(--surface-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:14px;transition:all 0.2s">
-        <input type="password" id="password" placeholder="Password" required style="width:100%;padding:12px 14px;background:var(--surface-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:14px;transition:all 0.2s">
-        <div id="turnstile-container"></div>
-        <button class="btn" type="submit" id="auth-submit" style="width:100%;padding:12px;background:var(--primary-color);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:8px">
-          <div id="auth-button" style="display:flex;align-items:center;justify-content:center;gap:8px">
-            <div class="btn-text" id="btn-text">Login</div>
-            <div class="btn-spinner" style="display:none;align-items:center;gap:8px">Loading... <span class="loader"></span></div>
-          </div>
-        </button>
-        <small class="accent" style="display:block;text-align:center;margin-top:12px">By <span id="auth-action-text">logging in</span> you accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
-      </form>
-      <hr>
-      <p id="auth-switch" style="text-align:center;color:var(--muted);font-size:14px"><span id="switch-text">New here?</span> <a href="#" id="toggle-mode" style="color:var(--primary-color);font-weight:500">Register</a></p>
+const html = `
+<div class="auth">
+  <div id="welcome-screen" style="min-height:400px;display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity 0.6s ease">
+    <div style="text-align:center;font-size:28px;font-weight:600;color:#e5e5e5;letter-spacing:-0.5px;display:flex;gap:10px">
+      <span class="word-anim" style="opacity:0;transform:translateY(30px)">Welcome</span>
+      <span class="word-anim" style="opacity:0;transform:translateY(30px)">to</span>
+      <span class="word-anim" style="opacity:0;transform:translateY(30px)">Hawk</span>
     </div>
   </div>
-  <style>
-    @keyframes slideUpWord {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+  <div id="auth-container" style="opacity:0;display:none;transition:opacity 0.6s ease">
+    <div class="header">
+      <h3><canv-icon id="auth-icon" src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon><span id="auth-title">Login</span></h3>
+      <span id="auth-description" class="description">Log in into Hawk.</span>
+    </div>
+    <hr>
+    <div id="oauth-buttons" style="display:none;margin-bottom:16px"></div>
+    <div id="oauth-divider" style="display:none;text-align:center;margin:16px 0;color:var(--muted);font-size:13px;position:relative">
+      <span style="background:var(--background-color);padding:0 12px;position:relative;z-index:1">OR</span>
+      <hr style="position:absolute;top:50%;left:0;right:0;margin:0;z-index:0">
+    </div>
+    <form id="authForm" class="gap">
+      <input type="text" id="display_name" placeholder="Display Name" style="display:none;width:100%;padding:12px 14px;background:var(--surface-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:14px;transition:all 0.2s">
+      <input type="text" id="username" placeholder="Username" required style="width:100%;padding:12px 14px;background:var(--surface-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:14px;transition:all 0.2s">
+      <input type="password" id="password" placeholder="Password" required style="width:100%;padding:12px 14px;background:var(--surface-color);border:1px solid var(--border-color);border-radius:8px;color:var(--text-color);font-size:14px;transition:all 0.2s">
+      <div id="turnstile-container"></div>
+      <button class="btn" type="submit" id="auth-submit" style="width:100%;padding:12px;background:var(--primary-color);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:8px">
+        <div id="auth-button" style="display:flex;align-items:center;justify-content:center;gap:8px">
+          <div class="btn-text" id="btn-text">Login</div>
+          <div class="btn-spinner" style="display:none;align-items:center;gap:8px">Loading... <span class="loader"></span></div>
+        </div>
+      </button>
+      <small class="accent" style="display:block;text-align:center;margin-top:12px">By <span id="auth-action-text">logging in</span> you accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
+    </form>
+    <hr>
+    <p id="auth-switch" style="text-align:center;color:var(--muted);font-size:14px"><span id="switch-text">New here?</span> <a href="#" id="toggle-mode" style="color:var(--primary-color);font-weight:500">Register</a></p>
+  </div>
+</div>
+<style>
+  @keyframes slideUpWord {
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-    @keyframes slideInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+  }
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
     }
-    .auth-slide-in {
-      animation: slideInUp 0.6s ease-out forwards;
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-    input:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      background: var(--surface-hover);
-    }
-    button:hover {
-      background: var(--primary-hover);
-    }
-    .oauth-btn {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      background: var(--surface-color);
-      color: var(--text-color);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .oauth-btn:hover {
-      background: var(--surface-hover);
-      border-color: var(--primary-color);
-    }
-    .oauth-btn svg {
-      width: 18px;
-      height: 18px;
-    }
-  </style>
-  `;
+  }
+  .auth-slide-in {
+    animation: slideInUp 0.6s ease-out forwards;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: var(--surface-hover);
+  }
+  button:hover {
+    background: var(--primary-hover);
+  }
+  .oauth-btn {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface-color);
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .oauth-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--primary-color);
+  }
+  .oauth-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+</style>
+`;
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = html;
   
   const welcomeScreen = document.getElementById('welcome-screen');
   const authContainer = document.getElementById('auth-container');
@@ -363,3 +365,7 @@ export function renderAuth() {
     }
   });
 }
+
+export const options = { title: "Auth", auth: false, description: "Choose your authentication method." };
+
+export { html, render };

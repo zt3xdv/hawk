@@ -2,50 +2,69 @@ import { escapeHtml, getAuth, apiPost, qs, qsa } from '../game/utils/Utils.js';
 import { API } from '../utils/Constants.js';
 import Cache from '../utils/Cache.js';
 
-export function renderPeople(dom, mini = false, closeBtn = false) {
-  const app = dom || document.getElementById('app');
-  app.innerHTML = `
-  <div class="auth" ${closeBtn ? 'style="margin: 0 0;"' : ''}>
-  <div class="header">
-    <h3><canv-icon src="${Cache.getBlob('assets/icons/people.png').dataUrl}"></canv-icon>People</h3>
-    <span class="description">Search friends and manage friend requests.</span>
-            <div class="friends-actions">
-              <button id="refreshBtn" class="friends-ghost">Refresh</button>
-              ${closeBtn ? '<button id="closeBtn" class="friends-ghost">Close</button>' : ''}
-            </div>
-  </div>
-  <hr>
-      <aside class="friends-sidebar mini">
-        <div class="friends-card" style="padding-bottom:10px">
-          <div style="margin-top:10px">
-            <div class="small" style="color:rgba(255,255,255,0.7)">Search friends by username</div>
-            <div class="friends-send-row">
-              <input id="searchUsername" class="friends-input" placeholder="Search username..." />
-              <button id="searchBtn" class="friends-primary">Search</button>
-            </div>
-            <div id="searchResult" class="friends-empty" style="margin-top:8px"></div>
+const html = `
+<div class="auth" id="people-container">
+<div class="header">
+  <h3><canv-icon src="${Cache.getBlob('assets/icons/people.png').dataUrl}"></canv-icon>People</h3>
+  <span class="description">Search friends and manage friend requests.</span>
+          <div class="friends-actions">
+            <button id="refreshBtn" class="friends-ghost">Refresh</button>
+            <button id="closeBtn" class="friends-ghost" style="display:none">Close</button>
           </div>
+</div>
+<hr>
+    <aside class="friends-sidebar mini">
+      <div class="friends-card" style="padding-bottom:10px">
+        <div style="margin-top:10px">
+          <div class="small" style="color:rgba(255,255,255,0.7)">Search friends by username</div>
+          <div class="friends-send-row">
+            <input id="searchUsername" class="friends-input" placeholder="Search username..." />
+            <button id="searchBtn" class="friends-primary">Search</button>
+          </div>
+          <div id="searchResult" class="friends-empty" style="margin-top:8px"></div>
         </div>
-
-        <div class="friends-card">
-          <div id="accountInfo" style="margin-top:8px;color:rgba(255,255,255,0.8)"></div>
-        </div>
-      </aside>
-
-      <section>
-        <div id="incomingSection" class="friends-card" style="margin-bottom:16px">
-          <h4 style="margin:0 0 12px 0;color:rgba(255,255,255,0.9)">Incoming Requests</h4>
-          <div id="incomingPanel"></div>
-        </div>
-
-        <div class="friends-card">
-          <h4 style="margin:0 0 12px 0;color:rgba(255,255,255,0.9)">Friends</h4>
-          <div id="friendsPanel"></div>
-          <div id="friendsPagination" style="margin-top:12px;display:flex;justify-content:center;gap:8px;align-items:center"></div>
-        </div>
-      </section>
       </div>
-  `;
+
+      <div class="friends-card">
+        <div id="accountInfo" style="margin-top:8px;color:rgba(255,255,255,0.8)"></div>
+      </div>
+    </aside>
+
+    <section>
+      <div id="incomingSection" class="friends-card" style="margin-bottom:16px">
+        <h4 style="margin:0 0 12px 0;color:rgba(255,255,255,0.9)">Incoming Requests</h4>
+        <div id="incomingPanel"></div>
+      </div>
+
+      <div class="friends-card">
+        <h4 style="margin:0 0 12px 0;color:rgba(255,255,255,0.9)">Friends</h4>
+        <div id="friendsPanel"></div>
+        <div id="friendsPagination" style="margin-top:12px;display:flex;justify-content:center;gap:8px;align-items:center"></div>
+      </div>
+    </section>
+    </div>
+`;
+
+function render(dom, mini = false, closeBtn = false) {
+  const app = dom || document.getElementById('app');
+  app.innerHTML = html;
+
+  if (mini) {
+    const container = document.getElementById('people-container');
+    if (container) container.style.margin = '0 0';
+  }
+
+  if (closeBtn) {
+    const closeBtnEl = document.getElementById('closeBtn');
+    if (closeBtnEl) {
+      closeBtnEl.style.display = 'inline-block';
+      closeBtnEl.addEventListener('click', () => {
+        if (typeof window.renderGame === 'function') {
+          window.renderGame();
+        }
+      });
+    }
+  }
 
   const auth = getAuth();
   const accountInfo = document.getElementById('accountInfo');
@@ -293,13 +312,9 @@ async function loadAll() {
 
   document.getElementById('refreshBtn').addEventListener('click', loadAll);
 
-  if (closeBtn) {
-    document.getElementById('closeBtn').addEventListener('click', () => {
-      if (typeof window.renderGame === 'function') {
-        window.renderGame();
-      }
-    });
-  }
-
   loadAll();
 }
+
+export const options = { title: "People", auth: true, description: "Manage friends, and send game invites." };
+
+export { html, render };

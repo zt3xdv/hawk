@@ -14,12 +14,6 @@ export default class NetworkManager {
     this.processingQueue = false;
   }
 
-  buildPath(basePath) {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    return `${protocol}//${host}${basePath}`;
-  }
-
   connect() {
     this.server = JSON.parse(localStorage.getItem("server"));
     this.ws = new WebSocket(this.server.path);
@@ -71,6 +65,10 @@ export default class NetworkManager {
 
           this.scene.cameras.main.startFollow(this.scene.player.sprite, true, 0.1, 0.1, 0.5, 0.5);
           this.scene.cameras.main.roundPixels = true;
+          
+          const playerRoles = data.player.roles || [];
+          this.scene.canEditMap = playerRoles.includes('superadmin');
+          this.scene.inputManager.updateEditorVisibility();
           break;
         case 'chatmessage':
           if (!this.players[data.id]) return;
@@ -101,7 +99,8 @@ export default class NetworkManager {
           });
           break;
         case 'loginError':
-          this.scene.errorModal.throwError(data.error || data.message || 'Login failed');
+          this.scene.connectingOverlay.textString = data.error;
+          this.scene.connectingOverlay.show();
           break;
         case 'disconnect':
           this.scene.errorModal.throwError("Disconnected from server.");

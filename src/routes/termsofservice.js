@@ -1,8 +1,6 @@
 import { DISCORD_SERVER } from "../utils/Constants.js";
 
-export function renderTermsOfService() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
+const html = `
 <span>
 <strong>Terms of Service (TERMS) - Hawk</strong>
 <br><br>
@@ -20,7 +18,7 @@ By using this site you accept these Terms. If you do not agree, do not use the s
 <br><br>
 4. <strong>User content</strong><br>
 - You retain ownership of content you publish.<br>
-- By posting content you agree the site may display it to other users according to the site’s functionality.
+- By posting content you agree the site may display it to other users according to the site's functionality.
 <br><br>
 5. <strong>Account status</strong><br>
 - Accounts remain on the system indefinitely.
@@ -38,4 +36,12 @@ By using this site you accept these Terms. If you do not agree, do not use the s
 9. <strong>Contact</strong><br>
 - For questions or security reports contact us on Discord by clicking <a href="${DISCORD_SERVER}">here</a>.
 </span>`;
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = html;
 }
+
+export const options = { title: "Terms Of Service", auth: false, description: "Rules and legal terms governing use of Hawk." };
+
+export { html, render };

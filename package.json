@@ -1,6 +1,6 @@
 {
   "name": "hawk",
-  "version": "0.0.1-beta",
+  "version": "0.17.6-beta",
   "assets": "0.1.2-release",
   "module": "index.js",
   "type": "module",
@@ -39,10 +39,14 @@
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.1",
+    "autoprefixer": "^10.4.21",
     "chokidar": "^4.0.3",
+    "postcss": "^8.5.6",
     "rollup": "^2.79.2",
     "rollup-cache": "^2.0.0",
+    "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-progress": "^1.1.2",
-    "rollup-plugin-terser": "^7.0.2"
+    "rollup-plugin-terser": "^7.0.2",
+    "sass": "^1.93.3"
   }
 }

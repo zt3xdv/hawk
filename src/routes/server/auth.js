@@ -99,8 +99,29 @@ router.post('/api/auth/register', async (req, res) => {
     res.json({
       message: 'Successfully logged in.',
       username: user.username,
-      password: user.password
+      password: user.password,
+      roles: user.roles || []
     });
+}).get('/api/auth/roles', async (req, res) => {
+    try {
+        const { username, password } = req.query;
+        
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Missing credentials' });
+        }
+
+        await UserModel.loadUsers();
+        const user = UserModel.getUserByUsername(username);
+        
+        if (!user || user.password !== password) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        res.json({ roles: user.roles || [] });
+    } catch (error) {
+        console.error('Error fetching roles:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 }).post('/api/auth/check', async (req, res) => {
     await router.parse(req, res);
     const { username, password } = req.body;
@@ -248,6 +269,8 @@ router.post('/api/auth/register', async (req, res) => {
     console.error(error);
     return res.status(500).json({ error: 'Error processing avatar.' });
   }
+}).get('/api/auth/users', async (req, res) => {
+    res.json({ users: UserModel.users.length });
 }).post('/api/user/edit', async (req, res) => {
     await router.parse(req, res);
     const { username, password, key, value } = req.body;

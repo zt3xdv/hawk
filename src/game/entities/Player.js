@@ -73,12 +73,6 @@ export default class Player {
     this._interpolationSpeed = 0.25;
 
     this.chat = new ChatBubbleManager(scene, () => this.sprite.x, () => this.sprite.y, {
-      bubblePaddingX: 6,
-      bubblePaddingY: 4,
-      bubbleSeparation: 4,
-      bubbleDuration: 5000,
-      bubbleMaxWidth: 200,
-      bubbleLimit: 5,
       bubblePosFPlayer: (!display_name || display_name == "") ? 24 : 40
     });
   }

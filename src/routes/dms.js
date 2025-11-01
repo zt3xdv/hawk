@@ -1,24 +1,26 @@
 import { escapeHtml, apiPost } from '../game/utils/Utils.js';
 import Cache from '../utils/Cache.js';
 
-export function renderDms() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="dms-container">
-      <div class="dms-header">
-        <h2>Direct Messages</h2>
-        <button class="btn btn-primary" id="new-conversation">
-          <canv-icon src="${Cache.getBlob('assets/icons/createintegration.png').dataUrl}"></canv-icon>
-          New Conversation
-        </button>
-      </div>
-      <div id="conversations-list" class="conversations-list">
-        <div class="loading">
-          <span class="loader"></span> Loading conversations...
-        </div>
+const html = `
+  <div class="dms-container">
+    <div class="dms-header">
+      <h2>Direct Messages</h2>
+      <button class="btn btn-primary" id="new-conversation">
+        <canv-icon src="${Cache.getBlob('assets/icons/createintegration.png').dataUrl}"></canv-icon>
+        New Conversation
+      </button>
+    </div>
+    <div id="conversations-list" class="conversations-list">
+      <div class="loading">
+        <span class="loader"></span> Loading conversations...
       </div>
     </div>
-  `;
+  </div>
+`;
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = html;
 
   const conversationsList = document.getElementById('conversations-list');
   const newConversationBtn = document.getElementById('new-conversation');
@@ -247,3 +249,7 @@ export function renderDms() {
 
   loadConversations();
 }
+
+export const options = { title: "Messages", auth: true, description: "Send and receive direct messages with other users." };
+
+export { html, render };

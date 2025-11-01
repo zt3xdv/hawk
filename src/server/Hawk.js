@@ -70,9 +70,6 @@ class HawkServer {
   _isVisibleTo(source, target) {
     if (!source || !target || !source.loggedIn || !target.loggedIn) return false;
     
-    if (ModerationModel.isHidden(source.uuid, target.uuid)) return false;
-    if (ModerationModel.isHidden(target.uuid, source.uuid)) return false;
-    
     const d = this._distance(source, target);
     return d <= target.viewRange;
   }
@@ -131,6 +128,20 @@ class HawkServer {
     }
   }
 
+  kickPlayer(userId) {
+    for (const [socketId, player] of Object.entries(this.players)) {
+      if (player.uuid === userId) {
+        const ws = player.ws;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          this._send(ws, 'kicked', { reason: 'You have been kicked by a moderator' });
+          ws.close();
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
 
 
   async create() {
@@ -140,7 +151,7 @@ class HawkServer {
       this.__counterStarted = true;
       setInterval(() => {
         if (this.time >= 1440) this.time = 0;
-        else this.time += 1;
+        else this.time += 0.5;
       }, 1000);
     }
 
@@ -195,7 +206,7 @@ class HawkServer {
           await UserModel.loadUsers();
           const user = UserModel.getUserByUsername(username);
           if (!user || user.password !== password) {
-            this._send(ws, 'loginError', { error: 'Invalid username or password.' });
+            this._send(ws, 'loginError', { error: 'Invalid credentials.' });
             return ws.close();
           }
 
@@ -205,17 +216,11 @@ class HawkServer {
             return ws.close();
           }
 
-          if (ModerationModel.isTimedOut(user.id)) {
-            const timeout = ModerationModel.getUserTimeout(user.id);
-            const remaining = Math.ceil((timeout.expiresAt - Date.now()) / 1000 / 60);
-            this._send(ws, 'loginError', { error: `You are timed out for ${remaining} more minutes. Reason: ${timeout.reason}` });
-            return ws.close();
-          }
-
           const p = this.players[socketId];
           p.uuid = user.id;
           p.display_name = user.displayName;
           p.username = username;
+          p.roles = user.roles || [];
           
           const positionData = user.game?.lastPosition ?? {};
           const { x = 0, y = 0 } = positionData;
@@ -322,6 +327,14 @@ class HawkServer {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
           
+          if (ModerationModel.isTimedOut(p.uuid)) {
+            const timeout = ModerationModel.getUserTimeout(p.uuid);
+            const remaining = Math.ceil((timeout.expiresAt - Date.now()) / 1000 / 60);
+            this._send(ws, 'chatmessage', { message: `You are timed out for ${remaining} more minutes. Reason: ${timeout.reason}`, isCommandResponse: false, user: p.username, id: socketId });
+            log('chat-' + this.data.id, `${p.username} (timeout ${remaining}m): ${data.message}`);
+            return;
+          }
+          
           log('chat-' + this.data.id, `${p.username}: ${data.message}`);
 
           const payload = { ...data, user: p.username, id: socketId };
@@ -351,9 +364,12 @@ class HawkServer {
           return;
         }
 
-        if (this.dev && type === 'createElement') {
+        if (type === 'createElement') {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
+          
+          const canEditMap = this.dev || (p.roles && p.roles.includes('superadmin'));
+          if (!canEditMap) return;
           
           const objId = data.options?.serverId || uuid();
           data.options = data.options || {};
@@ -375,9 +391,12 @@ class HawkServer {
           return;
         }
 
-        if (this.dev && type === 'deleteElement') {
+        if (type === 'deleteElement') {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
+          
+          const canEditMap = this.dev || (p.roles && p.roles.includes('superadmin'));
+          if (!canEditMap) return;
           
           const objId = data.options?.serverId;
           if (objId && this.mapObjects[objId]) {
@@ -401,9 +420,12 @@ class HawkServer {
           return;
         }
 
-        if (this.dev && type === 'moveElement') {
+        if (type === 'moveElement') {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
+          
+          const canEditMap = this.dev || (p.roles && p.roles.includes('superadmin'));
+          if (!canEditMap) return;
           
           const objId = data.options?.serverId;
           if (objId && this.mapObjects[objId]) {
@@ -438,9 +460,12 @@ class HawkServer {
           return;
         }
         
-        if (this.dev && type === 'setTile') {
+        if (type === 'setTile') {
           const p = this.players[socketId];
           if (!p || !p.loggedIn) return;
+          
+          const canEditMap = this.dev || (p.roles && p.roles.includes('superadmin'));
+          if (!canEditMap) return;
           
           const { x, y, type: tileType } = data;
           if (typeof x !== 'number' || typeof y !== 'number' || !tileType) return;

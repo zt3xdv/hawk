@@ -12,16 +12,32 @@ export default class LightManager {
     this.totalSeconds = this.totalMinutes * 60;
     this.running = options.startRunning ?? true;
     this.timeSeconds = (options.startAtMinutes ?? 12) * 60;
+    this.timeScale = options.timeScale ?? 0.5;
     this.nightColor = options.nightColor ?? 0x02061a;
     this.nightAlpha = options.nightAlpha ?? 0.7;
     const Tmin = this.totalMinutes;
     this.phasesMinutes = options.phasesMinutes ?? [
-      { start: 0,    color: this.nightColor, alpha: this.nightAlpha },
-      { start: 4,    color: this.nightColor, alpha: this.nightAlpha },
-      { start: 6,    color: 0xffffff,        alpha: 0 },
-      { start: 16,   color: 0xffffff,        alpha: 0 },
-      { start: 18,   color: this.nightColor, alpha: this.nightAlpha },
-      { start: 20,   color: this.nightColor, alpha: this.nightAlpha }
+      { start: 0,    color: 0x0a0a20, alpha: 0.8 },    // Noche profunda
+      { start: 3,    color: 0x0f0f2a, alpha: 0.75 },   // Noche media
+      { start: 5,    color: 0x1a1a3a, alpha: 0.65 },   // Pre-amanecer
+      { start: 5.5,  color: 0x2a2050, alpha: 0.55 },   // Alba temprana
+      { start: 6,    color: 0x4a3070, alpha: 0.4 },    // Alba violeta
+      { start: 6.5,  color: 0x8a5090, alpha: 0.25 },   // Amanecer rosado
+      { start: 7,    color: 0xd07060, alpha: 0.15 },   // Amanecer naranja
+      { start: 7.5,  color: 0xf0a050, alpha: 0.08 },   // Amanecer dorado
+      { start: 8,    color: 0xffe080, alpha: 0.03 },   // Mañana temprana
+      { start: 9,    color: 0xfff0c0, alpha: 0 },      // Mañana clara
+      { start: 12,   color: 0xffffff, alpha: 0 },      // Mediodía
+      { start: 15,   color: 0xfff8e0, alpha: 0 },      // Tarde temprana
+      { start: 17,   color: 0xffe0a0, alpha: 0.05 },   // Tarde
+      { start: 17.5, color: 0xffc080, alpha: 0.1 },    // Pre-atardecer
+      { start: 18,   color: 0xff9060, alpha: 0.2 },    // Atardecer naranja
+      { start: 18.5, color: 0xd06080, alpha: 0.35 },   // Atardecer rosado
+      { start: 19,   color: 0x8040a0, alpha: 0.5 },    // Crepúsculo violeta
+      { start: 19.5, color: 0x4030a0, alpha: 0.6 },    // Crepúsculo azul
+      { start: 20,   color: 0x2020a0, alpha: 0.7 },    // Anochecer
+      { start: 21,   color: 0x151550, alpha: 0.75 },   // Noche temprana
+      { start: 23,   color: 0x0d0d30, alpha: 0.8 }     // Noche
     ];
     this.phases = (this.phasesMinutes.slice()).map((p, idx) => ({
       start: HawkEngine.Math.Clamp((p.start ?? 0) * 60, 0, this.totalSeconds),
@@ -42,11 +58,16 @@ export default class LightManager {
     this.overlayEvaluator = options.overlayEvaluator ?? this._defaultOverlayEvaluator.bind(this);
     
     this._glowPipeline = null;
-    this._useLowQuality = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    this._useLowQuality = Options.get("quality") == "low";
     this._mergedLights = [];
+    this._lightBridges = [];
     this._lastCamX = 0;
     this._lastCamY = 0;
     this._updateCounter = 0;
+    this._time = 0;
+    this._lightPulseOffsets = new Map();
+    this._skipFrames = 0;
+    this._renderQuality = this._useLowQuality ? 0.35 : 0.6;
   }
 
   create(radialTextureKey = 'lightRadial', mask = 'imageMask') {
@@ -61,10 +82,9 @@ export default class LightManager {
     }
     this._rtKey = rtKey;
     
-    const quality = this._useLowQuality ? 0.5 : 1;
     this._rt = this.scene.make.renderTexture({ 
-      width: Math.floor(w * quality), 
-      height: Math.floor(h * quality), 
+      width: Math.floor(w * this._renderQuality), 
+      height: Math.floor(h * this._renderQuality), 
       key: rtKey 
     });
     
@@ -104,20 +124,22 @@ export default class LightManager {
         
         void main() {
           vec4 color = texture2D(uMainSampler, outTexCoord);
-          vec4 sum = vec4(0.0);
+          vec4 glow = vec4(0.0);
+          
           float blur = uGlowStrength / uResolution.x;
           
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x - 4.0 * blur, outTexCoord.y)) * 0.05;
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x - 3.0 * blur, outTexCoord.y)) * 0.09;
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x - 2.0 * blur, outTexCoord.y)) * 0.12;
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x - blur, outTexCoord.y)) * 0.15;
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x, outTexCoord.y)) * 0.16;
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x + blur, outTexCoord.y)) * 0.15;
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x + 2.0 * blur, outTexCoord.y)) * 0.12;
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x + 3.0 * blur, outTexCoord.y)) * 0.09;
-          sum += texture2D(uMainSampler, vec2(outTexCoord.x + 4.0 * blur, outTexCoord.y)) * 0.05;
+          // Solo 9 muestras (cruz + diagonales)
+          glow += texture2D(uMainSampler, outTexCoord + vec2(-blur, 0.0)) * 0.12;
+          glow += texture2D(uMainSampler, outTexCoord + vec2(blur, 0.0)) * 0.12;
+          glow += texture2D(uMainSampler, outTexCoord + vec2(0.0, -blur)) * 0.12;
+          glow += texture2D(uMainSampler, outTexCoord + vec2(0.0, blur)) * 0.12;
+          glow += texture2D(uMainSampler, outTexCoord + vec2(-blur, -blur)) * 0.08;
+          glow += texture2D(uMainSampler, outTexCoord + vec2(blur, -blur)) * 0.08;
+          glow += texture2D(uMainSampler, outTexCoord + vec2(-blur, blur)) * 0.08;
+          glow += texture2D(uMainSampler, outTexCoord + vec2(blur, blur)) * 0.08;
+          glow += color * 0.2;
           
-          gl_FragColor = mix(color, sum, 0.8);
+          gl_FragColor = color + glow * 0.8;
         }
       `;
       
@@ -173,7 +195,7 @@ export default class LightManager {
 
   _mergeLights(camX, camY, camW, camH) {
     this._mergedLights = [];
-    const processed = new Set();
+    this._lightBridges = [];
     
     const visibleLights = this.lights.filter(light => {
       const sx = light.x - camX;
@@ -183,66 +205,84 @@ export default class LightManager {
              sy + r >= -50 && sy - r <= camH + 50;
     });
     
-    for (let i = 0; i < visibleLights.length; i++) {
-      if (processed.has(i)) continue;
-      
-      const lightA = visibleLights[i];
-      const cluster = [lightA];
-      processed.add(i);
-      
-      for (let j = i + 1; j < visibleLights.length; j++) {
-        if (processed.has(j)) continue;
+    visibleLights.forEach(light => {
+      this._mergedLights.push({
+        x: light.x,
+        y: light.y,
+        radius: light.radius || 128,
+        color: light.color || 0xffffff,
+        alpha: light.alpha || 1,
+        intensity: light.intensity || 1,
+        mask: light.mask,
+        _original: true
+      });
+    });
+    
+    if (visibleLights.length > 1) {
+      for (let i = 0; i < visibleLights.length; i++) {
+        const lightA = visibleLights[i];
         
-        const lightB = visibleLights[j];
-        const dx = lightA.x - lightB.x;
-        const dy = lightA.y - lightB.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist < LIGHT_MERGE_DISTANCE) {
-          cluster.push(lightB);
-          processed.add(j);
-        }
-      }
-      
-      if (cluster.length === 1) {
-        this._mergedLights.push(lightA);
-      } else {
-        let totalX = 0, totalY = 0, totalWeight = 0;
-        let maxRadius = 0;
-        let blendedColor = { r: 0, g: 0, b: 0 };
-        let totalAlpha = 0;
-        let totalIntensity = 0;
-        
-        cluster.forEach(light => {
-          const weight = (light.intensity || 1) * (light.alpha || 1);
-          totalX += light.x * weight;
-          totalY += light.y * weight;
-          totalWeight += weight;
-          maxRadius = Math.max(maxRadius, light.radius || 128);
+        for (let j = i + 1; j < visibleLights.length; j++) {
+          const lightB = visibleLights[j];
+          const dx = lightB.x - lightA.x;
+          const dy = lightB.y - lightA.y;
+          const distSq = dx * dx + dy * dy;
           
-          const color = HawkEngine.Display.Color.IntegerToColor(light.color || 0xffffff);
-          blendedColor.r += color.red * weight;
-          blendedColor.g += color.green * weight;
-          blendedColor.b += color.blue * weight;
-          
-          totalAlpha += light.alpha || 1;
-          totalIntensity += light.intensity || 1;
-        });
-        
-        if (totalWeight > 0) {
-          this._mergedLights.push({
-            x: totalX / totalWeight,
-            y: totalY / totalWeight,
-            radius: maxRadius * 1.2,
-            color: HawkEngine.Display.Color.GetColor(
-              Math.round(blendedColor.r / totalWeight),
-              Math.round(blendedColor.g / totalWeight),
-              Math.round(blendedColor.b / totalWeight)
-            ),
-            alpha: Math.min(totalAlpha / cluster.length * 1.2, 1),
-            intensity: totalIntensity / cluster.length,
-            mask: lightA.mask
-          });
+          if (distSq < LIGHT_MERGE_DISTANCE * LIGHT_MERGE_DISTANCE && distSq > 1) {
+            const dist = Math.sqrt(distSq);
+            const radiusA = lightA.radius || 128;
+            const radiusB = lightB.radius || 128;
+            const mergeStrength = 1 - (dist / LIGHT_MERGE_DISTANCE);
+            
+            const colorA = HawkEngine.Display.Color.IntegerToColor(lightA.color || 0xffffff);
+            const colorB = HawkEngine.Display.Color.IntegerToColor(lightB.color || 0xffffff);
+            
+            const steps = Math.max(1, Math.floor(dist / 60));
+            for (let k = 1; k < steps; k++) {
+              const t = k / steps;
+              const easedT = t * t * (3 - 2 * t);
+              
+              const bridgeX = lightA.x + dx * easedT;
+              const bridgeY = lightA.y + dy * easedT;
+              
+              const dxA = bridgeX - lightA.x;
+              const dyA = bridgeY - lightA.y;
+              const dxB = bridgeX - lightB.x;
+              const dyB = bridgeY - lightB.y;
+              
+              const distToA = Math.sqrt(dxA * dxA + dyA * dyA);
+              const distToB = Math.sqrt(dxB * dxB + dyB * dyB);
+              
+              const influenceA = Math.max(0, 1 - distToA / radiusA);
+              const influenceB = Math.max(0, 1 - distToB / radiusB);
+              const totalInfluence = influenceA + influenceB;
+              
+              if (totalInfluence > 0.15) {
+                const blendFactor = influenceA / totalInfluence;
+                const bridgeRadius = (radiusA * blendFactor + radiusB * (1 - blendFactor)) * (0.6 + mergeStrength * 0.4);
+                
+                const blendedColor = HawkEngine.Display.Color.GetColor(
+                  Math.round(colorA.red * blendFactor + colorB.red * (1 - blendFactor)),
+                  Math.round(colorA.green * blendFactor + colorB.green * (1 - blendFactor)),
+                  Math.round(colorA.blue * blendFactor + colorB.blue * (1 - blendFactor))
+                );
+                
+                const bridgeAlpha = ((lightA.alpha || 1) * influenceA + (lightB.alpha || 1) * influenceB) * mergeStrength * 0.65;
+                const bridgeIntensity = ((lightA.intensity || 1) * influenceA + (lightB.intensity || 1) * influenceB) / totalInfluence;
+                
+                this._lightBridges.push({
+                  x: bridgeX,
+                  y: bridgeY,
+                  radius: bridgeRadius,
+                  color: blendedColor,
+                  alpha: Math.min(bridgeAlpha, 1),
+                  intensity: bridgeIntensity,
+                  mask: lightA.mask,
+                  _bridge: true
+                });
+              }
+            }
+          }
         }
       }
     }
@@ -251,8 +291,10 @@ export default class LightManager {
   update(time, delta) {
     if (!this._created) return;
     const dt = (delta ?? 0) / 1000;
+    this._time += dt;
+    
     if (this.running) {
-      this.timeSeconds += dt;
+      this.timeSeconds += dt * this.timeScale;
       if (this.timeSeconds >= this.totalSeconds) this.timeSeconds -= this.totalSeconds;
       if (this.timeSeconds < 0) this.timeSeconds = (this.timeSeconds % this.totalSeconds + this.totalSeconds) % this.totalSeconds;
       this._timeCallbacks.forEach(cb => { try { cb(this); } catch (e) {} });
@@ -266,19 +308,28 @@ export default class LightManager {
 
     const cam = this._camera || this.scene.cameras.main;
     const w = cam.width, h = cam.height;
+    const zoom = cam.zoom || 1;
+    
     if (!this._rt || !this._rt.texture) {
       console.warn('LightManager.update: missing RenderTexture');
       return;
     }
     if (!this._quad) return;
 
+    this._skipFrames++;
+    const skipInterval = this._useLowQuality ? 2 : 1;
+    if (this._skipFrames < skipInterval) {
+      return;
+    }
+    this._skipFrames = 0;
+
     const camX = (cam.worldView && typeof cam.worldView.x === 'number') ? cam.worldView.x : (cam.scrollX || 0);
     const camY = (cam.worldView && typeof cam.worldView.y === 'number') ? cam.worldView.y : (cam.scrollY || 0);
     
     this._updateCounter++;
-    const shouldMerge = this._updateCounter % (this._useLowQuality ? 3 : 2) === 0;
+    const shouldMerge = this._updateCounter % (this._useLowQuality ? 5 : 3) === 0;
     
-    if (shouldMerge || Math.abs(camX - this._lastCamX) > 50 || Math.abs(camY - this._lastCamY) > 50) {
+    if (shouldMerge || Math.abs(camX - this._lastCamX) > 80 || Math.abs(camY - this._lastCamY) > 80) {
       this._mergeLights(camX, camY, w, h);
       this._lastCamX = camX;
       this._lastCamY = camY;
@@ -293,25 +344,55 @@ export default class LightManager {
     const viewOffsetX = (typeof cam.x === 'number') ? cam.x : 0;
     const viewOffsetY = (typeof cam.y === 'number') ? cam.y : 0;
 
-    const lightsToRender = this._mergedLights;
-    const quality = this._useLowQuality ? 0.5 : 1;
+    const renderLight = (L, extraAlphaMod = 1, extraIntensityMod = 1) => {
+      if (!L) return;
 
-    for (let i = 0; i < lightsToRender.length; i++) {
-      const L = lightsToRender[i];
-      if (!L) continue;
+      const sx = ((L.x - camX) * zoom + viewOffsetX) * this._renderQuality;
+      const sy = ((L.y - camY) * zoom + viewOffsetY) * this._renderQuality;
 
-      const sx = ((L.x - camX) + viewOffsetX) * quality;
-      const sy = ((L.y - camY) + viewOffsetY) * quality;
-      const alpha = HawkEngine.Math.Clamp(L.alpha * (L.intensity ?? 1), 0, 1);
+      if (!this._lightSprite || !this._lightSprite.texture) return;
 
-      if (!this._lightSprite || !this._lightSprite.texture) continue;
+      const lightId = `${Math.round(L.x / 10)}_${Math.round(L.y / 10)}`;
+      if (!this._lightPulseOffsets.has(lightId)) {
+        this._lightPulseOffsets.set(lightId, Math.random() * Math.PI * 2);
+      }
+      const offset = this._lightPulseOffsets.get(lightId);
+      
+      const pulsePhase = this._time * 0.5 + offset;
+      const pulse = Math.sin(pulsePhase) * 0.035 + Math.sin(pulsePhase * 1.5) * 0.025;
+      const pulseFactor = 1 + pulse;
+      
+      const shapeNoise = Math.sin(pulsePhase * 0.5) * 0.025;
+      
+      const intensityMod = (L._original ? 1.2 : 0.9) * extraIntensityMod;
+      const alpha = HawkEngine.Math.Clamp(L.alpha * (L.intensity ?? 1) * intensityMod * pulseFactor * extraAlphaMod, 0, 1);
+      
+      const baseScale = (L.radius / 64) * this._renderQuality * zoom;
+      const scaleX = baseScale * (1 + shapeNoise);
+      const scaleY = baseScale * (1 - shapeNoise * 0.5);
 
-      const scale = (L.radius / 64) * quality;
       this._lightSprite.setPosition(sx, sy)
         .setAlpha(alpha)
         .setTint(L.color)
-        .setScale(scale);
+        .setScale(scaleX, scaleY)
+        .setRotation(pulsePhase * 0.015);
       this._rt.draw(this._lightSprite);
+      
+      if (alpha > 0.3 && L._original) {
+        this._lightSprite.setAlpha(alpha * 0.35)
+          .setScale(scaleX * 1.5, scaleY * 1.5);
+        this._rt.draw(this._lightSprite);
+      }
+    };
+
+    if (this._lightBridges && this._lightBridges.length > 0) {
+      for (let i = 0; i < this._lightBridges.length; i++) {
+        renderLight(this._lightBridges[i], 0.75, 1);
+      }
+    }
+    
+    for (let i = 0; i < this._mergedLights.length; i++) {
+      renderLight(this._mergedLights[i], 1, 1);
     }
 
     if (this._rt && this._rt.texture && this._quad.texture !== this._rt.texture) {
@@ -326,7 +407,7 @@ export default class LightManager {
     if (this._glowPipeline && this._glowPipeline.set2f && this._glowPipeline.set1f) {
       try {
         this._glowPipeline.set2f('uResolution', w, h);
-        this._glowPipeline.set1f('uGlowStrength', this._useLowQuality ? 3.0 : 5.0);
+        this._glowPipeline.set1f('uGlowStrength', this._useLowQuality ? 4.0 : 6.0);
       } catch (e) {}
     }
   }
@@ -354,6 +435,7 @@ export default class LightManager {
   clearLights() { 
     this.lights.length = 0;
     this._mergedLights = [];
+    this._lightBridges = [];
   }
   
   setNightAlpha(a) { this.nightAlpha = HawkEngine.Math.Clamp(a, 0, 1); }
@@ -392,10 +474,9 @@ export default class LightManager {
     if (!this._rt) return;
     this._rt.destroy();
     
-    const quality = this._useLowQuality ? 0.5 : 1;
     this._rt = this.scene.make.renderTexture({ 
-      width: Math.floor(w * quality), 
-      height: Math.floor(h * quality), 
+      width: Math.floor(w * this._renderQuality), 
+      height: Math.floor(h * this._renderQuality), 
       key: this._rtKey 
     });
     
@@ -419,5 +500,6 @@ export default class LightManager {
     this.scene.scale.off('resize', this._onResize);
     this._created = false;
     this._mergedLights = [];
+    this._lightBridges = [];
   }
 }

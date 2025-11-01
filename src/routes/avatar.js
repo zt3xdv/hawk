@@ -58,39 +58,41 @@ async function postAvatar(base64Image, username = null, password = null) {
   }
 }
 
-export function renderAvatar() {
-  const app = document.getElementById("app");
-  app.innerHTML = `
-    <div class="auth">
-  <div class="header">
-    <h3><canv-icon src="${Cache.getBlob('assets/icons/createemoji.png').dataUrl}"></canv-icon>In-Game avatar</h3>
-    <span class="description">Modify your in-game avatar.</span>
-  </div>
+const html = `
+  <div class="auth">
+<div class="header">
+  <h3><canv-icon src="${Cache.getBlob('assets/icons/createemoji.png').dataUrl}"></canv-icon>In-Game avatar</h3>
+  <span class="description">Modify your in-game avatar.</span>
+</div>
 <hr>
-      <section class="avatar-section">
-        <div class="header-row">
-          <div>
-            <p id="avatar-desc" class="lead">Upload an avatar for your character.</p>
-            <p class="small accent">Accepted: images. Max 5 MB.</p>
-          </div>
+    <section class="avatar-section">
+      <div class="header-row">
+        <div>
+          <p id="avatar-desc" class="lead">Upload an avatar for your character.</p>
+          <p class="small accent">Accepted: images. Max 5 MB.</p>
         </div>
+      </div>
 
-        <label for="avatarInput" class="file-label">
-          <input id="avatarInput" type="file" accept="image/*" class="visually-hidden" />
-        </label>
+      <label for="avatarInput" class="file-label">
+        <input id="avatarInput" type="file" accept="image/*" class="visually-hidden" />
+      </label>
 
-        <div class="preview-row" aria-live="polite">
-          <canvas id="avatarPreview" width="32" height="32" class="avatar-canvas"></canvas>
-          <div class="preview-text">Preview</div>
-        </div>
+      <div class="preview-row" aria-live="polite">
+        <canvas id="avatarPreview" width="32" height="32" class="avatar-canvas"></canvas>
+        <div class="preview-text">Preview</div>
+      </div>
 
-        <div class="controls">
-          <button id="uploadAvatarBtn" class="uploadBtn">Upload avatar</button>
-          <div id="avatarMessage" class="message"></div>
-        </div>
-      </section>
-    </div>
-  `;
+      <div class="controls">
+        <button id="uploadAvatarBtn" class="uploadBtn">Upload avatar</button>
+        <div id="avatarMessage" class="message"></div>
+      </div>
+    </section>
+  </div>
+`;
+
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = html;
 
   const fileInput = document.getElementById("avatarInput");
   const previewCanvas = document.getElementById("avatarPreview");
@@ -143,3 +145,7 @@ export function renderAvatar() {
     }
   });
 }
+
+export const options = { title: "Avatar", auth: true, description: "Customize your in-game avatar with a custom image." };
+
+export { html, render };

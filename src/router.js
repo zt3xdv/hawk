@@ -99,7 +99,15 @@ export function router() {
 
   if (fullPath.startsWith('/dms/') && fullPath !== '/dms') {
     const userId = fullPath.split('/')[2];
-    route = { auth: true, title: 'Chat', fn: () => renderDmChat(userId) };
+    const dmChatRoute = routes['/dms'];
+    route = { 
+      ...dmChatRoute,
+      render: () => renderDmChat(userId),
+      options: {
+        ...dmChatRoute.options,
+        title: 'Chat'
+      }
+    };
     routeParams.userId = userId;
   }
 
@@ -118,22 +126,50 @@ export function router() {
     return router();
   }
 
-  if (route.auth && !isAuthenticated) {
+  if (route.options?.auth && !isAuthenticated) {
     window.history.replaceState({}, '', '/auth');
     return router();
   }
 
-  if (!route.auth && isAuthenticated && path === '/auth') {
+  if (!route.options?.auth && isAuthenticated && path === '/auth') {
     window.history.replaceState({}, '', '/dashboard');
     return router();
   }
 
-  if (!route.fn) {
+  if (route.options?.superadmin && isAuthenticated) {
+    const username = localStorage.getItem('username');
+    const password = localStorage.getItem('password');
+    
+    fetch(`/api/auth/roles?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error || !data.roles || !data.roles.includes('superadmin')) {
+          window.history.replaceState({}, '', '/dashboard');
+          router();
+        } else {
+          continueRouting();
+        }
+      })
+      .catch(() => {
+        window.history.replaceState({}, '', '/dashboard');
+        router();
+      });
+    return;
+  }
+
+  continueRouting();
+}
+
+function continueRouting() {
+  const path = getPathFromLocation();
+  const route = routes[path] || {};
+
+  if (!route.render) {
     window.history.replaceState({}, '', '/404');
     return router();
   }
 
-  document.title = "Hawk - " + route.title;
+  document.title = "Hawk - " + route.options?.title;
   const display_name = localStorage.getItem('display_name');
 
   const appEl = document.getElementById('app');
@@ -146,7 +182,7 @@ export function router() {
     const appEl = document.getElementById('app');
     if (appEl) appEl.classList.remove('no-scroll');
     
-    route.fn();
+    route.render();
     
     setTimeout(() => {
       if (appEl) appEl.classList.remove('hidden');

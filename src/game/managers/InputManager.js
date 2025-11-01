@@ -542,16 +542,18 @@ export default class InputManager {
   }
   
   handleEditorClick(worldX, worldY) {
-    if (this.currentEditorMode === 'elements' && this.selectedElement && this.scene.dev) {
+    const canEdit = this.scene.dev || this.scene.canEditMap;
+    if (this.currentEditorMode === 'elements' && this.selectedElement && canEdit) {
       this.placeElement(worldX, worldY);
-    } else if (this.currentEditorMode === 'tiles' && this.scene.dev) {
+    } else if (this.currentEditorMode === 'tiles' && canEdit) {
       this.paintTile(worldX, worldY);
     }
   }
   
   placeElement(worldX, worldY) {
     if (!this.selectedElement) return;
-    if (!this.scene.dev) return;
+    const canEdit = this.scene.dev || this.scene.canEditMap;
+    if (!canEdit) return;
     
     const serverId = id(64);
     const element = this.scene.mapObjects.create(
@@ -567,7 +569,8 @@ export default class InputManager {
   
   paintTile(worldX, worldY) {
     if (!this.scene.tileManager) return;
-    if (!this.scene.dev) return;
+    const canEdit = this.scene.dev || this.scene.canEditMap;
+    if (!canEdit) return;
     
     const tileData = this.scene.tileManager.setTile(worldX, worldY, this.selectedTileType);
     
@@ -578,9 +581,10 @@ export default class InputManager {
   
   updateEditorVisibility() {
     const editorBtn = document.querySelector('[data-modal="editor"]');
+    const canEdit = this.scene.dev || this.scene.canEditMap;
     
     if (editorBtn) {
-      if (this.scene.dev) {
+      if (canEdit) {
         editorBtn.style.display = 'flex';
       } else {
         editorBtn.style.display = 'none';
@@ -590,7 +594,7 @@ export default class InputManager {
       }
     }
     
-    if (this.scene.dev) {
+    if (canEdit) {
       this.setupMoveMode();
       this.setupDeleteMode();
     }

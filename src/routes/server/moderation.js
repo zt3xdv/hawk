@@ -4,62 +4,6 @@ import ModerationModel from '../../models/ModerationModel.js';
 
 const router = new Router();
 
-router.post('/api/moderation/hide', async (req, res) => {
-    try {
-    await router.parse(req, res);
-        const { username, password, targetId, duration } = req.body;
-
-        if (!username || !password || !targetId) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        const user = UserModel.getUserByUsername(username);
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const bcrypt = await import('bcryptjs');
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const result = await ModerationModel.hidePlayer(user.id, targetId, duration || '1hour');
-        res.json(result);
-    } catch (error) {
-        console.error('Error hiding player:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-router.post('/api/moderation/unhide', async (req, res) => {
-    try {
-    await router.parse(req, res);
-        const { username, password, targetId } = req.body;
-
-        if (!username || !password || !targetId) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        const user = UserModel.getUserByUsername(username);
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const bcrypt = await import('bcryptjs');
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const result = await ModerationModel.unhidePlayer(user.id, targetId);
-        res.json(result);
-    } catch (error) {
-        console.error('Error unhiding player:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
 router.post('/api/moderation/ban', async (req, res) => {
     try {
     await router.parse(req, res);
@@ -74,13 +18,17 @@ router.post('/api/moderation/ban', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        if (!user.roles || !user.roles.includes('moderator')) {
+        const hasPermission = user.roles && (
+            user.roles.includes('moderator') || 
+            user.roles.includes('admin') || 
+            user.roles.includes('superadmin')
+        );
+        
+        if (!hasPermission) {
             return res.status(403).json({ error: 'Insufficient permissions' });
         }
 
-        const bcrypt = await import('bcryptjs');
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
+        if (!password === user.password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -90,9 +38,7 @@ router.post('/api/moderation/ban', async (req, res) => {
         console.error('Error banning player:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-});
-
-router.post('/api/moderation/unban', async (req, res) => {
+}).post('/api/moderation/unban', async (req, res) => {
     try {
     await router.parse(req, res);
         const { username, password, targetId } = req.body;
@@ -106,13 +52,17 @@ router.post('/api/moderation/unban', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        if (!user.roles || !user.roles.includes('moderator')) {
+        const hasPermission = user.roles && (
+            user.roles.includes('moderator') || 
+            user.roles.includes('admin') || 
+            user.roles.includes('superadmin')
+        );
+        
+        if (!hasPermission) {
             return res.status(403).json({ error: 'Insufficient permissions' });
         }
 
-        const bcrypt = await import('bcryptjs');
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
+        if (!password === user.password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -122,9 +72,7 @@ router.post('/api/moderation/unban', async (req, res) => {
         console.error('Error unbanning player:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-});
-
-router.post('/api/moderation/timeout', async (req, res) => {
+}).post('/api/moderation/timeout', async (req, res) => {
     try {
     await router.parse(req, res);
         const { username, password, targetId, duration, reason } = req.body;
@@ -138,13 +86,17 @@ router.post('/api/moderation/timeout', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        if (!user.roles || !user.roles.includes('moderator')) {
+        const hasPermission = user.roles && (
+            user.roles.includes('moderator') || 
+            user.roles.includes('admin') || 
+            user.roles.includes('superadmin')
+        );
+        
+        if (!hasPermission) {
             return res.status(403).json({ error: 'Insufficient permissions' });
         }
 
-        const bcrypt = await import('bcryptjs');
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
+        if (!password === user.password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -154,9 +106,7 @@ router.post('/api/moderation/timeout', async (req, res) => {
         console.error('Error timing out player:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-});
-
-router.post('/api/moderation/kick', async (req, res) => {
+}).post('/api/moderation/kick', async (req, res) => {
     try {
     await router.parse(req, res);
         const { username, password, targetId } = req.body;
@@ -170,24 +120,37 @@ router.post('/api/moderation/kick', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        if (!user.roles || !user.roles.includes('moderator')) {
+        const hasPermission = user.roles && (
+            user.roles.includes('moderator') || 
+            user.roles.includes('admin') || 
+            user.roles.includes('superadmin')
+        );
+        
+        if (!hasPermission) {
             return res.status(403).json({ error: 'Insufficient permissions' });
         }
 
-        const bcrypt = await import('bcryptjs');
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
+        if (!password === user.password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        res.json({ success: true, message: 'Player will be kicked' });
+        let kicked = false;
+        for (const server of router.app.hawkServers) {
+            if (server.kickPlayer(targetId)) {
+                kicked = true;
+            }
+        }
+
+        if (kicked) {
+            res.json({ success: true, message: 'Player has been kicked from all servers' });
+        } else {
+            res.json({ success: true, message: 'Player is not currently connected to any server' });
+        }
     } catch (error) {
         console.error('Error kicking player:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-});
-
-router.post('/api/moderation/check-status', async (req, res) => {
+}).post('/api/moderation/check-status', async (req, res) => {
     try {
     await router.parse(req, res);
         const { userId } = req.body;
@@ -209,34 +172,6 @@ router.post('/api/moderation/check-status', async (req, res) => {
         });
     } catch (error) {
         console.error('Error checking status:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-router.post('/api/moderation/hidden-players', async (req, res) => {
-    try {
-    await router.parse(req, res);
-        const { username, password } = req.body;
-
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        const user = UserModel.getUserByUsername(username);
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const bcrypt = await import('bcryptjs');
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const hiddenPlayers = ModerationModel.getHiddenPlayers(user.id);
-        res.json({ hiddenPlayers });
-    } catch (error) {
-        console.error('Error getting hidden players:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

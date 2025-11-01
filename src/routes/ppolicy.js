@@ -1,8 +1,6 @@
 import { DISCORD_SERVER } from "../utils/Constants.js";
 
-export function renderPrivacyPolicy() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
+const html = `
 <span>
 <strong>Privacy Policy (PRIVACY) - Hawk</strong>
 <br><br>
@@ -34,4 +32,12 @@ export function renderPrivacyPolicy() {
 9. <strong>Contact</strong><br>
 - For questions or security reports contact us on Discord by clicking <a href="${DISCORD_SERVER}">here</a>.
 </span>`;
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = html;
 }
+
+export const options = { title: "Privacy Policy", auth: false, description: "Details on how Hawk collects, uses, and protects data." };
+
+export { html, render };

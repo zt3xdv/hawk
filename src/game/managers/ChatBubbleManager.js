@@ -7,9 +7,9 @@ export default class ChatBubbleManager {
     this.getY = getYFn;
 
     this._bubbles = [];
-    this._bubblePaddingX = options.bubblePaddingX ?? 6;
-    this._bubblePaddingY = options.bubblePaddingY ?? 4;
-    this._bubbleSeparation = options.bubbleSeparation ?? 4;
+    this._bubblePaddingX = options.bubblePaddingX ?? 4;
+    this._bubblePaddingY = options.bubblePaddingY ?? 2;
+    this._bubbleSeparation = options.bubbleSeparation ?? 0;
     this._bubbleDuration = options.bubbleDuration ?? 5000;
     this._bubbleMaxWidth = options.bubbleMaxWidth ?? 200;
     this._bubbleLimit = options.bubbleLimit ?? 5;
@@ -165,17 +165,17 @@ export default class ChatBubbleManager {
 
     const container = this.scene.add.container(0, 0).setDepth(10000002);
 
-    const bg = this.scene.add.graphics();
+    const bg = this.scene.add.graphics({ pixelArt: true });
     bg.fillStyle(0x000000, 0.6);
-    const cRadius = 6;
+    const cRadius = 4;
     bg.fillRoundedRect(0, 0, bgWidth, bgHeight, cRadius);
 
     const msgText = this.scene.add.bitmapText(this._bubblePaddingX, this._bubblePaddingY, 'hawkpixelated', finalText, parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000003);
     msgText.setOrigin(0, 0);
-    msgText.setCharacterTint(0, -1, true, 0x808080);
+    msgText.setCharacterTint(0, -1, true, isCommand ? 0xFFFF00 : 0x808080);
     //msgText.setWordWrapWidth(this._bubbleMaxWidth, true);
 
-    const cloud = this.scene.add.graphics();
+    const cloud = this.scene.add.graphics({ pixelArt: true });
     cloud.fillStyle(0x000000, 0.6);
 
     container.add([bg, msgText, cloud]);
@@ -249,9 +249,9 @@ export default class ChatBubbleManager {
 
       const container = this.scene.add.container(0, 0).setDepth(10000010);
 
-      const bg = this.scene.add.graphics();
+      const bg = this.scene.add.graphics({ pixelArt: true });
       bg.fillStyle(0x000000, 0.6);
-      const cRadius = 6;
+      const cRadius = 4;
       bg.fillRoundedRect(0, 0, bgWidth, bgHeight, cRadius);
 
       const dotAreaX = this._bubblePaddingX;
@@ -285,7 +285,7 @@ export default class ChatBubbleManager {
         dots.push({ text: dotText });
       }
 
-      const cloud = this.scene.add.graphics();
+      const cloud = this.scene.add.graphics({ pixelArt: true });
       cloud.fillStyle(0x000000, 0.6);
       container.add([bg, cloud]);
       container.sendToBack(bg);
@@ -398,8 +398,9 @@ export default class ChatBubbleManager {
     cloud.clear();
     cloud.fillStyle(0x000000, 0.6);
 
-    const vWidth = 6;
-    const vHeight = 6;
+    const vWidth = 4;
+    const vHeight = 4;
+    
     const bubbleLeft = bubble.container.x;
     const spriteX = Math.round(this.getX());
 
@@ -453,7 +454,7 @@ export default class ChatBubbleManager {
       const bgW = b.width;
       const bgH = b.height;
       const stackIndex = i;
-      const topOffsetCount = this._typingBubble ? 1 : 0;
+      const topOffsetCount = 0;
       const baseX = Math.round(px - Math.floor(bgW / 2));
       const baseY = Math.round(py - this.bubblePosFPlayer - (bgH + this._bubbleSeparation) * (this._bubbles.length - 1 - stackIndex + topOffsetCount) - bgH);
       b.container.x = Math.floor(baseX);

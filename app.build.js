@@ -5,6 +5,9 @@ import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import { terser } from 'rollup-plugin-terser';
 import progress from 'rollup-plugin-progress';
+import postcss from 'rollup-plugin-postcss';
+import autoprefixer from 'autoprefixer';
+import htmlPlugin from './src/bundler/html-plugin.js';
 import path from 'path';
 
 const args = process.argv.slice(2).map(a => a.toLowerCase());
@@ -16,16 +19,41 @@ const input = 'src/main.js';
 const outDir = path.resolve('dist');
 
 const basePlugins = [
-  resolve({ browser: true, extensions: ['.js'] }),
-  commonjs(),
+  resolve({ 
+    browser: true, 
+    extensions: ['.js'],
+    preferBuiltins: false
+  }),
+  commonjs({
+    sourceMap: false
+  }),
   json(),
-  progress()
+  postcss({
+    extensions: ['.css', '.scss', '.sass'],
+    extract: 'main.css',
+    minimize: isProd,
+    sourceMap: false,
+    plugins: [
+      autoprefixer()
+    ]
+  }),
+  htmlPlugin({
+    template: 'src/templates/index.html',
+    filename: 'index.html'
+  })
 ];
+
+if (!isDev && !isFast) {
+  basePlugins.push(progress());
+}
 
 if (isProd) {
   basePlugins.push(terser({
     format: {
       comments: false
+    },
+    compress: {
+      passes: 2
     }
   }));
 }
@@ -37,17 +65,21 @@ const baseConfig = {
     dir: outDir,
     format: 'es',
     name: 'Hawk',
-    indent: false
-  }
+    indent: false,
+    sourcemap: false,
+    compact: isProd
+  },
+  cache: true,
+  treeshake: isProd ? true : false
 };
 
 const cacheOptions = {
   name: 'hawk-build-cache',
   dependencies: [],
-  enabled: isFast || isProd
+  enabled: true
 };
 
-const cachedBuildConfig = cacheBuild(cacheOptions, baseConfig);
+const cachedBuildConfig = isFast ? baseConfig : cacheBuild(cacheOptions, baseConfig);
 
 async function runBuild() {
   try {
@@ -66,8 +98,17 @@ async function runWatch() {
     ...baseConfig,
     watch: {
       exclude: ['node_modules/**'],
-      chokidar: true,
-      clearScreen: false
+      chokidar: {
+        ignoreInitial: true,
+        ignorePermissionErrors: true,
+        usePolling: false,
+        interval: 100,
+        binaryInterval: 300,
+        awaitWriteFinish: false
+      },
+      clearScreen: false,
+      buildDelay: 0,
+      skipWrite: false
     }
   });
 
@@ -75,7 +116,7 @@ async function runWatch() {
     if (event.code === 'BUNDLE_START') {
       console.log('Bundling...');
     } else if (event.code === 'BUNDLE_END') {
-      console.log('Build complete.');
+      console.log(`Build complete in ${event.duration}ms`);
     } else if (event.code === 'ERROR' || event.code === 'FATAL') {
       console.error('Build error:', event.error);
     }

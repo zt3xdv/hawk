@@ -2,108 +2,120 @@ import MapObject from './MapObject.js';
 
 export default class RoadLamp extends MapObject {
   static texture = "props";
-    static types = [
-      {
-        name: '1',
-        uvStartPx: { u: 391, v: 1676 },
-        widthPx: 64,
-        heightPx: 84,
-        zoffset: 9,
-        collision: { startx: 0, starty: 74, width: 17, height: 10 }
-      },
-      {
-        name: '2',
-        uvStartPx: { u: 461, v: 1676 },
-        widthPx: 57,
-        heightPx: 84,
-        zoffset: 9,
-        collision: { startx: 28, starty: 74, width: 17, height: 10 }
-      },
-    ];
+  static types = [
+    {
+      name: '1',
+      uvStartPx: { u: 391, v: 1676 },
+      widthPx: 64,
+      heightPx: 84,
+      zoffset: 9,
+      collision: { startx: 0, starty: 74, width: 17, height: 10 },
+      lampOffset: { x: 35, y: 22 },
+      lightOffset: { x: 39, y: 30 }
+    },
+    {
+      name: '2',
+      uvStartPx: { u: 461, v: 1676 },
+      widthPx: 57,
+      heightPx: 84,
+      zoffset: 9,
+      collision: { startx: 28, starty: 74, width: 17, height: 10 },
+      lampOffset: { x: 1, y: 22 },
+      lightOffset: { x: 5, y: 30 }
+    }
+  ];
+
+  static lampUV = {
+    uvStartPx: { u: 491, v: 1640 },
+    widthPx: 9,
+    heightPx: 17
+  };
     
   constructor(scene, x, y, typeNum = -1) {
-    const lamp = {
-      uvStartPx: { u: 491, v: 1640 },
-      widthPx: 9,
-      heightPx: 17,
-    };
-    
-    const textureKey = RoadLamp.texture;
-
-    const index = typeNum != -1 ? typeNum : scene.random.getNextInt(RoadLamp.types.length);
+    const index = typeNum !== -1 ? typeNum : scene.random.getNextInt(RoadLamp.types.length);
     const type = RoadLamp.types[index];
 
-    super(scene, x, y, textureKey, type.uvStartPx, type.widthPx, type.heightPx, type.zoffset);
+    super(scene, x, y, RoadLamp.texture, type.uvStartPx, type.widthPx, type.heightPx, type.zoffset);
 
     this.type = type.name;
-
-    const { startx, starty, width, height } = type.collision;
-    this.image.body.setSize(width, height);
-    this.image.body.setOffset(startx, starty);
+    this.typeIndex = index;
     
-    const cache = MapObject.textureCache;
-    const uvKey = `${textureKey}|${lamp.uvStartPx.u},${lamp.uvStartPx.v}|${lamp.widthPx}x${lamp.heightPx}`;
-    let cached = cache.get(uvKey);
+    this._setupCollision(type.collision);
+    this._setupLamp(x, y, type.lampOffset);
+    this._setupLight(x, y, type.lightOffset);
+  }
 
-    if (!cached) {
-      const baseSource = scene.textures.get(textureKey).getSourceImage();
-      const newKey = `crop-${textureKey}-${lamp.uvStartPx.u}-${lamp.uvStartPx.v}-${lamp.widthPx}x${lamp.heightPx}`;
-      if (!scene.textures.exists(newKey)) {
-        scene.textures.createCanvas(newKey, lamp.widthPx, lamp.heightPx);
-        const canvasTexture = scene.textures.get(newKey);
-        const ctx = canvasTexture.getSourceImage().getContext('2d');
-        ctx.drawImage(
-          baseSource,
-          lamp.uvStartPx.u, lamp.uvStartPx.v,
-          lamp.widthPx, lamp.heightPx,
-          0, 0,
-          lamp.widthPx, lamp.heightPx
-        );
-        canvasTexture.refresh();
-      }
-      cached = { key: newKey, refCount: 1 };
-      cache.set(uvKey, cached);
-    } else {
-      cached.refCount++;
-    }
+  _setupCollision(collision) {
+    const { startx, starty, width, height } = collision;
+    this.image.body.setSize(width, height).setOffset(startx, starty);
+  }
 
-    this.__cacheKey = uvKey;
-    this.__textureKey = cached.key;
-    
-    this.lightXOffset = typeNum == 0 ? 35 : 1;
-    this.lightYOffset = 22;
+  _setupLamp(x, y, offset) {
+    const lampTexture = this._getCachedTexture(
+      RoadLamp.texture, 
+      RoadLamp.lampUV.uvStartPx, 
+      RoadLamp.lampUV.widthPx, 
+      RoadLamp.lampUV.heightPx
+    );
 
-    this.lampImage = scene.add.image(x + this.lightXOffset, y + this.lightYOffset, this.__textureKey)
+    this.lampImage = this.scene.add.image(
+      x + offset.x, 
+      y + offset.y, 
+      lampTexture
+    )
       .setOrigin(0, 0)
       .setDepth(y - 1);
-      
-    this.light = scene.lightManager.addLight(x + this.lightXOffset, y + this.lightYOffset, 150, 0xffffff, 0.9)
+  }
+
+  _setupLight(x, y, offset) {
+    this.light = this.scene.lightManager.addLight(
+      x + offset.x, 
+      y + offset.y, 
+      200, 
+      0xFFF4D0, 
+      0.93, 
+      1.15
+    );
   }
   
   update(time, delta) {
     super.update(time, delta);
     
-    this.lampImage.setDepth(this.image.y + this.height - this.zoffset);
+    if (this.lampImage) {
+      this.lampImage.setDepth(this._calculateDepth(this.image.y));
+    }
   }
   
   setPosition(x, y) {
     super.setPosition(x, y);
     
-    this.lampImage.setPosition(x + this.lightXOffset, y + this.lightYOffset);
-    this.lampImage.setDepth(y - 1);
+    const type = RoadLamp.types[this.typeIndex];
     
-    this.light.x = x + this.lightXOffset + 4;
-    this.light.y = y + this.lightYOffset + 8;
+    if (this.lampImage) {
+      this.lampImage.setPosition(x + type.lampOffset.x, y + type.lampOffset.y);
+      this.lampImage.setDepth(this._calculateDepth(y));
+    }
+    
+    if (this.light) {
+      this.light.x = x + type.lightOffset.x;
+      this.light.y = y + type.lightOffset.y;
+    }
   }
   
   destroy() {
-    super.destroy();
-    
-    if (this.lampImage.body) {
-      this.scene.physics.world.disableBody(this.lampImage.body);
+    if (this.lampImage) {
+      if (this.lampImage.body) {
+        this.scene.physics.world.disableBody(this.lampImage.body);
+      }
+      this.lampImage.destroy();
+      this.lampImage = null;
     }
-    this.lampImage.destroy();
     
-    this.scene.lightManager.removeLightObj(this.light);
+    if (this.light) {
+      this.scene.lightManager.removeLightObj(this.light);
+      this.light = null;
+    }
+    
+    super.destroy();
   }
 }

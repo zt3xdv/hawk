@@ -9,64 +9,94 @@ export default class Campfire extends MapObject {
       widthPx: 46,
       heightPx: 32,
       zoffset: 9,
-      collision: { startx: 0, starty: 4, width: 46, height: 28 }
-    },
+      collision: { startx: 0, starty: 4, width: 46, height: 28 },
+      lightOffset: { x: 23, y: 8 }
+    }
   ];
 
-  constructor(scene, x, y) {
-    const type = Campfire.types[0];
+  static FRAME_COUNT = 25;
+  static FRAME_DURATION = 75;
 
+  constructor(scene, x, y, typeIndex = 0) {
+    const type = Campfire.types[typeIndex];
     super(scene, x, y, Campfire.texture, type.uvStartPx, type.widthPx, type.heightPx, type.zoffset);
 
     this.type = type.name;
-
-    const { startx, starty, width, height } = type.collision;
-    this.image.body.setSize(width, height);
-    this.image.body.setOffset(startx, starty);
-    
-    this.lightXOffset = 8;
-    this.lightYOffset = -15;
-
-    this.fireImage = scene.add.image(x + this.lightXOffset, y + this.lightYOffset, "flame")
-      .setOrigin(0, 0)
-      .setDepth(y - 1);
-      
-    this.light = scene.lightManager.addLight(x + this.lightXOffset + 20, y + this.lightYOffset + 20, 150, 0xffffff, 0.9);
-    this.fireImage.tint = 0xFF7700;
+    this._setupCollision(type.collision);
+    this._setupFire(x, y, type.lightOffset);
     
     this.frame = 0;
     this.frameTime = 0;
+  }
+
+  _setupCollision(collision) {
+    const { startx, starty, width, height } = collision;
+    this.image.body.setSize(width, height).setOffset(startx, starty);
+  }
+
+  _setupFire(x, y, lightOffset) {
+    this.fireImage = this.scene.add.image(
+      x + lightOffset.x - 15, 
+      y + lightOffset.y - 15, 
+      "flame"
+    )
+      .setOrigin(0, 0)
+      .setDepth(y - 1)
+      .setTint(0xFF7700);
+      
+    this.light = this.scene.lightManager.addLight(
+      x + lightOffset.x, 
+      y + lightOffset.y, 
+      180, 
+      0xFF8844, 
+      0.95, 
+      1.1
+    );
   }
   
   update(time, delta) {
     super.update(time, delta);
     
     this.frameTime += delta;
-    if (this.frameTime >= 75) {
-      this.frameTime = 0;
-      this.frame = (this.frame + 1) % 25; // Assume que hay 25 frames en la animación
+    if (this.frameTime >= Campfire.FRAME_DURATION) {
+      this.frameTime -= Campfire.FRAME_DURATION;
+      this.frame = (this.frame + 1) % Campfire.FRAME_COUNT;
       this.fireImage.setFrame(this.frame);
     }
-    this.fireImage.setDepth(this.image.y + this.height - this.zoffset);
+    
+    this.fireImage.setDepth(this._calculateDepth(this.image.y));
   }
   
   setPosition(x, y) {
     super.setPosition(x, y);
     
-    this.fireImage.setPosition(x + this.lightXOffset, y + this.lightYOffset);
-    this.fireImage.setDepth(y - 1);
+    const type = Campfire.types[0];
+    const offsetX = type.lightOffset.x - 15;
+    const offsetY = type.lightOffset.y - 15;
     
-    this.light.x = x + this.lightXOffset + 20; // Corrige la posición del light para alinearse con la imagen
-    this.light.y = y + this.lightYOffset + 20; // Corrige la posición del light para alinearse con la imagen
+    this.fireImage.setPosition(x + offsetX, y + offsetY);
+    this.fireImage.setDepth(this._calculateDepth(y));
+    
+    if (this.light) {
+      this.light.x = x + type.lightOffset.x;
+      this.light.y = y + type.lightOffset.y;
+    }
   }
   
   destroy() {
-    if (this.fireImage.body) {
-      this.scene.physics.world.disableBody(this.fireImage.body);
+    if (this.fireImage) {
+      if (this.fireImage.body) {
+        this.scene.physics.world.disableBody(this.fireImage.body);
+      }
+      this.fireImage.destroy();
+      this.fireImage = null;
     }
-    this.fireImage.destroy();
     
-    this.scene.lightManager.removeLightObj(this.light);
-    super.destroy(); // Mueve esta línea al final para asegurar que el objeto se elimine correctamente
+    if (this.light) {
+      this.scene.lightManager.removeLightObj(this.light);
+      this.light = null;
+    }
+    
+    super.destroy();
   }
 }

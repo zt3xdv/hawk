@@ -50,8 +50,15 @@ export default class PlayerInfoModal extends Modal {
 
     async checkIfModerator(username) {
         try {
-            const profile = await apiPost('/api/auth/profile', { username });
-            return profile && profile.roles && profile.roles.includes('moderator');
+            const auth = getAuth();
+            const response = await fetch(`/api/auth/roles?username=${encodeURIComponent(auth.username)}&password=${encodeURIComponent(auth.password)}`);
+            const data = await response.json();
+            
+            if (data.error || !data.roles) return false;
+            
+            return data.roles.includes('moderator') ||
+                   data.roles.includes('admin') ||
+                   data.roles.includes('superadmin');
         } catch (error) {
             return false;
         }
@@ -224,6 +231,16 @@ export default class PlayerInfoModal extends Modal {
             .player-role-badge.moderator {
                 background: rgba(255, 193, 7, 0.2);
                 color: #ffc107;
+            }
+
+            .player-role-badge.admin {
+                background: rgba(156, 39, 176, 0.2);
+                color: #9c27b0;
+            }
+
+            .player-role-badge.superadmin {
+                background: rgba(244, 67, 54, 0.2);
+                color: #f44336;
             }
 
             .player-info-section {
@@ -430,7 +447,7 @@ export default class PlayerInfoModal extends Modal {
                             reason
                         });
                         if (result.success) {
-                            this.showResult(resultDiv, `✓ Player timed out for ${duration}`, 'success');
+                            this.showResult(resultDiv, `Player timed out for ${duration}`, 'success');
                         } else {
                             this.showResult(resultDiv, result.error || 'Error timing out player', 'error');
                         }
@@ -445,7 +462,7 @@ export default class PlayerInfoModal extends Modal {
                     if (!checkAuth()) return;
                     
                     const reason = prompt('Enter ban reason:') || 'No reason provided';
-                    const confirm = window.confirm(`⚠️ Are you sure you want to PERMANENTLY ban ${profile.username}?\n\nReason: ${reason}`);
+                    const confirm = window.confirm(`Are you sure you want to PERMANENTLY ban ${profile.username}?\n\nReason: ${reason}`);
                     
                     if (!confirm) return;
 
@@ -456,7 +473,7 @@ export default class PlayerInfoModal extends Modal {
                             reason
                         });
                         if (result.success) {
-                            this.showResult(resultDiv, '✓ Player banned successfully', 'success');
+                            this.showResult(resultDiv, 'Player banned successfully', 'success');
                         } else {
                             this.showResult(resultDiv, result.error || 'Error banning player', 'error');
                         }
@@ -480,7 +497,7 @@ export default class PlayerInfoModal extends Modal {
                             targetId: profile.id
                         });
                         if (result.success) {
-                            this.showResult(resultDiv, '✓ Player kicked successfully', 'success');
+                            this.showResult(resultDiv, 'Player kicked successfully', 'success');
                         } else {
                             this.showResult(resultDiv, result.error || 'Error kicking player', 'error');
                         }

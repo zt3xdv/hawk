@@ -2,73 +2,74 @@ import { toBase64, loadImageFromDataUrl, fitAndDrawImageToCanvas, validateAndCon
 import Cache from '../utils/Cache.js';
 import { API } from '../utils/Constants.js';
 
-export async function renderProfileSettings() {
-  const app = document.getElementById("app");
-  app.innerHTML = `
-    <div class="auth">
-  <div class="header">
-    <h3><canv-icon src="${Cache.getBlob('assets/icons/control.png').dataUrl}"></canv-icon>Profile Settings</h3>
-    <span class="description">Edit/Modify your profile with ease.</span>
-  </div>
-  <hr>
+const html = `
+  <div class="auth">
+<div class="header">
+  <h3><canv-icon src="${Cache.getBlob('assets/icons/control.png').dataUrl}"></canv-icon>Profile Settings</h3>
+  <span class="description">Edit/Modify your profile with ease.</span>
+</div>
+<hr>
 
-      <div class="header-row" id="headerRow">
-        <div class="avatar-wrap"><canvas id="settingsAvatarPreview" width=128 height=128></canvas></div>
-        <div class="header-meta">
-          <div id="settingsUsername" class="username"></div>
-          <div id="settingsDisplayName" class="displayname"></div>
-          <div id="settingsId" class="id">ID: —</div>
-        </div>
-      </div>
-
-      <div class="profile-grid">
-        <div class="profile-section">
-          <label for="settingsDisplayNameInput">Display name</label>
-          <input id="settingsDisplayNameInput" type="text" />
-          <button id="settingsSaveDisplayName" class="btn mini">Save</button>
-          <div id="settingsDisplayNameMsg" class="message" aria-live="polite"></div>
-        </div>
-
-        <div class="profile-section">
-          <label for="settingsUsernameInput">Username</label>
-          <input id="settingsUsernameInput" type="text" />
-          <button id="settingsSaveUsername" class="btn mini">Save</button>
-          <div id="settingsUsernameMsg" class="message" aria-live="polite"></div>
-        </div>
-
-        <div class="profile-section">
-          <label for="settingsPasswordInput">Password</label>
-          <input id="settingsPasswordInput" type="password" />
-          <button id="settingsSavePassword" class="btn mini">Save</button>
-          <div id="settingsPasswordMsg" class="message" aria-live="polite"></div>
-        </div>
-
-        <div class="profile-section">
-          <label for="settingsBioInput">Bio</label>
-          <input id="settingsBioInput" type="bio" />
-          <button id="settingsSaveBio" class="btn mini">Save</button>
-          <div id="settingsBioMsg" class="message" aria-live="polite"></div>
-        </div>
-
-        <div class="avatar-block">
-          <div class="avatar-row" style="margin-top:8px;">
-            <canvas id="settingsAvatarPreviewSmall" width="128" height="128"></canvas>
-            <div>
-              <input id="settingsAvatarInput" type="file" accept="image/*" />
-              <button id="settingsUploadAvatar" class="uploadBtn">Upload avatar</button>
-              <div id="settingsAvatarMsg" class="message" aria-live="polite"></div>
-            </div>
-          </div>
-        </div>
-
-        <div id="profileActions" style="margin-top:40px; display: flex; gap: 5px;">
-          <a class="btn mini" href="/profile">Back to profile</a>
-        </div>
+    <div class="header-row" id="headerRow">
+      <div class="avatar-wrap"><canvas id="settingsAvatarPreview" width=128 height=128></canvas></div>
+      <div class="header-meta">
+        <div id="settingsUsername" class="username"></div>
+        <div id="settingsDisplayName" class="displayname"></div>
+        <div id="settingsId" class="id">ID: —</div>
       </div>
     </div>
-  `;
 
-  // element refs
+    <div class="profile-grid">
+      <div class="profile-section">
+        <label for="settingsDisplayNameInput">Display name</label>
+        <input id="settingsDisplayNameInput" type="text" />
+        <button id="settingsSaveDisplayName" class="btn mini">Save</button>
+        <div id="settingsDisplayNameMsg" class="message" aria-live="polite"></div>
+      </div>
+
+      <div class="profile-section">
+        <label for="settingsUsernameInput">Username</label>
+        <input id="settingsUsernameInput" type="text" />
+        <button id="settingsSaveUsername" class="btn mini">Save</button>
+        <div id="settingsUsernameMsg" class="message" aria-live="polite"></div>
+      </div>
+
+      <div class="profile-section">
+        <label for="settingsPasswordInput">Password</label>
+        <input id="settingsPasswordInput" type="password" />
+        <button id="settingsSavePassword" class="btn mini">Save</button>
+        <div id="settingsPasswordMsg" class="message" aria-live="polite"></div>
+      </div>
+
+      <div class="profile-section">
+        <label for="settingsBioInput">Bio</label>
+        <input id="settingsBioInput" type="bio" />
+        <button id="settingsSaveBio" class="btn mini">Save</button>
+        <div id="settingsBioMsg" class="message" aria-live="polite"></div>
+      </div>
+
+      <div class="avatar-block">
+        <div class="avatar-row" style="margin-top:8px;">
+          <canvas id="settingsAvatarPreviewSmall" width="128" height="128"></canvas>
+          <div>
+            <input id="settingsAvatarInput" type="file" accept="image/*" />
+            <button id="settingsUploadAvatar" class="uploadBtn">Upload avatar</button>
+            <div id="settingsAvatarMsg" class="message" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="profileActions" style="margin-top:40px; display: flex; gap: 5px;">
+        <a class="btn mini" href="/profile">Back to profile</a>
+      </div>
+    </div>
+  </div>
+`;
+
+async function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = html;
+
   const get = id => document.getElementById(id);
   const settingsAvatarPreview = get("settingsAvatarPreview");
   const settingsAvatarPreviewSmall = get("settingsAvatarPreviewSmall");
@@ -174,7 +175,6 @@ export async function renderProfileSettings() {
     }
   }
 
-  // Reuse same click binder
   settingsSaveDisplayName.addEventListener("click", () =>
     handleFieldSave({ key: "displayName", inputEl: settingsDisplayNameInput, msgEl: settingsDisplayNameMsg, successLocalKey: "display_name" })
   );
@@ -248,3 +248,7 @@ export async function renderProfileSettings() {
     }
   })();
 }
+
+export const options = { title: "Profile Settings", auth: true, description: "Manage data and security settings." };
+
+export { html, render };

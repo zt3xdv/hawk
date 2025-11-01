@@ -3,29 +3,31 @@ import Cache from '../utils/Cache.js';
 import { setupTurnstile } from '../utils/Utils.js';
 import { TURNSTILE } from '../utils/Constants.js';
 
-export function renderLogin() {
+const html = `
+<div class="auth">
+<div class="header">
+  <h3><canv-icon src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon>Login</h3>
+  <span class="description">Log in into Hawk.</span>
+</div>
+<hr>
+<form id="loginForm" class="gap">
+  <input type="text" id="username" placeholder="Username" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <br>
+  <div id="turnstile-container"></div>
+  <br>
+  <button class="btn" type="submit">Login</button>
+  <br>
+  <small class="accent">By logging in you accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
+</form>
+<hr>
+<p>New here? <a href="/register">Register</a></p>
+</div>
+`;
+
+function render() {
   const app = document.getElementById('app');
-  app.innerHTML = `
-  <div class="auth">
-  <div class="header">
-    <h3><canv-icon src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon>Login</h3>
-    <span class="description">Log in into Hawk.</span>
-  </div>
-  <hr>
-  <form id="loginForm" class="gap">
-    <input type="text" id="username" placeholder="Username" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <br>
-    <div id="turnstile-container"></div>
-    <br>
-    <button class="btn" type="submit">Login</button>
-    <br>
-    <small class="accent">By logging in you accept our <a href="/termsofservice">Terms Of Service</a> and <a href="/privacypolicy">Privacy Policy</a></small>
-  </form>
-  <hr>
-  <p>New here? <a href="/register">Register</a></p>
-  </div>
-  `;
+  app.innerHTML = html;
   
   if (TURNSTILE) {
     setupTurnstile((token) => {
@@ -54,3 +56,7 @@ export function renderLogin() {
     }
   });
 }
+
+export const options = { title: "Login", auth: false, description: "Sign in to your Hawk account." };
+
+export { html, render };

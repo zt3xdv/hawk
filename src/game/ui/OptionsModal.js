@@ -10,6 +10,10 @@ class OptionsModal extends Modal {
         icon: "assets/icons/generalinfo.png",
         name: "General"
       },
+      render: {
+        icon: "assets/icons/bright.png",
+        name: "Render"
+      },
       development: {
         icon: "assets/icons/control.png",
         name: "Development"

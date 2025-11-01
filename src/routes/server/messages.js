@@ -1,6 +1,7 @@
 import Router from './router.js';
 import UserModel from '../../models/UserModel.js';
 import MessageModel from '../../models/MessageModel.js';
+import { MESSAGE } from '../../utils/Constants.js';
 
 const router = new Router();
 
@@ -96,8 +97,8 @@ router.post('/api/messages/conversations', async (req, res) => {
         return res.status(400).json({ error: 'Content cannot be empty.' });
     }
 
-    if (content.length > 2000) {
-        return res.status(400).json({ error: 'Message too long (max 2000 characters).' });
+    if (content.length > MESSAGE.MAX) {
+        return res.status(400).json({ error: `Message too long (max ${MESSAGE.MAX} characters).` });
     }
 
     const toUser = UserModel.getUserById(toUserId);

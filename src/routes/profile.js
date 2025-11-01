@@ -2,33 +2,35 @@ import { postJson, escapeHtml, apiGet } from "../utils/Utils.js";
 import Cache from '../utils/Cache.js';
 import { API } from '../utils/Constants.js';
 
-export async function renderProfile() {
-  const app = document.getElementById("app");
-  app.innerHTML = `
-    <div class="auth">
-  <div class="header">
-    <h3><canv-icon src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon>Profile</h3>
-    <span class="description">Main profile.</span>
-  </div>
-  <hr>
-      <div class="profile-header" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-        <img id="profileAvatar" src="/assets/generic-profile.png" width="64" height="64" style="border-radius:50%;object-fit:cover;background:#222;">
-        <div>
-          <div id="profileUsername" style="font-weight:700;font-size:18px"></div>
-          <div id="profileDisplayName" style="color:#666;margin-top:4px"></div>
-          <div id="profileId" style="color:#999;font-size:12px;margin-top:6px">ID: —</div>
-        </div>
-      </div>
-
+const html = `
+  <div class="auth">
+<div class="header">
+  <h3><canv-icon src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon>Profile</h3>
+  <span class="description">Main profile.</span>
+</div>
+<hr>
+    <div class="profile-header" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <img id="profileAvatar" src="/assets/generic-profile.png" width="64" height="64" style="border-radius:50%;object-fit:cover;background:#222;">
       <div>
-        <span id="profileFieldBio">No bio.</span>
-        <p id="profileActions" style="margin-top:40px; display: flex; gap: 5px;">
-          <a class="btn mini" id="editProfileBtn" href="/profile-settings">Edit profile</a>
-          <a class="btn mini" id="editAvatarBtn" href="/avatar">Edit in-game avatar</a>
-        </p>
+        <div id="profileUsername" style="font-weight:700;font-size:18px"></div>
+        <div id="profileDisplayName" style="color:#666;margin-top:4px"></div>
+        <div id="profileId" style="color:#999;font-size:12px;margin-top:6px">ID: —</div>
       </div>
     </div>
-  `;
+
+    <div>
+      <span id="profileFieldBio">No bio.</span>
+      <p id="profileActions" style="margin-top:40px; display: flex; gap: 5px;">
+        <a class="btn mini" id="editProfileBtn" href="/profile-settings">Edit profile</a>
+        <a class="btn mini" id="editAvatarBtn" href="/avatar">Edit in-game avatar</a>
+      </p>
+    </div>
+  </div>
+`;
+
+async function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = html;
 
   const profileAvatar = document.getElementById("profileAvatar");
   const profileUsername = document.getElementById("profileUsername");
@@ -94,18 +96,14 @@ export async function renderProfile() {
   }
 
   (async () => {
-    // Determine if URL provides an id parameter
     const urlId = getQueryParam("id");
 
-    // First, check authenticated session (used to know current user's id)
     const fresh = await authCheck();
     const currentUserId = fresh && fresh.id ? String(fresh.id) : null;
 
     if (urlId) {
-      // If loading someone else's profile via ?id=..., try to load that profile
       const byId = await loadProfileById(urlId);
       if (byId) {
-        // If the profile loaded belongs to current user, show edit buttons; otherwise hide them
         if (currentUserId && String(byId.id || urlId) === currentUserId) {
           showEditButtons();
         } else {
@@ -113,24 +111,23 @@ export async function renderProfile() {
         }
         return;
       }
-      // If loading by id failed, continue to fallback to authenticated profile (if any)
     }
 
-    // No ?id or loading by id failed — show authenticated user's profile if available
     if (fresh) {
       const uname = fresh.username || localStorage.getItem("username") || "";
       const dname = fresh.displayName || localStorage.getItem("display_name") || "";
       showBasicData(uname, dname, fresh.id, fresh.bio);
       if (fresh.id) await loadAvatar(fresh.id);
-      // keep local cache in sync
       if (fresh.username) localStorage.setItem("username", fresh.username);
       if (fresh.displayName) localStorage.setItem("display_name", fresh.displayName);
-      // Authenticated user is viewing their own profile — show edit buttons
       showEditButtons();
     } else {
-      // Not authenticated and no profile loaded — show placeholders and hide edit buttons
       showBasicData("", "", "—", "");
       hideEditButtons();
     }
   })();
 }
+
+export const options = { title: "Profile", auth: true, description: "View and edit your public profile." };
+
+export { html, render };

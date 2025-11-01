@@ -18,17 +18,10 @@ export const BIO = {
   MAX: 200
 };
 
-export const PARTY_NAME = {
-  MIN: 3,
-  MAX: 32
-};
-
-export const PARTY_DESCRIPTION = {
+export const MESSAGE = {
   MIN: 0,
-  MAX: 75
+  MAX: 1000
 };
-
-export const PARTY_MAX_ELEMENTS = 700;
 
 export const PLAYER_SPEED_WALK = 100;
 export const PLAYER_SPEED_RUN = 150;
@@ -67,8 +60,23 @@ export const CONTRIBUTORS = [
   },
   {
     name: "Asura",
-    username: "asurawhite_1",
+    username: "asurawhite1",
     role: "Domain gifter :3"
+  },
+  {
+    name: "Alexxx",
+    username: "alexonvscode",
+    role: "Caddy (reverse proxy) provider"
+  },
+  {
+    name: "Axillux",
+    username: "axillux",
+    role: "Assets (non-official)"
+  },
+  {
+    name: "Cainos",
+    username: "cainos",
+    role: "Assets (non-official)"
   },
 ];
 
@@ -84,6 +92,10 @@ export const BASE_RULES = [
   {
     title: "Hack/Exploits",
     description: "Do not use any hack/exploit such as auto write."
+  },
+  {
+    title: "Rules",
+    description: "Follow all rules or you will be permanently banned/timeout."
   },
 ];
 
@@ -106,3 +118,15 @@ export const TIPS = [
   "You can change your in-game avatar in profile page",
   "You can change your username in profile page",
 ];
+
+export const ROLES = {
+  MODERATOR: 'moderator',
+  ADMIN: 'admin',
+  SUPERADMIN: 'superadmin'
+};
+
+export const ROLE_PERMISSIONS = {
+  moderator: ['kick', 'timeout', 'ban'],
+  admin: ['kick', 'timeout', 'ban', 'unban'],
+  superadmin: ['kick', 'timeout', 'ban', 'unban', 'edit_map']
+};
