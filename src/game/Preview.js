@@ -1,4 +1,4 @@
-import HawkEngine from '../../dist/engine/main.js';
+import Game from '../hawk/core/Game.js';
 import PreviewScene from './scenes/PreviewScene.js';
 
 export default class Preview {
@@ -18,6 +18,6 @@ export default class Preview {
       ]
     };
 
-    this.game = new HawkEngine.Game(config);
+    this.game = new Game(config);
   }
 }

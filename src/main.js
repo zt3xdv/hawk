@@ -1,3 +1,13 @@
+import './hawk/events/index.js';
+import './hawk/gameobjects/index.js';
+import './hawk/cameras/index.js';
+import './hawk/loader/index.js';
+import './hawk/input/index.js';
+import './hawk/data/index.js';
+import './hawk/scene/index.js';
+import './hawk/time/index.js';
+import './hawk/tweens/index.js';
+import './hawk/physics/index.js';
 import './styles/main.scss';
 import { router } from './router.js';
 import Features from './game/device/Features.js';
@@ -6,6 +16,8 @@ import { list } from './utils/Icons.js';
 import { ASSETS_VERSION, TIPS } from './utils/ConstantsPackage.js';
 import { getRandomFromArray, requestNotificationPermission } from './utils/Utils.js';
 import * as Components from './components/components.js';
+import Console from './utils/Console.js';
+import presenceClient from './utils/PresenceClient.js';
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -25,6 +37,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Work in progress...
     // requestNotificationPermission();
   }
+  
+  const username = localStorage.getItem('username');
+  const password = localStorage.getItem('password');
+    
+  fetch(`/api/auth/roles?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.roles?.includes('developer')) {
+        Console.init();
+      }
+    })
+    .catch(() => {});
 
   const loading = document.getElementById("loading");
   loading.querySelector("#tip-title").innerHTML = "DID YOU KNOW";
@@ -51,7 +75,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     app.innerHTML = `
       <main class="main">
         <div class="header">
-          <h3>Aw man :(</h3>
+          <h3>Aw man...</h3>
         </div>
         <p>Your browser is not compatible with <span class="highlight">Hawk Engine</span>.</p>
         <div class="try-footer">
@@ -72,8 +96,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   } else {
     await Cache.load(ASSETS_VERSION, [
       "assets/entities/bee.png",
-      "assets/fonts/at02.png",
-      "assets/fonts/at02.xml",
+      "assets/fonts/white.png",
+      "assets/fonts/dashed.png",
+      "assets/fonts/mappings.xml",
       "assets/game/props.png",
       "assets/game/plants.png",
       "assets/game/building.png",
@@ -81,8 +106,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       "assets/game/animated.png",
       "assets/game/grass2.png",
       "assets/game/dirt.png",
-      "assets/game/grass2_snow.png",
-      "assets/game/dirt_snow.png",
       "assets/masks/lightMask.png",
       "assets/masks/flame.png",
       "assets/masks/candle_flame.png",

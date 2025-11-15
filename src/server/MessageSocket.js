@@ -49,6 +49,31 @@ export default class MessageSocket {
               }));
             }
           }
+
+          if (message.type === 'mark_read' && userId) {
+            const { otherUserId, messageIds } = message;
+            const recipientWs = this.clients.get(otherUserId);
+
+            if (recipientWs && recipientWs.readyState === 1) {
+              recipientWs.send(JSON.stringify({
+                type: 'messages_read',
+                readByUserId: userId,
+                messageIds
+              }));
+            }
+          }
+
+          if (message.type === 'viewing_chat' && userId) {
+            const { otherUserId } = message;
+            const recipientWs = this.clients.get(otherUserId);
+
+            if (recipientWs && recipientWs.readyState === 1) {
+              recipientWs.send(JSON.stringify({
+                type: 'user_viewing',
+                userId
+              }));
+            }
+          }
         } catch (error) {
           console.error('Error processing WebSocket message:', error);
         }

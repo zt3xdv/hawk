@@ -1,10 +1,12 @@
-import HawkEngine from '../../../dist/engine/main.js';
+import Scene from '../../hawk/scene/Scene.js';
 import Player from '../entities/Player.js';
 import { escapeHtml, getAuth, apiPost, getAssets, loadPack } from '../utils/Utils.js';
 import { API } from '../../utils/Constants.js';
-import Floor from '../objects/Floor.js';
+import TileManager from '../managers/TileManager.js';
+import LightManager from '../managers/LightManager.js';
+import Tree from '../objects/Tree.js';
 
-export default class PreviewScene extends HawkEngine.Scene {
+export default class PreviewScene extends Scene {
   constructor() {
     super({ key: 'DashScene' });
     this.player = null;
@@ -15,10 +17,51 @@ export default class PreviewScene extends HawkEngine.Scene {
   }
 
   create() {
-    this.floor = new Floor(this, {
-      mapPixelWidth: 4 * 32,
-      mapPixelHeight: 4 * 32
+    this.tileManager = new TileManager(this, {
+      mapPixelWidth: 256,
+      mapPixelHeight: 256,
+      tileSize: 32
     });
+    
+    this.tileManager.loadTilesFromData([
+      {
+        x: 4,
+        y: 1,
+        type: "dirt"
+      },
+      {
+        x: 4,
+        y: 0,
+        type: "dirt"
+      },
+      {
+        x: 3,
+        y: 0,
+        type: "dirt"
+      },
+      {
+        x: 3,
+        y: 1,
+        type: "dirt"
+      },
+      {
+        x: 3,
+        y: 2,
+        type: "dirt"
+      }
+    ]);
+    this.tileManager.create();
+    
+    this.lightManager = new LightManager(this, {
+      startAtMinutes: 23,
+      timeScale: 0
+    });
+    this.lightManager.create();
+    
+    this.elements = [
+      new Tree(this, -20, -120, 4),
+      new Tree(this, 60, 10, 2)
+    ];
     
     (async () => {
       const data = await apiPost(API.check, getAuth());

@@ -1,11 +1,13 @@
-import HawkEngine from '../../../dist/engine/main.js';
+import Scene from '../../hawk/scene/Scene.js';
+import Clamp from '../../hawk/math/Clamp.js';
+import RectangleOverlaps from '../../hawk/geom/rectangle/Overlaps.js';
+import RectangleToRectangle from '../../hawk/geom/intersects/RectangleToRectangle.js';
 import InputManager from '../managers/InputManager.js';
 import NetworkManager from '../managers/NetworkManager.js';
 import ConnectingOverlay from '../managers/ConnectingOverlay.js';
 import LightManager from '../managers/LightManager.js';
 import MapObjectManager from '../managers/MapObjectManager.js';
 import TileManager from '../managers/TileManager.js';
-import Floor from '../objects/Floor.js';
 import Random from '../utils/Random.js';
 import ErrorModal from '../ui/ErrorModal.js';
 import { DEV } from '../../utils/Constants.js';
@@ -13,7 +15,7 @@ import { getAssets, loadPack } from '../utils/Utils.js';
 
 const SEND_INTERVAL = 100;
 
-export default class GameScene extends HawkEngine.Scene {
+export default class GameScene extends Scene {
   constructor() {
     super({ key: 'GameScene' });
     this.zoom = 1;
@@ -28,8 +30,6 @@ export default class GameScene extends HawkEngine.Scene {
     this.errorModal = new ErrorModal(document.getElementById('game-container'), this);
 
     this.dev = DEV;
-    
-    this.floor = null;
     
     this.mapSize = {
       width: 2048,
@@ -80,7 +80,7 @@ export default class GameScene extends HawkEngine.Scene {
   }
 
   update(time, delta) {
-    this.fpsElement.innerHTML = "Engine - HawkEngine<br>" + this.game.renderer.constructor.name + " v" + this.game.renderer.gl.VERSION;
+    this.fpsElement.innerHTML = this.game.loop.fps + " fps<br>" + this.game.renderer.constructor.name + " v" + this.game.renderer.gl.VERSION;
       
     const direction = this.inputManager.getDirection();
     
@@ -90,7 +90,7 @@ export default class GameScene extends HawkEngine.Scene {
           this.collisionGroup.add(object.image);
         }
         
-        if (HawkEngine.Geom.Rectangle.Overlaps(this.player.sprite.getBounds(), object.image.getBounds()) && this.player.sprite.depth < object.image.depth) {
+        if (RectangleOverlaps(this.player.sprite.getBounds(), object.image.getBounds()) && this.player.sprite.depth < object.image.depth) {
           if (!object.isOverlapping) {
             object.isOverlapping = true;
             this.tweens.add({
@@ -147,7 +147,7 @@ export default class GameScene extends HawkEngine.Scene {
 
   zoomIn() {
     const cam = this.cameras.main;
-    const newZoom = HawkEngine.Math.Clamp(this.zoom + 1.0, this.minZoom, this.maxZoom);
+    const newZoom = Clamp(this.zoom + 1.0, this.minZoom, this.maxZoom);
     this.tweens.add({
       targets: cam,
       zoom: newZoom,
@@ -162,7 +162,7 @@ export default class GameScene extends HawkEngine.Scene {
 
   zoomOut() {
     const cam = this.cameras.main;
-    const newZoom = HawkEngine.Math.Clamp(this.zoom - 1.0, this.minZoom, this.maxZoom);
+    const newZoom = Clamp(this.zoom - 1.0, this.minZoom, this.maxZoom);
     this.tweens.add({
       targets: cam,
       zoom: newZoom,
@@ -201,6 +201,6 @@ export default class GameScene extends HawkEngine.Scene {
   isVisible(camera, gameObject) {
     const camRect = camera.worldView; 
     const goRect = gameObject.getBounds(); 
-    return HawkEngine.Geom.Intersects.RectangleToRectangle(camRect, goRect);
+    return RectangleToRectangle(camRect, goRect);
   }
 }

@@ -33,6 +33,11 @@ const basePlugins = [
     extract: 'main.css',
     minimize: isProd,
     sourceMap: false,
+    use: {
+      sass: {
+        silenceDeprecations: ['legacy-js-api']
+      }
+    },
     plugins: [
       autoprefixer()
     ]
@@ -70,7 +75,12 @@ const baseConfig = {
     compact: isProd
   },
   cache: true,
-  treeshake: isProd ? true : false
+  treeshake: isProd ? true : false,
+  onwarn(warning, warn) {
+    if (warning.code === 'FILE_NAME_CONFLICT') return;
+    if (warning.plugin === 'postcss' && warning.message.includes('deprecation')) return;
+    warn(warning);
+  }
 };
 
 const cacheOptions = {

@@ -122,11 +122,13 @@ export const TIPS = [
 export const ROLES = {
   MODERATOR: 'moderator',
   ADMIN: 'admin',
-  SUPERADMIN: 'superadmin'
+  SUPERADMIN: 'superadmin',
+  DEVELOPER: 'developer'
 };
 
 export const ROLE_PERMISSIONS = {
   moderator: ['kick', 'timeout', 'ban'],
   admin: ['kick', 'timeout', 'ban', 'unban'],
-  superadmin: ['kick', 'timeout', 'ban', 'unban', 'edit_map']
+  superadmin: ['kick', 'timeout', 'ban', 'unban', 'edit_map'],
+  developer: ['kick', 'timeout', 'ban', 'unban', 'edit_map']
 };

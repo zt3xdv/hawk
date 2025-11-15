@@ -1,6 +1,6 @@
-import HawkEngine from '../../../dist/engine/main.js';
+import Container from '../../hawk/gameobjects/container/Container.js';
 
-export default class Floor extends HawkEngine.GameObjects.Container {
+export default class Floor extends Container {
   constructor(scene, {
     textureKey = 'floor_dynamic',
     mapPixelWidth = 2048,

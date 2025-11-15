@@ -4,7 +4,7 @@ import Cache from '../utils/Cache.js';
 const html = `
   <div class="auth">
 <div class="header">
-  <h3><canv-icon src="${Cache.getBlob('assets/icons/endstage.png').dataUrl}"></canv-icon>404 - Not Found</h3>
+  <h3><canv-icon id="404-icon"></canv-icon>404 - Not Found</h3>
   <span class="description">Not found</span>
 </div>
 <hr>
@@ -18,6 +18,9 @@ const html = `
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = html;
+
+  // Set icon data URLs
+  document.getElementById('404-icon').src = Cache.getBlob('assets/icons/endstage.png').dataUrl;
 }
 
 export const options = { title: "404", auth: false, description: "This page has not found." };

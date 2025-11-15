@@ -1,5 +1,3 @@
-import HawkEngine from '../../../dist/engine/main.js';
-
 export default class MapObject {
   static _nextId = 1;
   static textureCache = new Map();

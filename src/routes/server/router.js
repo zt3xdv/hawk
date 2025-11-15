@@ -43,9 +43,9 @@ class Router {
     return true;
   };
 
-  setApp(app) {
+  setApp(app, basePath = "") {
     for (const { method, path, handlers } of this.routes) {
-      app[method](path, ...handlers);
+      app[method](basePath + path, ...handlers);
     }
     this.app = app;
   }

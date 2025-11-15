@@ -1,4 +1,4 @@
-import HawkEngine from '../../../dist/engine/main.js';
+
 
 export default class TileManager {
   constructor(scene, {

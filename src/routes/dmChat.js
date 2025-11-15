@@ -7,14 +7,15 @@ export function renderDmChat(userId) {
   app.innerHTML = `
     <div class="dm-chat-container">
       <div class="dm-chat-header">
-        <button class="btn-back" id="back-to-dms">
-          <canv-icon src="${Cache.getBlob('assets/icons/arrowleft.png').dataUrl}"></canv-icon>
-        </button>
+        <button class="btn-back" id="back-to-dms">←</button>
         <div class="dm-chat-user-info">
-          <img class="dm-chat-avatar" id="chat-avatar" src="/api/pavatar/${userId}" alt="User">
+          <div class="friend-avatar-wrapper">
+            <img class="friend-avatar" id="chat-avatar" src="/api/pavatar/${userId}" alt="User">
+            <span class="friend-status-dot offline" id="chat-status-dot"></span>
+          </div>
           <div>
             <div class="dm-chat-username" id="chat-username">Loading...</div>
-            <div class="dm-chat-status">Online</div>
+            <div class="dm-chat-status" id="chat-status-text">Offline</div>
           </div>
         </div>
       </div>
@@ -30,10 +31,7 @@ export function renderDmChat(userId) {
           placeholder="Type a message..."
           rows="1"
         ></textarea>
-        <button class="btn btn-primary" id="send-message">
-          <canv-icon src="${Cache.getBlob('assets/icons/send.png').dataUrl}"></canv-icon>
-          Send
-        </button>
+        <button class="btn btn-primary" id="send-message">Send</button>
       </div>
     </div>
   `;
@@ -43,6 +41,8 @@ export function renderDmChat(userId) {
   const messageInput = document.getElementById('message-input');
   const sendBtn = document.getElementById('send-message');
   const chatUsername = document.getElementById('chat-username');
+  const chatStatusDot = document.getElementById('chat-status-dot');
+  const chatStatusText = document.getElementById('chat-status-text');
 
   let messages = [];
   let otherUser = null;
@@ -60,6 +60,18 @@ export function renderDmChat(userId) {
       if (response.id) {
         otherUser = response;
         chatUsername.textContent = response.displayName;
+        
+        // Update online status
+        if (response.online === 'web') {
+          chatStatusDot.className = 'friend-status-dot online-web';
+          chatStatusText.textContent = 'On web';
+        } else if (response.online && response.online !== false) {
+          chatStatusDot.className = 'friend-status-dot online';
+          chatStatusText.textContent = response.server ? response.server.name : 'Online';
+        } else {
+          chatStatusDot.className = 'friend-status-dot offline';
+          chatStatusText.textContent = 'Offline';
+        }
       } else {
         chatUsername.textContent = 'Unknown User';
       }
@@ -88,9 +100,46 @@ export function renderDmChat(userId) {
       messages = response.messages || [];
       renderMessages();
       scrollToBottom();
+      markMessagesAsRead();
     } catch (error) {
       console.error('Error loading messages:', error);
       messagesContainer.innerHTML = '<div class="error">Failed to load messages.</div>';
+    }
+  }
+
+  async function markMessagesAsRead() {
+    const unreadMessages = messages.filter(m => !m.fromMe && !m.read);
+    if (unreadMessages.length === 0) return;
+
+    const messageIds = unreadMessages.map(m => m.id);
+
+    try {
+      const username = localStorage.getItem('username');
+      const password = localStorage.getItem('password');
+
+      await apiPost('/api/messages/mark-read', {
+        username,
+        password,
+        messageIds
+      });
+
+      // Update local state
+      messages.forEach(m => {
+        if (messageIds.includes(m.id)) {
+          m.read = true;
+        }
+      });
+
+      // Notify other user via WebSocket
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'mark_read',
+          otherUserId: parseInt(userId),
+          messageIds
+        }));
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
     }
   }
 
@@ -113,11 +162,20 @@ export function renderDmChat(userId) {
     
     const timeStr = formatTime(msg.timestamp);
     
+    let readIndicator = '';
+    if (msg.fromMe) {
+      if (msg.read) {
+        readIndicator = '<span class="read-indicator read"></span>';
+      } else {
+        readIndicator = '<span class="read-indicator sent"></span>';
+      }
+    }
+    
     div.innerHTML = `
       <div class="message-content">
         ${escapeHtml(msg.content)}
       </div>
-      <div class="message-time">${timeStr}</div>
+      <div class="message-time">${timeStr} ${readIndicator}</div>
     `;
 
     return div;

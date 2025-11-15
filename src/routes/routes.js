@@ -11,14 +11,10 @@ import * as ppolicyRoute from './ppolicy.js';
 import * as notFoundRoute from './404.js';
 import * as pingRoute from './ping.js';
 import * as dmsRoute from './dms.js';
-import * as loginRoute from './login.js';
-import * as registerRoute from './register.js';
 import * as adminRoute from './admin.js';
 
 export const routes = {
   '/auth':             authRoute,
-  '/login':            loginRoute,
-  '/register':         registerRoute,
   '/admin':            adminRoute,
   '/dashboard':        dashboardRoute,
   '/avatar':           avatarRoute,

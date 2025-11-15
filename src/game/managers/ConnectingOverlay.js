@@ -1,4 +1,4 @@
-import HawkEngine from '../../../dist/engine/main.js';
+
 
 export default class ConnectingOverlay {
   constructor(scene, opts = {}) {
@@ -22,7 +22,7 @@ export default class ConnectingOverlay {
 
     const textX = Math.floor(width / 2);
     const textY = Math.floor(height / 2);
-    const text = this.scene.add.bitmapText(textX, textY, 'hawkpixelated', this.textString, this.fontSize, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT)
+    const text = this.scene.add.bitmapText(textX, textY, 'hawkpixelated', this.textString, this.fontSize, 0)
       .setOrigin(0.5, 0.5);
 
     this.container = this.scene.add.container(0, 0, [bg, text])

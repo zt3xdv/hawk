@@ -5,49 +5,40 @@ import Cache from '../utils/Cache.js';
 const html = `
 <div class="auth" id="people-container">
 <div class="header">
-  <h3><canv-icon src="${Cache.getBlob('assets/icons/people.png').dataUrl}"></canv-icon>People</h3>
-  <span class="description">Search friends and manage friend requests.</span>
-          <div class="friends-actions">
-            <button id="refreshBtn" class="friends-ghost">Refresh</button>
-            <button id="closeBtn" class="friends-ghost" style="display:none">Close</button>
-          </div>
+  <h3><canv-icon id="people-icon"></canv-icon>People</h3>
+  <span class="description">Search and manage your friends.</span>
+  <div class="friends-actions">
+    <button id="refreshBtn" class="friends-ghost">Refresh</button>
+    <button id="closeBtn" class="friends-ghost" style="display:none">Close</button>
+  </div>
 </div>
 <hr>
-    <aside class="friends-sidebar mini">
-      <div class="friends-card" style="padding-bottom:10px">
-        <div style="margin-top:10px">
-          <div class="small" style="color:rgba(255,255,255,0.7)">Search friends by username</div>
-          <div class="friends-send-row">
-            <input id="searchUsername" class="friends-input" placeholder="Search username..." />
-            <button id="searchBtn" class="friends-primary">Search</button>
-          </div>
-          <div id="searchResult" class="friends-empty" style="margin-top:8px"></div>
-        </div>
-      </div>
-
-      <div class="friends-card">
-        <div id="accountInfo" style="margin-top:8px;color:rgba(255,255,255,0.8)"></div>
-      </div>
-    </aside>
-
-    <section>
-      <div id="incomingSection" class="friends-card" style="margin-bottom:16px">
-        <h4 style="margin:0 0 12px 0;color:rgba(255,255,255,0.9)">Incoming Requests</h4>
-        <div id="incomingPanel"></div>
-      </div>
-
-      <div class="friends-card">
-        <h4 style="margin:0 0 12px 0;color:rgba(255,255,255,0.9)">Friends</h4>
-        <div id="friendsPanel"></div>
-        <div id="friendsPagination" style="margin-top:12px;display:flex;justify-content:center;gap:8px;align-items:center"></div>
-      </div>
-    </section>
+<aside class="friends-sidebar mini">
+  <div class="friends-card">
+    <div class="friends-send-row">
+      <input id="searchUsername" class="friends-input" placeholder="Search username..." />
+      <button id="searchBtn" class="friends-primary">Search</button>
     </div>
+    <div id="searchResult" style="margin-top:8px"></div>
+  </div>
+</aside>
+
+<section>
+  <div class="friends-card">
+    <div id="incomingPanel"></div>
+    <div id="friendsPanel"></div>
+    <div id="friendsPagination" style="margin-top:12px;display:flex;justify-content:center;gap:8px;align-items:center"></div>
+  </div>
+</section>
+</div>
 `;
 
 function render(dom, mini = false, closeBtn = false) {
   const app = dom || document.getElementById('app');
   app.innerHTML = html;
+
+  // Set icon data URLs
+  document.getElementById('people-icon').src = Cache.getBlob('assets/icons/people.png').dataUrl;
 
   if (mini) {
     const container = document.getElementById('people-container');
@@ -67,12 +58,6 @@ function render(dom, mini = false, closeBtn = false) {
   }
 
   const auth = getAuth();
-  const accountInfo = document.getElementById('accountInfo');
-  if (!auth.username || !auth.password) {
-    accountInfo.innerText = 'Not authenticated. Please log in.';
-  } else {
-    accountInfo.innerHTML = `<div><strong>@${escapeHtml(auth.username)}</strong></div><div class="accent small">Your username</div>`;
-  }
 
   let allFriends = [];
   let allIncoming = [];
@@ -80,9 +65,8 @@ function render(dom, mini = false, closeBtn = false) {
   const itemsPerPage = 10;
 
 async function loadAll() {
-  setLoadingStates();
   if (!auth.username || !auth.password) {
-    showEmptyStates('Not authenticated. Please log in.');
+    document.getElementById('friendsPanel').innerHTML = `<div class="friends-empty">Not authenticated. Please log in.</div>`;
     return;
   }
 
@@ -113,16 +97,6 @@ async function loadAll() {
   renderIncoming(incoming);
   renderFriendsPage();
 }
-
-  function setLoadingStates() {
-    document.getElementById('friendsPanel').innerHTML = `<div class="friends-empty">Loading friends...</div>`;
-    document.getElementById('incomingPanel').innerHTML = `<div class="friends-empty">Loading incoming...</div>`;
-  }
-
-  function showEmptyStates(msg) {
-    document.getElementById('friendsPanel').innerHTML = `<div class="friends-empty">${escapeHtml(msg)}</div>`;
-    document.getElementById('incomingPanel').innerHTML = `<div class="friends-empty">${escapeHtml(msg)}</div>`;
-  }
 
   function renderFriendsPage() {
     const panel = document.getElementById('friendsPanel');
@@ -175,7 +149,6 @@ async function loadAll() {
     const panel = document.getElementById('incomingPanel');
     panel.innerHTML = '';
     if (!Array.isArray(list) || !list.length) {
-      panel.append(childEmpty('No incoming requests.'));
       return;
     }
     for (const r of list) {
@@ -191,32 +164,106 @@ async function loadAll() {
   }
 
   function renderFriendRow(f) {
-    const wrapper = document.createElement('div'); wrapper.className = 'friends-row';
-    const left = document.createElement('div');
-    left.innerHTML = `<div class="friends-name">${escapeHtml(f.display_name || f.username || 'Unnamed')}</div><div class="friends-meta">@${escapeHtml(f.username)} · ID ${escapeHtml(String(f.id))}</div>`;
-    const controls = document.createElement('div'); controls.className = 'friends-controls';
-    const removeBtn = document.createElement('button'); removeBtn.className = 'friends-ghost'; removeBtn.textContent = 'Remove';
-    removeBtn.addEventListener('click', async ()=>{ await removeFriend(f.username); });
-    controls.appendChild(removeBtn);
-    wrapper.appendChild(left); wrapper.appendChild(controls);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'friends-row';
+    
+    let statusClass = 'offline';
+    let statusText = 'Offline';
+    
+    if (f.online === 'web') {
+      statusClass = 'online-web';
+      statusText = 'On web';
+    } else if (f.online && f.online !== false) {
+      statusClass = 'online';
+      statusText = f.server ? escapeHtml(f.server.name) : 'Online';
+    }
+    
+    const avatarUrl = f.avatar || `/api/pavatar/${f.id}`;
+    
+    wrapper.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <div class="friend-avatar-wrapper">
+          <img src="${avatarUrl}" class="friend-avatar" />
+          <span class="friend-status-dot ${statusClass}"></span>
+        </div>
+        <div>
+          <div class="friends-name">${escapeHtml(f.display_name || f.username || 'Unnamed')}</div>
+          <div class="friends-meta">@${escapeHtml(f.username)}</div>
+          <div class="friends-meta">${statusText}</div>
+        </div>
+      </div>
+      <div class="friends-controls">
+        <div class="friend-menu-wrapper">
+          <button class="friend-menu-btn">⋮</button>
+          <div class="friend-menu-dropdown">
+            <button class="friend-menu-item open-dm-btn">Open DM</button>
+            <button class="friend-menu-item remove-friend-btn">Remove friend</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    const menuBtn = wrapper.querySelector('.friend-menu-btn');
+    const menuDropdown = wrapper.querySelector('.friend-menu-dropdown');
+    
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.friend-menu-dropdown').forEach(m => {
+        if (m !== menuDropdown) m.classList.remove('active');
+      });
+      menuDropdown.classList.toggle('active');
+    });
+    
+    wrapper.querySelector('.remove-friend-btn').addEventListener('click', async () => {
+      menuDropdown.classList.remove('active');
+      await removeFriend(f.username);
+    });
+    
+    wrapper.querySelector('.open-dm-btn').addEventListener('click', () => {
+      menuDropdown.classList.remove('active');
+      if (window.router) {
+        window.router.navigateTo(`/dms/${f.id}`);
+      } else {
+        window.location.href = `/dms/${f.id}`;
+      }
+    });
+    
     return wrapper;
   }
 
   async function renderIncomingRow(r) {
-    const wrapper = document.createElement('div'); wrapper.className = 'friends-row';
-    const left = document.createElement('div');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'friends-row incoming-request';
     const who = r.requesterId;
     const whoData = await apiPost("/api/auth/profile", { id: who });
     const whoName = whoData.username || "Unknown";
+    const avatarUrl = whoData.game?.avatar || `/api/pavatar/${who}`;
     
-    left.innerHTML = `<div class="friends-name">From ${escapeHtml(String(whoName))}</div><div class="friends-meta">Request ID: ${escapeHtml(String(r.id || ''))}</div>`;
-    const controls = document.createElement('div'); controls.className = 'friends-controls';
-    const acceptBtn = document.createElement('button'); acceptBtn.className = 'friends-primary'; acceptBtn.textContent = 'Accept';
-    const denyBtn = document.createElement('button'); denyBtn.className = 'friends-ghost'; denyBtn.textContent = 'Deny';
-    acceptBtn.addEventListener('click', async ()=>{ await acceptRequest(r.id); });
-    denyBtn.addEventListener('click', async ()=>{ await denyRequest(r.id); });
-    controls.appendChild(acceptBtn); controls.appendChild(denyBtn);
-    wrapper.appendChild(left); wrapper.appendChild(controls);
+    wrapper.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <div class="friend-avatar-wrapper">
+          <img src="${avatarUrl}" class="friend-avatar" />
+          <span class="friend-status-dot pending"></span>
+        </div>
+        <div>
+          <div class="friends-name">${escapeHtml(whoData.display_name || whoName)}</div>
+          <div class="friends-meta">@${escapeHtml(whoName)}</div>
+          <div class="friends-meta" style="color:#f59e0b">Friend request</div>
+        </div>
+      </div>
+      <div class="friends-controls">
+        <button class="friends-primary accept-btn">Accept</button>
+        <button class="friends-ghost deny-btn">Deny</button>
+      </div>
+    `;
+    
+    wrapper.querySelector('.accept-btn').addEventListener('click', async () => {
+      await acceptRequest(r.id);
+    });
+    wrapper.querySelector('.deny-btn').addEventListener('click', async () => {
+      await denyRequest(r.id);
+    });
+    
     return wrapper;
   }
 
@@ -227,8 +274,6 @@ async function loadAll() {
       return;
     }
 
-    resultDiv.innerHTML = '<div class="friends-empty">Searching...</div>';
-
     try {
       const userData = await apiPost("/api/auth/profile", { username });
       
@@ -238,22 +283,34 @@ async function loadAll() {
       }
 
       const isFriend = allFriends.some(f => f.username === userData.username);
+      const avatarUrl = userData.game?.avatar || `/api/pavatar/${userData.id}`;
       
       if (isFriend) {
         resultDiv.innerHTML = `
           <div class="friends-row">
-            <div>
-              <div class="friends-name">${escapeHtml(userData.display_name || userData.username)}</div>
-              <div class="friends-meta">@${escapeHtml(userData.username)} · Already a friend</div>
+            <div style="display:flex;align-items:center;gap:12px;flex:1">
+              <div class="friend-avatar-wrapper">
+                <img src="${avatarUrl}" class="friend-avatar" />
+              </div>
+              <div>
+                <div class="friends-name">${escapeHtml(userData.display_name || userData.username)}</div>
+                <div class="friends-meta">@${escapeHtml(userData.username)}</div>
+                <div class="friends-meta" style="color:#4CAF50">Already a friend</div>
+              </div>
             </div>
           </div>
         `;
       } else {
         resultDiv.innerHTML = `
           <div class="friends-row">
-            <div>
-              <div class="friends-name">${escapeHtml(userData.display_name || userData.username)}</div>
-              <div class="friends-meta">@${escapeHtml(userData.username)}</div>
+            <div style="display:flex;align-items:center;gap:12px;flex:1">
+              <div class="friend-avatar-wrapper">
+                <img src="${avatarUrl}" class="friend-avatar" />
+              </div>
+              <div>
+                <div class="friends-name">${escapeHtml(userData.display_name || userData.username)}</div>
+                <div class="friends-meta">@${escapeHtml(userData.username)}</div>
+              </div>
             </div>
             <div class="friends-controls">
               <button id="sendRequestBtn" class="friends-primary">Send Request</button>
@@ -311,6 +368,12 @@ async function loadAll() {
   });
 
   document.getElementById('refreshBtn').addEventListener('click', loadAll);
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.friend-menu-dropdown').forEach(m => {
+      m.classList.remove('active');
+    });
+  });
 
   loadAll();
 }

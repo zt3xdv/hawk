@@ -1,4 +1,8 @@
-import HawkEngine from '../../../dist/engine/main.js';
+import Clamp from '../../hawk/math/Clamp.js';
+import Linear from '../../hawk/math/Linear.js';
+import IntegerToColor from '../../hawk/display/color/IntegerToColor.js';
+import GetColor from '../../hawk/display/color/GetColor.js';
+import BlendModes from '../../hawk/renderer/BlendModes.js';
 import Options from '../utils/Options.js';
 
 const MAX_LIGHTS = 64;
@@ -40,9 +44,9 @@ export default class LightManager {
       { start: 23,   color: 0x0d0d30, alpha: 0.8 }     // Noche
     ];
     this.phases = (this.phasesMinutes.slice()).map((p, idx) => ({
-      start: HawkEngine.Math.Clamp((p.start ?? 0) * 60, 0, this.totalSeconds),
+      start: Clamp((p.start ?? 0) * 60, 0, this.totalSeconds),
       color: (typeof p.color !== 'undefined') ? (p.color >>> 0) : undefined,
-      alpha: (typeof p.alpha !== 'undefined') ? HawkEngine.Math.Clamp(p.alpha, 0, 1) : undefined,
+      alpha: (typeof p.alpha !== 'undefined') ? Clamp(p.alpha, 0, 1) : undefined,
       index: idx
     })).sort((a, b) => a.start - b.start);
     this.lights = [];
@@ -102,7 +106,7 @@ export default class LightManager {
     this.scene.scale.on('resize', this._onResize);
     
     try {
-      const PostFXPipeline = HawkEngine.Renderer?.WebGL?.Pipelines?.PostFXPipeline;
+      const PostFXPipeline = this.scene.sys.game.renderer.pipelines?.PostFXPipeline;
       if (PostFXPipeline && this.scene.renderer.pipelines) {
         this._setupGlowPipeline();
       }
@@ -156,12 +160,12 @@ export default class LightManager {
   }
 
   static _lerpColor(cA, cB, t) {
-    const a = HawkEngine.Display.Color.IntegerToColor(cA >>> 0);
-    const b = HawkEngine.Display.Color.IntegerToColor(cB >>> 0);
-    const r = Math.round(HawkEngine.Math.Linear(a.red, b.red, t));
-    const g = Math.round(HawkEngine.Math.Linear(a.green, b.green, t));
-    const bl = Math.round(HawkEngine.Math.Linear(a.blue, b.blue, t));
-    return HawkEngine.Display.Color.GetColor(r, g, bl);
+    const a = IntegerToColor(cA >>> 0);
+    const b = IntegerToColor(cB >>> 0);
+    const r = Math.round(Linear(a.red, b.red, t));
+    const g = Math.round(Linear(a.green, b.green, t));
+    const bl = Math.round(Linear(a.blue, b.blue, t));
+    return GetColor(r, g, bl);
   }
 
   _defaultOverlayEvaluator(nowSec) {
@@ -178,13 +182,13 @@ export default class LightManager {
     if (duration <= 0) duration += this.totalSeconds;
     let elapsed = t - phase.start;
     if (elapsed < 0) elapsed += this.totalSeconds;
-    const progress = duration > 0 ? HawkEngine.Math.Clamp(elapsed / duration, 0, 1) : 0;
+    const progress = duration > 0 ? Clamp(elapsed / duration, 0, 1) : 0;
     const curColor = (typeof phase.color !== 'undefined') ? phase.color >>> 0 : this.nightColor;
     const curAlpha = (typeof phase.alpha !== 'undefined') ? phase.alpha : this.nightAlpha;
     const nextColor = (typeof nextPhase.color !== 'undefined') ? nextPhase.color >>> 0 : this.nightColor;
     const nextAlpha = (typeof nextPhase.alpha !== 'undefined') ? nextPhase.alpha : this.nightAlpha;
     const color = LightManager._lerpColor(curColor, nextColor, progress);
-    const alpha = HawkEngine.Math.Clamp(HawkEngine.Math.Linear(curAlpha, nextAlpha, progress), 0, 1);
+    const alpha = Clamp(Linear(curAlpha, nextAlpha, progress), 0, 1);
     return {
       color,
       alpha,
@@ -234,8 +238,8 @@ export default class LightManager {
             const radiusB = lightB.radius || 128;
             const mergeStrength = 1 - (dist / LIGHT_MERGE_DISTANCE);
             
-            const colorA = HawkEngine.Display.Color.IntegerToColor(lightA.color || 0xffffff);
-            const colorB = HawkEngine.Display.Color.IntegerToColor(lightB.color || 0xffffff);
+            const colorA = IntegerToColor(lightA.color || 0xffffff);
+            const colorB = IntegerToColor(lightB.color || 0xffffff);
             
             const steps = Math.max(1, Math.floor(dist / 60));
             for (let k = 1; k < steps; k++) {
@@ -261,7 +265,7 @@ export default class LightManager {
                 const blendFactor = influenceA / totalInfluence;
                 const bridgeRadius = (radiusA * blendFactor + radiusB * (1 - blendFactor)) * (0.6 + mergeStrength * 0.4);
                 
-                const blendedColor = HawkEngine.Display.Color.GetColor(
+                const blendedColor = GetColor(
                   Math.round(colorA.red * blendFactor + colorB.red * (1 - blendFactor)),
                   Math.round(colorA.green * blendFactor + colorB.green * (1 - blendFactor)),
                   Math.round(colorA.blue * blendFactor + colorB.blue * (1 - blendFactor))
@@ -336,9 +340,9 @@ export default class LightManager {
     }
 
     this._rt.clear();
-    const nc = HawkEngine.Display.Color.IntegerToColor(overlay.color ?? this.nightColor);
-    const nightFill = HawkEngine.Display.Color.GetColor(nc.red, nc.green, nc.blue);
-    const nightAlpha = HawkEngine.Math.Clamp(overlay.alpha ?? this.nightAlpha, 0, 1);
+    const nc = IntegerToColor(overlay.color ?? this.nightColor);
+    const nightFill = GetColor(nc.red, nc.green, nc.blue);
+    const nightAlpha = Clamp(overlay.alpha ?? this.nightAlpha, 0, 1);
     this._rt.fill(nightFill, nightAlpha);
 
     const viewOffsetX = (typeof cam.x === 'number') ? cam.x : 0;
@@ -365,7 +369,7 @@ export default class LightManager {
       const shapeNoise = Math.sin(pulsePhase * 0.5) * 0.025;
       
       const intensityMod = (L._original ? 1.2 : 0.9) * extraIntensityMod;
-      const alpha = HawkEngine.Math.Clamp(L.alpha * (L.intensity ?? 1) * intensityMod * pulseFactor * extraAlphaMod, 0, 1);
+      const alpha = Clamp(L.alpha * (L.intensity ?? 1) * intensityMod * pulseFactor * extraAlphaMod, 0, 1);
       
       const baseScale = (L.radius / 64) * this._renderQuality * zoom;
       const scaleX = baseScale * (1 + shapeNoise);
@@ -402,7 +406,7 @@ export default class LightManager {
       this._quad.setDisplaySize(w, h);
     }
     
-    this._quad.setBlendMode(HawkEngine.BlendModes.MULTIPLY);
+    this._quad.setBlendMode(BlendModes.MULTIPLY);
     
     if (this._glowPipeline && this._glowPipeline.set2f && this._glowPipeline.set1f) {
       try {
@@ -419,7 +423,7 @@ export default class LightManager {
       y: y ?? 0,
       radius: radius ?? 128,
       color: color >>> 0,
-      alpha: HawkEngine.Math.Clamp(alpha, 0, 1),
+      alpha: Clamp(alpha, 0, 1),
       intensity: intensity ?? 1,
       mask: mask ?? this._maskKey
     };
@@ -438,7 +442,7 @@ export default class LightManager {
     this._lightBridges = [];
   }
   
-  setNightAlpha(a) { this.nightAlpha = HawkEngine.Math.Clamp(a, 0, 1); }
+  setNightAlpha(a) { this.nightAlpha = Clamp(a, 0, 1); }
   setNightColor(c) { this.nightColor = c >>> 0; }
 
   start() { this.running = true; }

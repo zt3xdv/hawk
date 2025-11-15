@@ -5,7 +5,7 @@ import { API } from '../utils/Constants.js';
 const html = `
   <div class="auth">
 <div class="header">
-  <h3><canv-icon src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon>Profile</h3>
+  <h3><canv-icon id="profile-icon"></canv-icon>Profile</h3>
   <span class="description">Main profile.</span>
 </div>
 <hr>
@@ -31,6 +31,9 @@ const html = `
 async function render() {
   const app = document.getElementById("app");
   app.innerHTML = html;
+
+  // Set icon data URLs
+  document.getElementById('profile-icon').src = Cache.getBlob('assets/icons/Person.png').dataUrl;
 
   const profileAvatar = document.getElementById("profileAvatar");
   const profileUsername = document.getElementById("profileUsername");

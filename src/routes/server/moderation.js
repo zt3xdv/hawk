@@ -1,8 +1,21 @@
 import Router from './router.js';
 import UserModel from '../../models/UserModel.js';
 import ModerationModel from '../../models/ModerationModel.js';
+import { ROLES, ROLE_PERMISSIONS } from '../../utils/Constants.js';
 
 const router = new Router();
+
+function hasPermission(user, permission) {
+    if (!user.roles || user.roles.length === 0) return false;
+    
+    for (const role of user.roles) {
+        const permissions = ROLE_PERMISSIONS[role];
+        if (permissions && permissions.includes(permission)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 router.post('/api/moderation/ban', async (req, res) => {
     try {
@@ -14,22 +27,12 @@ router.post('/api/moderation/ban', async (req, res) => {
         }
 
         const user = UserModel.getUserByUsername(username);
-        if (!user) {
+        if (!user || user.password !== password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const hasPermission = user.roles && (
-            user.roles.includes('moderator') || 
-            user.roles.includes('admin') || 
-            user.roles.includes('superadmin')
-        );
-        
-        if (!hasPermission) {
+        if (!hasPermission(user, 'ban')) {
             return res.status(403).json({ error: 'Insufficient permissions' });
-        }
-
-        if (!password === user.password) {
-            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const result = await ModerationModel.banPlayer(targetId, user.id, reason);
@@ -48,22 +51,12 @@ router.post('/api/moderation/ban', async (req, res) => {
         }
 
         const user = UserModel.getUserByUsername(username);
-        if (!user) {
+        if (!user || user.password !== password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const hasPermission = user.roles && (
-            user.roles.includes('moderator') || 
-            user.roles.includes('admin') || 
-            user.roles.includes('superadmin')
-        );
-        
-        if (!hasPermission) {
+        if (!hasPermission(user, 'unban')) {
             return res.status(403).json({ error: 'Insufficient permissions' });
-        }
-
-        if (!password === user.password) {
-            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const result = await ModerationModel.unbanPlayer(targetId);
@@ -82,22 +75,12 @@ router.post('/api/moderation/ban', async (req, res) => {
         }
 
         const user = UserModel.getUserByUsername(username);
-        if (!user) {
+        if (!user || user.password !== password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const hasPermission = user.roles && (
-            user.roles.includes('moderator') || 
-            user.roles.includes('admin') || 
-            user.roles.includes('superadmin')
-        );
-        
-        if (!hasPermission) {
+        if (!hasPermission(user, 'timeout')) {
             return res.status(403).json({ error: 'Insufficient permissions' });
-        }
-
-        if (!password === user.password) {
-            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const result = await ModerationModel.timeoutPlayer(targetId, user.id, duration, reason);
@@ -116,22 +99,12 @@ router.post('/api/moderation/ban', async (req, res) => {
         }
 
         const user = UserModel.getUserByUsername(username);
-        if (!user) {
+        if (!user || user.password !== password) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const hasPermission = user.roles && (
-            user.roles.includes('moderator') || 
-            user.roles.includes('admin') || 
-            user.roles.includes('superadmin')
-        );
-        
-        if (!hasPermission) {
+        if (!hasPermission(user, 'kick')) {
             return res.status(403).json({ error: 'Insufficient permissions' });
-        }
-
-        if (!password === user.password) {
-            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         let kicked = false;

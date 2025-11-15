@@ -5,7 +5,7 @@ import { apiGet } from '../utils/Utils.js';
 const html = `
   <div class="auth">
     <div class="header">
-      <h3><canv-icon src="${Cache.getBlob('assets/icons/pings.png').dataUrl}"></canv-icon>Ping</h3>
+      <h3><canv-icon id="ping-icon"></canv-icon>Ping</h3>
       <span class="description">Ping check</span>
     </div>
     <hr>
@@ -22,6 +22,9 @@ function render() {
   const app = document.getElementById('app');
   app.innerHTML = html;
 
+  // Set icon data URLs
+  document.getElementById('ping-icon').src = Cache.getBlob('assets/icons/pings.png').dataUrl;
+
   const pingButton = document.getElementById('ping-button');
   const pingResult = document.getElementById('ping-result');
 
@@ -31,15 +34,17 @@ function render() {
       const response = await apiGet(API.gameServers);
       const endTime = new Date().getTime();
       const pingTime = endTime - startTime;
-      let pingLevel;
+      const icon = document.createElement('canv-icon');
       if (pingTime < 100) {
-        pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/goodping.png').dataUrl}"></canv-icon>`;
+      icon.src = Cache.getBlob('assets/icons/goodping.png').dataUrl;
       } else if (pingTime < 300) {
-        pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/idelping.png').dataUrl}"></canv-icon>`;
+      icon.src = Cache.getBlob('assets/icons/idelping.png').dataUrl;
       } else {
-        pingLevel = `<canv-icon src="${Cache.getBlob('assets/icons/badping.png').dataUrl}"></canv-icon>`;
+      icon.src = Cache.getBlob('assets/icons/badping.png').dataUrl;
       }
-      pingResult.innerHTML = `${pingLevel} Ping: ${pingTime} ms`;
+      pingResult.innerHTML = '';
+      pingResult.appendChild(icon);
+      pingResult.appendChild(document.createTextNode(` Ping: ${pingTime} ms`));
     } catch (error) {
       pingResult.innerText = 'Error checking your ping';
     }

@@ -9,8 +9,45 @@ export default class CanvIcon extends HTMLElement {
     this.attachShadow({ mode: 'open' });
   }
 
+  static get observedAttributes() {
+    return ['src', 'color'];
+  }
+
+  get src() {
+    return this.getAttribute('src');
+  }
+
+  set src(value) {
+    this.setAttribute('src', value);
+  }
+
+  get color() {
+    return this.getAttribute('color');
+  }
+
+  set color(value) {
+    this.setAttribute('color', value);
+  }
+
   connectedCallback() {
     const src = this.getAttribute('src');
+    if (src) {
+      this.processImage(src);
+    }
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'src' && newValue && newValue !== oldValue) {
+      this.processImage(newValue);
+    } else if (name === 'color' && newValue !== oldValue) {
+      const src = this.getAttribute('src');
+      if (src) {
+        this.processImage(src);
+      }
+    }
+  }
+
+  processImage(src) {
     const color = this.getAttribute('color');
 
     const img = document.createElement('img');
@@ -19,6 +56,9 @@ export default class CanvIcon extends HTMLElement {
     img.style.height = '2em';
     img.style.verticalAlign = 'middle';
     img.style.marginRight = '5px';
+
+    this.shadowRoot.innerHTML = '';
+    this.shadowRoot.appendChild(img);
 
     img.onload = () => {
       canvas.width = 128;

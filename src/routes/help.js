@@ -4,7 +4,7 @@ import Cache from '../utils/Cache.js';
 const html = `
   <div class="auth">
 <div class="header">
-  <h3><canv-icon src="${Cache.getBlob('assets/icons/info.png').dataUrl}"></canv-icon>Help</h3>
+  <h3><canv-icon id="help-icon"></canv-icon>Help</h3>
   <span class="description">Help and controls of Hawk.</span>
 </div>
 <hr>
@@ -30,6 +30,9 @@ const html = `
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = html;
+
+  // Set icon data URLs
+  document.getElementById('help-icon').src = Cache.getBlob('assets/icons/info.png').dataUrl;
 }
 
 export const options = { title: "Help", auth: false, description: "Controls, and some help." };

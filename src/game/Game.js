@@ -1,8 +1,8 @@
-import HawkEngine from '../../dist/engine/main.js';
+import Game from '../hawk/core/Game.js';
 import GameScene from './scenes/GameScene.js';
 import Options from './utils/Options.js';
 
-export default class Game {
+export default class HawkGame {
   constructor(domElement) {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isLowEnd = navigator.hardwareConcurrency <= 4 || navigator.deviceMemory <= 4;
@@ -38,7 +38,7 @@ export default class Game {
       ]
     };
 
-    this.game = new HawkEngine.Game(config);
+    this.game = new Game(config);
     this.resizeTimeout = null;
     
     window.addEventListener('resize', () => {

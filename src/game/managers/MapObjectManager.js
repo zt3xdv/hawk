@@ -10,7 +10,8 @@ import HouseOne from '../objects/building/HouseOne.js';
 import Campfire from '../objects/Campfire.js';
 import Crate from '../objects/Crate.js';
 import Outdoor from '../objects/Outdoor.js';
-import HawkEngine from '../../../dist/engine/main.js';
+import Rectangle from '../../hawk/geom/rectangle/Rectangle.js';
+import RectangleToRectangle from '../../hawk/geom/intersects/RectangleToRectangle.js';
 
 const CHUNK_SIZE = 512;
 const PAD = 64;
@@ -324,7 +325,7 @@ export default class MapObjectManager {
         Math.abs(this._lastView.x - view.x) > 10 || 
         Math.abs(this._lastView.y - view.y) > 10) {
       this._lastView = { x: view.x, y: view.y, width: view.width, height: view.height };
-      this._viewPadded = new HawkEngine.Geom.Rectangle(
+      this._viewPadded = new Rectangle(
         view.x - PAD, 
         view.y - PAD, 
         view.width + PAD * 2, 
@@ -340,7 +341,7 @@ export default class MapObjectManager {
       const child = element.image || element.sprite || element;
       if (!child || !child.getBounds) continue;
       
-      const inView = HawkEngine.Geom.Intersects.RectangleToRectangle(this._viewPadded, child.getBounds());
+      const inView = RectangleToRectangle(this._viewPadded, child.getBounds());
       
       if (child.visible !== inView && typeof child.setVisible === 'function') {
         child.setVisible(inView);

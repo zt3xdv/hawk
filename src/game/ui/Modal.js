@@ -4,6 +4,7 @@ class Modal {
     
     this.overlay = document.createElement('div');
     this.overlay.className = 'modal-overlay';
+    this.overlay.style.display = 'none';
     
     this.modal = document.createElement('div');
     this.modal.className = 'modal-container';

@@ -1,5 +1,7 @@
 import HudComponent from '../../hud/HudComponent.js';
 import Cache from '../../../../utils/Cache.js';
+import { getAuth, apiPost } from '../../../utils/Utils.js';
+import { API } from '../../../../utils/Constants.js';
 
 export default class AccComponent extends HudComponent {
   constructor({ scene, onClickMe, onClickPeople }) {
@@ -9,82 +11,148 @@ export default class AccComponent extends HudComponent {
     this.scene = scene;
     
     this.peopleVisible = false;
+    this.friendsData = [];
+    this.refreshInterval = null;
   }
 
   render(parent) {
-    this.el = document.createElement('div');
-    this.el.className = 'acc-container';
+    const btn = document.createElement('button');
+    btn.innerHTML = '<img src="' + Cache.getBlob("assets/icons/friends.png").dataUrl + '">';
+    btn.className = 'acc-button';
+    btn.onclick = () => this.toggle();
 
-    const btnMe = document.createElement('button');
-    btnMe.innerHTML = '<img src="' + Cache.getBlob("assets/icons/Person.png").dataUrl + '">';
-    btnMe.className = 'acc-button';
-    btnMe.onclick = this.onClickMe;
-
-    const btnPeople = document.createElement('button');
-    btnPeople.innerHTML = '<img src="' + Cache.getBlob("assets/icons/people.png").dataUrl + '">';
-    btnPeople.className = 'acc-button';
-    btnPeople.onclick = () => this.togglePeople();
-
-    this.peopleContainer = document.createElement('div');
-    this.peopleContainer.className = 'people-container';
-    this.peopleContainer.style.display = 'none';
+    this.el = document.createElement('ul');
+    this.el.className = 'acc-list';
+    this.el.style.display = 'none';
     
-    const peopleHeader = document.createElement('div');
-    peopleHeader.innerHTML = "<div class=\"header-brand\"><img src='" + Cache.getBlob('assets/icons/people.png').dataUrl + "'>People</div><button class=\"header-button\"><img src='" + Cache.getBlob('assets/icons/friends.png').dataUrl + "'></button>";
-    peopleHeader.className = 'people-header';
+    const header = document.createElement('div');
+    header.innerHTML = "<div class=\"header-brand\"><img src='" + Cache.getBlob('assets/icons/friends.png').dataUrl + "'>Friends</div><button class=\"header-button refresh-btn\">⟳</button>";
+    header.className = 'acc-header';
     
-    peopleHeader.querySelector("button").addEventListener("click", () => {
-      this.scene.inputManager.peopleModal.toggle();
+    header.querySelector(".refresh-btn").addEventListener("click", () => {
+      this.loadFriends();
     });
     
-    this.peopleList = document.createElement('ul');
-    this.peopleList.className = "people-list";
+    this.el.appendChild(header);
     
-    this.peopleContainer.appendChild(peopleHeader);
-    this.peopleContainer.appendChild(this.peopleList);
+    this.friendsList = document.createElement('div');
+    this.friendsList.className = "friends-list";
+    
+    this.el.appendChild(this.friendsList);
 
-    this.el.appendChild(btnMe);
-    this.el.appendChild(btnPeople);
+    parent.appendChild(btn);
     parent.appendChild(this.el);
-    parent.appendChild(this.peopleContainer);
   }
   
-  togglePeople() {
+  async toggle() {
     this.peopleVisible = !this.peopleVisible;
     
-    this.peopleContainer.style.display = (this.peopleVisible ? "block" : "none");
+    this.el.style.display = (this.peopleVisible ? "block" : "none");
     
     if (this.peopleVisible) {
-      const players = this.scene.networkManager.players;
-      if (players != {}) {
-        this.peopleList.innerHTML = "";
-        
-        Object.values(players).forEach(player => {
-          const li = document.createElement('li');
-          
-          const header = document.createElement('div');
-          header.className = "people-user-header";
-          
-          const avatar = document.createElement('img');
-          avatar.src = player.avatar || "logo.png";
-          
-          const name = document.createElement('p');
-          name.innerText = player.display_name + (player.id == this.scene.player.id ? " (you)" : "");
-          
-          const id = document.createElement('p');
-          id.className = "accent";
-          id.innerText = "@" + player.username;
-          
-          header.appendChild(avatar);
-          header.appendChild(name);
-          
-          li.appendChild(header);
-          li.appendChild(id);
-          this.peopleList.appendChild(li);
-        });
-      } else {
-        this.peopleList.innerHTML = "<small class='accent'>There are no people nearby.</small>";
+      await this.loadFriends();
+      
+      if (!this.refreshInterval) {
+        this.refreshInterval = setInterval(() => {
+          if (this.peopleVisible) {
+            this.loadFriends();
+          }
+        }, 5000);
       }
+    } else {
+      if (this.refreshInterval) {
+        clearInterval(this.refreshInterval);
+        this.refreshInterval = null;
+      }
+    }
+  }
+  
+  async loadFriends() {
+    const auth = getAuth();
+    if (!auth.username || !auth.password) {
+      this.friendsList.innerHTML = "<small class='accent'>Not authenticated</small>";
+      return;
+    }
+    
+    try {
+      const response = await apiPost(API.friendsList, auth);
+      
+      if (response.error) {
+        this.friendsList.innerHTML = "<small class='accent'>Error loading friends</small>";
+        return;
+      }
+      
+      this.friendsData = response.friends || [];
+      this.renderFriends();
+    } catch (error) {
+      this.friendsList.innerHTML = "<small class='accent'>Error loading friends</small>";
+    }
+  }
+  
+  renderFriends() {
+    this.friendsList.innerHTML = "";
+    
+    if (this.friendsData.length === 0) {
+      this.friendsList.innerHTML = "<small class='accent'>No friends yet</small>";
+      return;
+    }
+    
+    this.friendsData.forEach(friend => {
+      const li = document.createElement('li');
+      
+      const header = document.createElement('div');
+      header.className = "people-user-header";
+      
+      const avatar = document.createElement('img');
+      avatar.src = friend.avatar || "/api/pavatar/" + friend.id;
+      
+      const infoContainer = document.createElement('div');
+      infoContainer.className = "people-user-info";
+      
+      const name = document.createElement('p');
+      name.className = "people-user-name";
+      name.innerText = friend.display_name || friend.username;
+      
+      const username = document.createElement('p');
+      username.className = "accent";
+      username.innerText = "@" + friend.username;
+      
+      const status = document.createElement('div');
+      status.className = "friend-status";
+      
+      const statusDot = document.createElement('span');
+      const statusText = document.createElement('span');
+      statusText.className = "status-text";
+      
+      if (friend.online === 'web') {
+        statusDot.className = "status-dot online-web";
+        statusText.innerText = 'On web';
+      } else if (friend.online && friend.online !== false) {
+        statusDot.className = "status-dot online";
+        statusText.innerText = friend.server ? friend.server.name : 'Online';
+      } else {
+        statusDot.className = "status-dot offline";
+        statusText.innerText = 'Offline';
+      }
+      
+      status.appendChild(statusDot);
+      status.appendChild(statusText);
+      
+      header.appendChild(avatar);
+      infoContainer.appendChild(name);
+      infoContainer.appendChild(username);
+      infoContainer.appendChild(status);
+      header.appendChild(infoContainer);
+      
+      li.appendChild(header);
+      this.friendsList.appendChild(li);
+    });
+  }
+  
+  destroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
     }
   }
 }

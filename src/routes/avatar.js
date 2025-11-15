@@ -61,7 +61,7 @@ async function postAvatar(base64Image, username = null, password = null) {
 const html = `
   <div class="auth">
 <div class="header">
-  <h3><canv-icon src="${Cache.getBlob('assets/icons/createemoji.png').dataUrl}"></canv-icon>In-Game avatar</h3>
+  <h3><canv-icon id="avatar-icon"></canv-icon>In-Game avatar</h3>
   <span class="description">Modify your in-game avatar.</span>
 </div>
 <hr>
@@ -93,6 +93,9 @@ const html = `
 function render() {
   const app = document.getElementById("app");
   app.innerHTML = html;
+
+  // Set icon data URLs
+  document.getElementById('avatar-icon').src = Cache.getBlob('assets/icons/createemoji.png').dataUrl;
 
   const fileInput = document.getElementById("avatarInput");
   const previewCanvas = document.getElementById("avatarPreview");

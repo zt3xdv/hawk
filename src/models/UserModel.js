@@ -16,7 +16,7 @@ class UserModel {
         x: 0,
         y: 0
       }
-    }, avatar, bio, roles = ['player'], hiddenPlayers = [], oauthProvider = null, oauthId = null) {
+    }, avatar, bio, roles = ['player'], oauthProvider = null, oauthId = null) {
         this.id = id;
         this.displayName = displayName;
         this.username = username;
@@ -25,7 +25,6 @@ class UserModel {
         this.avatar = avatar;
         this.bio = bio;
         this.roles = roles;
-        this.hiddenPlayers = hiddenPlayers;
         this.oauthProvider = oauthProvider;
         this.oauthId = oauthId;
     }
@@ -43,7 +42,6 @@ class UserModel {
                 user.avatar, 
                 user.bio,
                 user.roles || ['player'],
-                user.hiddenPlayers || [],
                 user.oauthProvider || null,
                 user.oauthId || null
             ));
@@ -68,7 +66,6 @@ class UserModel {
                 avatar: user.avatar,
                 bio: user.bio,
                 roles: user.roles || ['player'],
-                hiddenPlayers: user.hiddenPlayers || [],
                 oauthProvider: user.oauthProvider || null,
                 oauthId: user.oauthId || null
             }));
@@ -81,8 +78,7 @@ class UserModel {
     static async createUser(displayName, username, password) {
         const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
         const defaultGame = {
-            lastPosition: { x: 0, y: 0 },
-            partyLastPosition: { x: 0, y: 0 }
+            lastPosition: { x: 0, y: 0 }
         };
         const newUser = new UserModel(
             uuid(), 
@@ -92,8 +88,7 @@ class UserModel {
             defaultGame, 
             null, 
             '', 
-            ['player'], 
-            []
+            ['player'],
         );
         this.users.push(newUser);
         await this.saveUsers();
@@ -147,8 +142,7 @@ class UserModel {
         const hashedPassword = await bcrypt.hash(randomPassword, this.SALT_ROUNDS);
         
         const defaultGame = {
-            lastPosition: { x: 0, y: 0 },
-            partyLastPosition: { x: 0, y: 0 }
+            lastPosition: { x: 0, y: 0 }
         };
         const newUser = new UserModel(
             uuid(), 
@@ -159,7 +153,6 @@ class UserModel {
             extraData.avatar || null, 
             '', 
             ['player'], 
-            [],
             oauthProvider,
             oauthId
         );

@@ -11,6 +11,7 @@ import adminRoutes from './src/routes/server/admin.js';
 import HawkServer from './src/server/Hawk.js';
 import SocketServer from './src/server/Socket.js';
 import MessageSocket from './src/server/MessageSocket.js';
+import PresenceSocket from './src/server/PresenceSocket.js';
 import ModerationModel from './src/models/ModerationModel.js';
 import config from './config.json' with { type: 'json' };
 import { fileURLToPath } from 'url';
@@ -26,7 +27,9 @@ const app = express();
 const server = config.https.enabled ? https.createServer({ cert: config.https.cert, key: config.https.key }, app) : http.createServer(app);
 const socketServer = new SocketServer({ server });
 const messageSocket = new MessageSocket(socketServer);
+const presenceSocket = new PresenceSocket(socketServer);
 app.hawkServers = [];
+app.presenceSocket = presenceSocket;
 
 SERVERS.forEach(s => {
   const srv = new HawkServer(socketServer, s);

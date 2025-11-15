@@ -35,7 +35,7 @@ export default function htmlPlugin(options = {}) {
         this.emitFile({
           type: 'asset',
           fileName: filename,
-          source: processedHtml
+          source: processedHtml.replaceAll("\n", "")
         });
       } catch (error) {
         this.error(`Failed to process HTML template: ${error.message}`);

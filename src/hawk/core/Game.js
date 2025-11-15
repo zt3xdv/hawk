@@ -51,7 +51,7 @@ var Game = new Class({
   boot: function () {
     if (!PluginCache.hasCore('EventEmitter')) {
       console.warn('Aborting. Core Plugins missing.');
-      return;
+      //return;
     }
     this.isBooted = true;
     this.config.preBoot(this);
@@ -153,7 +153,7 @@ var Game = new Class({
     return this.loop.frame;
   },
   getTime: function () {
-    return this.loop.now;
+    return this.loop.lastTime;
   },
   destroy: function (removeCanvas, noReturn) {
     if (noReturn === undefined) {

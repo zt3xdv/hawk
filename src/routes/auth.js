@@ -14,7 +14,7 @@ const html = `
   </div>
   <div id="auth-container" style="opacity:0;display:none;transition:opacity 0.6s ease">
     <div class="header">
-      <h3><canv-icon id="auth-icon" src="${Cache.getBlob('assets/icons/Person.png').dataUrl}"></canv-icon><span id="auth-title">Login</span></h3>
+      <h3><canv-icon id="auth-icon"></canv-icon><span id="auth-title">Login</span></h3>
       <span id="auth-description" class="description">Log in into Hawk.</span>
     </div>
     <hr>
@@ -98,6 +98,9 @@ const html = `
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = html;
+
+  // Set icon data URLs
+  document.getElementById('auth-icon').src = Cache.getBlob('assets/icons/Person.png').dataUrl;
   
   const welcomeScreen = document.getElementById('welcome-screen');
   const authContainer = document.getElementById('auth-container');

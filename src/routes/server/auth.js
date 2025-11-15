@@ -157,6 +157,24 @@ router.post('/api/auth/register', async (req, res) => {
     const user = id ? UserModel.getUserById(id) : UserModel.getUserByUsername(normalizeUsername(username));
     if (!user) return res.json({ valid: false });
 
+    let online = false;
+    let server = null;
+
+    // Check if online in game servers
+    for (const srv of router.app.hawkServers) {
+      const player = Object.values(srv.players).find(p => p.userId === user.id);
+      if (player && player.loggedIn) {
+        online = srv.data.id;
+        server = srv.data;
+        break;
+      }
+    }
+
+    // If not in game, check if online on web
+    if (!online && router.app.presenceSocket && router.app.presenceSocket.isUserOnlineWeb(user.id)) {
+      online = 'web';
+    }
+
     return res.json({
       id: user.id,
       displayName: user.displayName,
@@ -165,6 +183,8 @@ router.post('/api/auth/register', async (req, res) => {
       bio: user.bio || '',
       avatar: user.avatar || '',
       roles: user.roles || ['player'],
+      online,
+      server: server ? { id: server.id, name: server.name } : null,
       game: {
         avatar: user.game?.avatar || '',
         lastPosition: user.game?.lastPosition || { x: 0, y: 0 }

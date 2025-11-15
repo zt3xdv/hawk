@@ -1,4 +1,4 @@
-import HawkEngine from '../../../dist/engine/main.js';
+
 
 export default class ChatBubbleManager {
   constructor(scene, getXFn, getYFn, options = {}) {
@@ -28,7 +28,7 @@ export default class ChatBubbleManager {
 
   _wrapAndTruncateByWords(text, style, maxWidth, maxLines = 10) {
     if (!text) return '';
-    const tmp = this.scene.add.bitmapText(0, 0, 'hawkpixelated', '', parseInt(style.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000001);
+    const tmp = this.scene.add.bitmapText(0, 0, 'hawkpixelated', '', parseInt(style.fontSize, 10) || 16, 0).setDepth(10000001);
     tmp.setOrigin(0, 0);
 
     const words = text.split(/\s+/);
@@ -153,7 +153,7 @@ export default class ChatBubbleManager {
 
     const finalText = this._wrapAndTruncateByWords(message, textStyle, this._bubbleMaxWidth);
 
-    const tmpText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', finalText, parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000001);
+    const tmpText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', finalText, parseInt(textStyle.fontSize, 10) || 16, 0).setDepth(10000001);
     tmpText.setOrigin(0, 0);
 
     const bounds = tmpText.getBounds();
@@ -170,7 +170,7 @@ export default class ChatBubbleManager {
     const cRadius = 4;
     bg.fillRoundedRect(0, 0, bgWidth, bgHeight, cRadius);
 
-    const msgText = this.scene.add.bitmapText(this._bubblePaddingX, this._bubblePaddingY, 'hawkpixelated', finalText, parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000003);
+    const msgText = this.scene.add.bitmapText(this._bubblePaddingX, this._bubblePaddingY, 'hawkpixelated' + (isCommand ? "dashed" : ""), finalText, parseInt(textStyle.fontSize, 10) || 16, 0).setDepth(10000003);
     msgText.setOrigin(0, 0);
     msgText.setCharacterTint(0, -1, true, isCommand ? 0xFFFF00 : 0x808080);
     //msgText.setWordWrapWidth(this._bubbleMaxWidth, true);
@@ -236,7 +236,7 @@ export default class ChatBubbleManager {
 
       const textStyle = { fontFamily: 'Hawk', fontSize: '16px', color: '#aaaaaa' };
       const message = '...';
-      const tmpText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', message, parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000001);
+      const tmpText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', message, parseInt(textStyle.fontSize, 10) || 16, 0).setDepth(10000001);
       tmpText.setOrigin(0, 0);
       
       const bounds = tmpText.getBounds();
@@ -271,7 +271,7 @@ export default class ChatBubbleManager {
       const dots = [];
       for (let i = 0; i < dotCount; i++) {
         const color = randGrayBetween();
-        const dotText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', '.', parseInt(textStyle.fontSize, 10) || 16, HawkEngine.GameObjects.BitmapText.ALIGN_LEFT).setDepth(10000011 + i);
+        const dotText = this.scene.add.bitmapText(0, 0, 'hawkpixelated', '.', parseInt(textStyle.fontSize, 10) || 16, 0).setDepth(10000011 + i);
         dotText.setCharacterTint(0, -1, true, 0xFFFFFF);
         dotText.setOrigin(0.5, 0.5);
         const x = (spacing * (i + 1)) + dotAreaX - 0.5;

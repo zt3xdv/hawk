@@ -6,7 +6,6 @@ const html = `
     <div class="dms-header">
       <h2>Direct Messages</h2>
       <button class="btn btn-primary" id="new-conversation">
-        <canv-icon src="${Cache.getBlob('assets/icons/createintegration.png').dataUrl}"></canv-icon>
         New Conversation
       </button>
     </div>
@@ -63,10 +62,18 @@ function render() {
     const messagePreview = conv.lastMessage.fromMe 
       ? `You: ${conv.lastMessage.content}` 
       : conv.lastMessage.content;
+    
+    let statusClass = 'offline';
+    if (conv.online === 'web') {
+      statusClass = 'online-web';
+    } else if (conv.online && conv.online !== false) {
+      statusClass = 'online';
+    }
 
     div.innerHTML = `
-      <div class="conversation-avatar">
-        <img src="/api/pavatar/${conv.userId}" alt="${escapeHtml(conv.displayName)}">
+      <div class="conversation-avatar friend-avatar-wrapper">
+        <img src="/api/pavatar/${conv.userId}" alt="${escapeHtml(conv.displayName)}" class="friend-avatar">
+        <span class="friend-status-dot ${statusClass}"></span>
       </div>
       <div class="conversation-info">
         <div class="conversation-header">
@@ -197,9 +204,19 @@ function render() {
       friendsToShow.forEach(friend => {
         const friendItem = document.createElement('div');
         friendItem.className = 'friend-item';
+        let statusClass = 'offline';
+        if (friend.online === 'web') {
+          statusClass = 'online-web';
+        } else if (friend.online && friend.online !== false) {
+          statusClass = 'online';
+        }
+        
         friendItem.innerHTML = `
           <div class="friend-info">
-            <img src="/api/pavatar/${friend.id}" alt="${escapeHtml(friend.display_name)}" class="friend-avatar">
+            <div class="friend-avatar-wrapper">
+              <img src="/api/pavatar/${friend.id}" alt="${escapeHtml(friend.display_name)}" class="friend-avatar">
+              <span class="friend-status-dot ${statusClass}"></span>
+            </div>
             <div class="friend-details">
               <div class="friend-name">${escapeHtml(friend.display_name)}</div>
               <div class="friend-username">@${escapeHtml(friend.username)}</div>

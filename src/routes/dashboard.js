@@ -9,13 +9,13 @@ const html = `
 <div class="auth">
   <div class="main-header">
     <button class="btn" id="discord">
-      <span><canv-icon src="${Cache.getBlob('assets/icons/flag.png').dataUrl}"></canv-icon>Join our <strong>Discord</strong> server</span>
+      <span><canv-icon id="discord-icon"></canv-icon>Join our <strong>Discord</strong> server</span>
     </button>
     <button class="btn" id="support">
-      <span><canv-icon src="${Cache.getBlob('assets/icons/kofi.png').dataUrl}"></canv-icon>Become a <strong>supporter</strong>!</span>
+      <span><canv-icon id="support-icon"></canv-icon>Become a <strong>supporter</strong>!</span>
     </button>
     <button class="btn" id="install">
-      <span><canv-icon src="${Cache.getBlob('assets/icons/createintegration.png').dataUrl}"></canv-icon>Install <strong>Hawk</strong> App</span>
+      <span><canv-icon id="install-icon"></canv-icon>Install <strong>Hawk</strong> App</span>
     </button>
   </div>
   <hr>
@@ -53,6 +53,11 @@ const html = `
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = html;
+
+  // Set icon data URLs
+  document.getElementById('discord-icon').src = Cache.getBlob('assets/icons/flag.png').dataUrl;
+  document.getElementById('support-icon').src = Cache.getBlob('assets/icons/kofi.png').dataUrl;
+  document.getElementById('install-icon').src = Cache.getBlob('assets/icons/createintegration.png').dataUrl;
 
   const previewEl = document.getElementById('preview');
   const preview = new Preview(previewEl);

@@ -109,8 +109,16 @@ export function getAssets() {
       type: "bitmapfont",
       key: "hawkpixelated",
       url: {
-        image: Cache.getBlob("assets/fonts/at02.png").dataUrl,
-        xml: Cache.getBlob("assets/fonts/at02.xml").dataUrl,
+        image: Cache.getBlob("assets/fonts/white.png").dataUrl,
+        xml: Cache.getBlob("assets/fonts/mappings.xml").dataUrl,
+      }
+    },
+    {
+      type: "bitmapfont",
+      key: "hawkpixelateddashed",
+      url: {
+        image: Cache.getBlob("assets/fonts/dashed.png").dataUrl,
+        xml: Cache.getBlob("assets/fonts/mappings.xml").dataUrl,
       }
     }
   ];

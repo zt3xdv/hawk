@@ -161,8 +161,22 @@ export function router() {
 }
 
 function continueRouting() {
+  const fullPath = window.location.pathname;
   const path = getPathFromLocation();
-  const route = routes[path] || {};
+  let route = routes[path] || {};
+
+  if (fullPath.startsWith('/dms/') && fullPath !== '/dms') {
+    const userId = fullPath.split('/')[2];
+    const dmChatRoute = routes['/dms'];
+    route = { 
+      ...dmChatRoute,
+      render: () => renderDmChat(userId),
+      options: {
+        ...dmChatRoute.options,
+        title: 'Chat'
+      }
+    };
+  }
 
   if (!route.render) {
     window.history.replaceState({}, '', '/404');

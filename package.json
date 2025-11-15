@@ -1,17 +1,14 @@
 {
   "name": "hawk",
-  "version": "0.17.6-beta",
-  "assets": "0.1.2-release",
+  "version": "0.18.2-beta",
+  "assets": "0.1.6-release",
   "module": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
     "build": "node app.build.js",
     "fast-build": "node app.build.js fast",
-    "watch": "node app.build.js dev",
-    "build-engine": "node engine.build.js",
-    "fast-build-engine": "node engine.build.js fast",
-    "watch-engine": "node engine.build.js dev"
+    "watch": "node app.build.js dev"
   },
   "keywords": [
     "game",
@@ -24,6 +21,7 @@
   "description": "Hangout game created using Hawk engine.",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "eruda": "^3.4.3",
     "eventemitter3": "^4.0.7",
     "express": "^5.1.0",
     "mime-types": "^3.0.1",

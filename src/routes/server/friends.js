@@ -5,7 +5,6 @@ import { USERNAME, DISPLAY_NAME, PASSWORD } from '../../utils/Constants.js';
 
 const router = new Router();
 
-// --- Helpers ---
 function inRange(value = '', min, max) {
   return typeof value === 'string' && value.length >= min && value.length <= max;
 }
@@ -19,7 +18,6 @@ function validUsername(value = '') {
   return USERNAME_RE.test(v) && inRange(v, USERNAME.MIN, USERNAME.MAX);
 }
 
-// Auth when client sends hashed password
 async function authenticate(body) {
   const { username, password } = body || {};
   if (!username || !password) throw { status: 400, json: { error: 'Please fill all fields.' } };
@@ -30,7 +28,6 @@ async function authenticate(body) {
   const user = UserModel.getUserByUsername(normUsername);
   if (!user) throw { status: 401, json: { error: 'Invalid credentials.' } };
 
-  // client sends hashed password, compare directly
   if (password !== user.password) throw { status: 401, json: { error: 'Invalid credentials.' } };
 
   return user;
@@ -41,8 +38,48 @@ async function ensureLoaded() {
   await FriendsModel.load();
 }
 
-// --- Routes ---
-// All routes use POST { username, password, ... }
+router.post('/api/friends/list', async (req, res) => {
+  await router.parse(req, res);
+  try {
+    await ensureLoaded();
+    const user = await authenticate(req.body);
+
+    const friends = FriendsModel.getFriends(user.id);
+    const friendsData = friends.map(friend => {
+      let online = false;
+      let server = null;
+
+      // Check if online in game servers
+      for (const srv of router.app.hawkServers) {
+        const player = Object.values(srv.players).find(p => p.userId === friend.id);
+        if (player && player.loggedIn) {
+          online = srv.data.id;
+          server = srv.data;
+          break;
+        }
+      }
+
+      // If not in game, check if online on web
+      if (!online && router.app.presenceSocket && router.app.presenceSocket.isUserOnlineWeb(friend.id)) {
+        online = 'web';
+      }
+
+      return {
+        id: friend.id,
+        username: friend.username,
+        display_name: friend.displayName,
+        avatar: friend.game?.avatar,
+        online,
+        server: server ? { id: server.id, name: server.name } : null
+      };
+    });
+
+    res.json({ friends: friendsData });
+  } catch (e) {
+    console.error(e);
+    return res.status(e.status || 500).json(e.json || { error: 'Internal error.' });
+  }
+});
 
 router.post('/api/friends/send', async (req, res) => {
   await router.parse(req, res);
@@ -50,7 +87,6 @@ router.post('/api/friends/send', async (req, res) => {
     await ensureLoaded();
     const user = await authenticate(req.body);
 
-    // Accept either targetUsername or targetUserId
     const { targetUsername, targetUserId } = req.body;
     if (!targetUsername && !targetUserId) return res.status(400).json({ error: 'targetUsername or targetUserId required.' });
 
@@ -174,23 +210,7 @@ router.post('/api/friends/remove', async (req, res) => {
   }
 });
 
-router.post('/api/friends/list', async (req, res) => {
-  await router.parse(req, res);
-  try {
-    await ensureLoaded();
-    const user = await authenticate(req.body);
 
-    const friends = FriendsModel.getFriends(user.id).map(u => ({
-      id: u.id,
-      display_name: u.displayName,
-      username: u.username
-    }));
-
-    return res.json({ friends });
-  } catch (e) {
-    return res.status(e.status || 500).json(e.json || { error: 'Internal error.' });
-  }
-});
 
 router.post('/api/friends/requests', async (req, res) => {
   await router.parse(req, res);
