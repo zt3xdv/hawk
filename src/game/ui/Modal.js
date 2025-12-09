@@ -42,7 +42,7 @@ class Modal {
     this.isOpen = !this.isOpen;
     this.overlay.style.display = this.isOpen ? 'flex' : 'none';
     
-    if (this.scene) this.scene.inputManager.joystickModalEnable(this.isOpen);
+    if (this.scene.inputManager) this.scene.inputManager.joystickModalEnable(this.isOpen);
   }
 }
 

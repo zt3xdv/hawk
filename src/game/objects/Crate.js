@@ -115,6 +115,89 @@ export default class Crate extends MapObject {
         zoffset: 10,
         collision: { startx: 0, starty: 12, width: 23, height: 23 }
       },
+      
+{
+  name: 'flower_e_h',
+  uvStartPx: { u: 932, v: 1035 },
+  widthPx: 57,
+  heightPx: 21,
+  zoffset: 10,
+  collision: { startx: 0, starty: 7, width: 54, height: 14 }
+},
+{
+  name: 'flower_e_v',
+  uvStartPx: { u: 998, v: 1035 },
+  widthPx: 22,
+  heightPx: 47,
+  zoffset: 10,
+  collision: { startx: 0, starty: 6, width: 20, height: 41 }
+},
+
+{
+  name: 'flower_w_v',
+  uvStartPx: { u: 1028, v: 1027 },
+  widthPx: 26,
+  heightPx: 55,
+  zoffset: 10,
+  collision: { startx: 2, starty: 12, width: 19, height: 43 }
+},
+{
+  name: 'flower_y_v',
+  uvStartPx: { u: 1060, v: 1031 },
+  widthPx: 25,
+  heightPx: 50,
+  zoffset: 10,
+  collision: { startx: 2, starty: 8, width: 19, height: 43 }
+},
+{
+  name: 'flower_wl_v',
+  uvStartPx: { u: 1093, v: 1027 },
+  widthPx: 24,
+  heightPx: 55,
+  zoffset: 10,
+  collision: { startx: 1, starty: 12, width: 19, height: 43 }
+},
+{
+  name: 'flower_d_v',
+  uvStartPx: { u: 1127, v: 1035 },
+  widthPx: 22,
+  heightPx: 47,
+  zoffset: 10,
+  collision: { startx: 0, starty: 4, width: 19, height: 43 }
+},
+
+{
+  name: 'flower_w_h',
+  uvStartPx: { u: 930, v: 1062 },
+  widthPx: 62,
+  heightPx: 26,
+  zoffset: 10,
+  collision: { startx: 3, starty: 14, width: 54, height: 12 }
+},
+{
+  name: 'flower_y_h',
+  uvStartPx: { u: 930, v: 1092 },
+  widthPx: 60,
+  heightPx: 27,
+  zoffset: 10,
+  collision: { startx: 3, starty: 15, width: 54, height: 12 }
+},
+{
+  name: 'flower_wl_h',
+  uvStartPx: { u: 933, v: 1125 },
+  widthPx: 59,
+  heightPx: 27,
+  zoffset: 10,
+  collision: { startx: 0, starty: 15, width: 54, height: 12 }
+},
+{
+  name: 'flower_d_h',
+  uvStartPx: { u: 933, v: 1163 },
+  widthPx: 54,
+  heightPx: 21,
+  zoffset: 10,
+  collision: { startx: 0, starty: 9, width: 54, height: 12 }
+}
     ];
     
   constructor(scene, x, y, typeNum = -1) {

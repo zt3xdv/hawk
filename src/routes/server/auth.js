@@ -31,7 +31,7 @@ function validUsername(value = '') {
 router.post('/api/auth/register', async (req, res) => {
     await router.parse(req, res);
     let { display_name, username, password, turnstile } = req.body;
-    if (!TURNSTILE) turnstile = "TOKK853";
+    if (!TURNSTILE) turnstile = "hawkgzsot3xdv";
     if (!display_name || !username || !password || !turnstile) {
         return res.status(400).json({ error: 'Please fill all fields.' });
     }
@@ -160,9 +160,8 @@ router.post('/api/auth/register', async (req, res) => {
     let online = false;
     let server = null;
 
-    // Check if online in game servers
     for (const srv of router.app.hawkServers) {
-      const player = Object.values(srv.players).find(p => p.userId === user.id);
+      const player = Object.values(srv.players).find(p => p.uuid === user.id);
       if (player && player.loggedIn) {
         online = srv.data.id;
         server = srv.data;
@@ -170,7 +169,6 @@ router.post('/api/auth/register', async (req, res) => {
       }
     }
 
-    // If not in game, check if online on web
     if (!online && router.app.presenceSocket && router.app.presenceSocket.isUserOnlineWeb(user.id)) {
       online = 'web';
     }
@@ -188,7 +186,9 @@ router.post('/api/auth/register', async (req, res) => {
       game: {
         avatar: user.game?.avatar || '',
         lastPosition: user.game?.lastPosition || { x: 0, y: 0 }
-      }
+      },
+      oauthProvider: user.oauthProvider,
+      oauthId: user.oauthId
     });
 }).post('/api/avatar', async (req, res) => {
     await router.parse(req, res);

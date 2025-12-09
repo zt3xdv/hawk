@@ -50,11 +50,26 @@ function mountShell() {
         </div>
         <div class="extras">
           <p>${VERSION} · assets-${ASSETS_VERSION}</p>
-          <a href="/termsofservice">Terms Of Service</a> · <a href="/privacypolicy">Privacy Policy</a> · <a href="${DISCORD_SERVER}">Discord</a>
+          <a href="/termsofservice">Terms Of Service</a> · <a href="/privacypolicy">Privacy Policy</a> · <a href="${DISCORD_SERVER}">Discord</a> · <a id="wah">wah</a>
         </div>
       </div>
     `;
+    currentFooter.querySelector("#wah").addEventListener("click", () => {
+      window.wahs ||= 1;
+      
+      const wahStyle = document.createElement('style');
+      wahStyle.textContent = `
+        h1::after, h2::after, h3::after, h4::after, h5::after, p::after, span::after, i::after, b::after {
+          content: "${" wah".repeat(window.wahs)}";
+        }
+      `;
+      
+      window.wahs++;
+      document.head.appendChild(wahStyle);
+    });
     currentFooter.style.marginTop = `170px`;
+    
+    
     document.body.appendChild(currentFooter);
 
     document.body.addEventListener('click', onBodyClick);
@@ -112,14 +127,6 @@ export function router() {
   }
 
   const isAuthenticated = !!localStorage.getItem('loggedIn');
-
-  if (path === '/') {
-    if (isAuthenticated) {
-      window.history.replaceState({}, '', '/dashboard');
-    } else {
-      window.history.replaceState({}, '', '/auth');
-    }
-  }
 
   if (route.redirect) {
     window.history.replaceState({}, '', route.redirect);

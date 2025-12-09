@@ -29,7 +29,7 @@ const basePlugins = [
   }),
   json(),
   postcss({
-    extensions: ['.css', '.scss', '.sass'],
+    extensions: ['.css', '.scss'],
     extract: 'main.css',
     minimize: isProd,
     sourceMap: false,

@@ -7,7 +7,6 @@ export function renderDmChat(userId) {
   app.innerHTML = `
     <div class="dm-chat-container">
       <div class="dm-chat-header">
-        <button class="btn-back" id="back-to-dms">←</button>
         <div class="dm-chat-user-info">
           <div class="friend-avatar-wrapper">
             <img class="friend-avatar" id="chat-avatar" src="/api/pavatar/${userId}" alt="User">
@@ -36,7 +35,6 @@ export function renderDmChat(userId) {
     </div>
   `;
 
-  const backBtn = document.getElementById('back-to-dms');
   const messagesContainer = document.getElementById('chat-messages');
   const messageInput = document.getElementById('message-input');
   const sendBtn = document.getElementById('send-message');
@@ -47,12 +45,6 @@ export function renderDmChat(userId) {
   let messages = [];
   let otherUser = null;
   let ws = null;
-
-  backBtn.addEventListener('click', () => {
-    if (ws) ws.close();
-    app.classList.remove('no-scroll');
-    window.router.navigateTo('/dms');
-  });
 
   async function loadUserInfo() {
     try {

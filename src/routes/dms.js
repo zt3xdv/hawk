@@ -4,9 +4,9 @@ import Cache from '../utils/Cache.js';
 const html = `
   <div class="dms-container">
     <div class="dms-header">
-      <h2>Direct Messages</h2>
+      <h2>Messages</h2>
       <button class="btn btn-primary" id="new-conversation">
-        New Conversation
+        <canv-icon id="new-icon"></canv-icon> New
       </button>
     </div>
     <div id="conversations-list" class="conversations-list">
@@ -20,6 +20,8 @@ const html = `
 function render() {
   const app = document.getElementById('app');
   app.innerHTML = html;
+  
+  document.getElementById('new-icon').src = Cache.getBlob('assets/icons/startstage.png').dataUrl;
 
   const conversationsList = document.getElementById('conversations-list');
   const newConversationBtn = document.getElementById('new-conversation');

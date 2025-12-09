@@ -80,7 +80,7 @@ export default class GameScene extends Scene {
   }
 
   update(time, delta) {
-    this.fpsElement.innerHTML = this.game.loop.fps + " fps<br>" + this.game.renderer.constructor.name + " v" + this.game.renderer.gl.VERSION;
+    this.fpsElement.innerHTML = this.game.loop.fps + " fps<br>" + this.game.renderer.constructor.name + " v" + this.game.renderer.gl.VERSION + "<br>" + (() => { let u=performance.memory.usedJSHeapSize, i=0, units=['B','KB','MB','GB']; while(u>=1024 && i<units.length-1){u/=1024;i++;} return `${u.toFixed(2)}${units[i]}` })() + " used of NaNgb";
       
     const direction = this.inputManager.getDirection();
     

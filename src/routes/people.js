@@ -175,7 +175,7 @@ async function loadAll() {
       statusText = 'On web';
     } else if (f.online && f.online !== false) {
       statusClass = 'online';
-      statusText = f.server ? escapeHtml(f.server.name) : 'Online';
+      statusText = f.server ? f.server.name : 'Online';
     }
     
     const avatarUrl = f.avatar || `/api/pavatar/${f.id}`;
@@ -187,8 +187,10 @@ async function loadAll() {
           <span class="friend-status-dot ${statusClass}"></span>
         </div>
         <div>
-          <div class="friends-name">${escapeHtml(f.display_name || f.username || 'Unnamed')}</div>
-          <div class="friends-meta">@${escapeHtml(f.username)}</div>
+          <div class="user-name-inline">
+            <div class="friends-name">${escapeHtml(f.display_name || f.username || 'Unnamed')}</div>
+            <div class="friends-meta">(@${escapeHtml(f.username)})</div>
+          </div>
           <div class="friends-meta">${statusText}</div>
         </div>
       </div>

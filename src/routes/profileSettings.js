@@ -1,12 +1,14 @@
 import { toBase64, loadImageFromDataUrl, fitAndDrawImageToCanvas, validateAndConvertImage, postJson, escapeHtml } from "../utils/Utils.js";
 import Cache from '../utils/Cache.js';
-import { API } from '../utils/Constants.js';
+import { API, DEV } from '../utils/Constants.js';
+import OptionsModal from '../game/ui/OptionsModal.js';
+import Modal from '../game/ui/Modal.js';
 
 const html = `
   <div class="auth">
 <div class="header">
-  <h3><canv-icon id="profile-settings-icon"></canv-icon>Profile Settings</h3>
-  <span class="description">Edit/Modify your profile with ease.</span>
+  <h3><canv-icon id="profile-settings-icon"></canv-icon>Settings</h3>
+  <span class="description">Edit/Modify your settings with ease.</span>
 </div>
 <hr>
 
@@ -19,6 +21,23 @@ const html = `
       </div>
     </div>
 
+    <div id="profileActions" style="margin-top:40px; display: flex; gap: 5px;">
+      <a class="btn mini" id="game-options">Game Options</a>
+      <a class="btn mini" id="profile-options">Profile Options</a>
+    </div>
+  </div>
+`;
+
+async function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = html;
+  
+  const optionsModal = new OptionsModal(app, { dev: DEV });
+  app.querySelector("#game-options").addEventListener("click", () => optionsModal.toggle());
+  
+  const profileModal = new Modal(app, "Profile", {}, { showHeader: false });
+  app.querySelector("#profile-options").addEventListener("click", () => profileModal.toggle());
+  profileModal.body.innerHTML = `
     <div class="profile-grid">
       <div class="profile-section">
         <label for="settingsDisplayNameInput">Display name</label>
@@ -43,7 +62,7 @@ const html = `
 
       <div class="profile-section">
         <label for="settingsBioInput">Bio</label>
-        <input id="settingsBioInput" type="bio" />
+        <textarea rows="3" id="settingsBioInput" type="bio"></textarea>
         <button id="settingsSaveBio" class="btn mini">Save</button>
         <div id="settingsBioMsg" class="message" aria-live="polite"></div>
       </div>
@@ -58,42 +77,39 @@ const html = `
           </div>
         </div>
       </div>
-
-      <div id="profileActions" style="margin-top:40px; display: flex; gap: 5px;">
-        <a class="btn mini" href="/profile">Back to profile</a>
+      
+      <div class="options-footer">
+        <button class="button-cancel button-gray" id="btn-close">Close</button>
       </div>
     </div>
-  </div>
-`;
-
-async function render() {
-  const app = document.getElementById("app");
-  app.innerHTML = html;
-
+  `;
+  profileModal.body.querySelector("#btn-close").addEventListener("click", () => profileModal.toggle());
+  
   // Set icon data URLs
   document.getElementById('profile-settings-icon').src = Cache.getBlob('assets/icons/control.png').dataUrl;
 
   const get = id => document.getElementById(id);
+  const getM = id => profileModal.body.querySelector("#" + id);
   const settingsAvatarPreview = get("settingsAvatarPreview");
   const settingsAvatarPreviewSmall = get("settingsAvatarPreviewSmall");
   const settingsUsernameEl = get("settingsUsername");
   const settingsDisplayNameEl = get("settingsDisplayName");
   const settingsIdEl = get("settingsId");
-  const settingsDisplayNameInput = get("settingsDisplayNameInput");
-  const settingsSaveDisplayName = get("settingsSaveDisplayName");
-  const settingsDisplayNameMsg = get("settingsDisplayNameMsg");
-  const settingsUsernameInput = get("settingsUsernameInput");
-  const settingsSaveUsername = get("settingsSaveUsername");
-  const settingsUsernameMsg = get("settingsUsernameMsg");
-  const settingsPasswordInput = get("settingsPasswordInput");
-  const settingsSavePassword = get("settingsSavePassword");
-  const settingsPasswordMsg = get("settingsPasswordMsg");
-  const settingsBioInput = get("settingsBioInput");
-  const settingsSaveBio = get("settingsSaveBio");
-  const settingsBioMsg = get("settingsBioMsg");
-  const settingsAvatarInput = get("settingsAvatarInput");
-  const settingsUploadAvatar = get("settingsUploadAvatar");
-  const settingsAvatarMsg = get("settingsAvatarMsg");
+  const settingsDisplayNameInput = getM("settingsDisplayNameInput");
+  const settingsSaveDisplayName = getM("settingsSaveDisplayName");
+  const settingsDisplayNameMsg = getM("settingsDisplayNameMsg");
+  const settingsUsernameInput = getM("settingsUsernameInput");
+  const settingsSaveUsername = getM("settingsSaveUsername");
+  const settingsUsernameMsg = getM("settingsUsernameMsg");
+  const settingsPasswordInput = getM("settingsPasswordInput");
+  const settingsSavePassword = getM("settingsSavePassword");
+  const settingsPasswordMsg = getM("settingsPasswordMsg");
+  const settingsBioInput = getM("settingsBioInput");
+  const settingsSaveBio = getM("settingsSaveBio");
+  const settingsBioMsg = getM("settingsBioMsg");
+  const settingsAvatarInput = getM("settingsAvatarInput");
+  const settingsUploadAvatar = getM("settingsUploadAvatar");
+  const settingsAvatarMsg = getM("settingsAvatarMsg");
 
   const ctxMain = settingsAvatarPreview.getContext("2d");
   const ctxSmall = settingsAvatarPreviewSmall.getContext("2d");

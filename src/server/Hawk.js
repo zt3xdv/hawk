@@ -21,7 +21,7 @@ class HawkServer {
 
     this.chunkManager = new ChunkManager(512);
 
-    this.time = 0;
+    this.time = 720;
     this.__counterStarted = false;
 
     this.dev = DEV;

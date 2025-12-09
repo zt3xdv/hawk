@@ -26,12 +26,8 @@ export default class AccComponent extends HudComponent {
     this.el.style.display = 'none';
     
     const header = document.createElement('div');
-    header.innerHTML = "<div class=\"header-brand\"><img src='" + Cache.getBlob('assets/icons/friends.png').dataUrl + "'>Friends</div><button class=\"header-button refresh-btn\">⟳</button>";
+    header.innerHTML = "<div class=\"header-brand\"><img src='" + Cache.getBlob('assets/icons/friends.png').dataUrl + "'>Friends</div>";
     header.className = 'acc-header';
-    
-    header.querySelector(".refresh-btn").addEventListener("click", () => {
-      this.loadFriends();
-    });
     
     this.el.appendChild(header);
     
@@ -104,7 +100,7 @@ export default class AccComponent extends HudComponent {
       header.className = "people-user-header";
       
       const avatar = document.createElement('img');
-      avatar.src = friend.avatar || "/api/pavatar/" + friend.id;
+      avatar.src = "/api/pavatar/" + friend.id;
       
       const infoContainer = document.createElement('div');
       infoContainer.className = "people-user-info";
@@ -115,7 +111,12 @@ export default class AccComponent extends HudComponent {
       
       const username = document.createElement('p');
       username.className = "accent";
-      username.innerText = "@" + friend.username;
+      username.innerText = "(@" + friend.username + ")";
+      
+      const usernameInline = document.createElement('div');
+      usernameInline.className = "user-name-inline";
+      usernameInline.appendChild(name);
+      usernameInline.appendChild(username);
       
       const status = document.createElement('div');
       status.className = "friend-status";
@@ -139,8 +140,7 @@ export default class AccComponent extends HudComponent {
       status.appendChild(statusText);
       
       header.appendChild(avatar);
-      infoContainer.appendChild(name);
-      infoContainer.appendChild(username);
+      infoContainer.appendChild(usernameInline);
       infoContainer.appendChild(status);
       header.appendChild(infoContainer);
       

@@ -98,6 +98,140 @@ export default class Outdoor extends MapObject {
         zoffset: 20,
         collision: { startx: 0, starty: 10, width: 41, height: 65 }
       },
+      
+{
+  name: 'anvil',
+  uvStartPx: { u: 154, v: 1123 },
+  widthPx: 42,
+  heightPx: 25,
+  zoffset: 10,
+  collision: { startx: 10, starty: 11, width: 24, height: 14 }
+},
+
+{
+  name: 'bee_nest',
+  uvStartPx: { u: 989, v: 1700 },
+  widthPx: 44,
+  heightPx: 59,
+  zoffset: 5,
+  collision: { startx: 4, starty: 41, width: 30, height: 18 }
+},
+{
+  name: 'bird_house',
+  uvStartPx: { u: 1059, v: 1703 },
+  widthPx: 30,
+  heightPx: 51,
+  zoffset: 5,
+  collision: { startx: 10, starty: 41, width: 6, height: 10 }
+},
+
+{
+  name: 'hay_mount_1',
+  uvStartPx: { u: 1065, v: 1466 },
+  widthPx: 51,
+  heightPx: 37,
+  zoffset: 8,
+  collision: { startx: 0, starty: 15, width: 47, height: 18 }
+},
+{
+  name: 'hay_mount_2',
+  uvStartPx: { u: 1133, v: 1445 },
+  widthPx: 77,
+  heightPx: 56,
+  zoffset: 8,
+  collision: { startx: 3, starty: 27, width: 67, height: 27 }
+},
+{
+  name: 'hay_mount_3',
+  uvStartPx: { u: 1222, v: 1424 },
+  widthPx: 89,
+  heightPx: 75,
+  zoffset: 8,
+  collision: { startx: 2, starty: 30, width: 77, height: 41 }
+},
+
+{
+  name: 'hay_block_1',
+  uvStartPx: { u: 1088, v: 1379 },
+  widthPx: 34,
+  heightPx: 28,
+  zoffset: 8,
+  collision: { startx: 0, starty: 9, width: 32, height: 19 }
+},
+{
+  name: 'hay_block_2',
+  uvStartPx: { u: 1156, v: 1373 },
+  widthPx: 26,
+  heightPx: 35,
+  zoffset: 8,
+  collision: { startx: 0, starty: 8, width: 24, height: 27 }
+},
+
+{
+  name: 'hay_block_b1',
+  uvStartPx: { u: 866, v: 1377 },
+  widthPx: 31,
+  heightPx: 31,
+  zoffset: 5,
+  collision: { startx: 0, starty: 10, width: 29, height: 21 }
+},
+{
+  name: 'hay_block_b2',
+  uvStartPx: { u: 923, v: 1377 },
+  widthPx: 44,
+  heightPx: 31,
+  zoffset: 5,
+  collision: { startx: 0, starty: 10, width: 42, height: 21 }
+},
+
+{
+  name: 'flowerpot_empty',
+  uvStartPx: { u: 902, v: 1317 },
+  widthPx: 22,
+  heightPx: 23,
+  zoffset: 5,
+  collision: { startx: 2, starty: 13, width: 16, height: 10 }
+},
+{
+  name: 'flowerpot_dirt',
+  uvStartPx: { u: 934, v: 1317 },
+  widthPx: 22,
+  heightPx: 23,
+  zoffset: 5,
+  collision: { startx: 2, starty: 13, width: 16, height: 10 }
+},
+{
+  name: 'flowerpot_white',
+  uvStartPx: { u: 965, v: 1312 },
+  widthPx: 25,
+  heightPx: 28,
+  zoffset: 5,
+  collision: { startx: 3, starty: 18, width: 16, height: 10 }
+},
+{
+  name: 'flowerpot_yellow',
+  uvStartPx: { u: 996, v: 1313 },
+  widthPx: 25,
+  heightPx: 27,
+  zoffset: 5,
+  collision: { startx: 4, starty: 17, width: 16, height: 10 }
+},
+{
+  name: 'flowerpot_whitelarge',
+  uvStartPx: { u: 1030, v: 1310 },
+  widthPx: 22,
+  heightPx: 30,
+  zoffset: 5,
+  collision: { startx: 2, starty: 20, width: 16, height: 10 }
+},
+{
+  name: 'watering_can',
+  uvStartPx: { u: 891, v: 1281 },
+  widthPx: 38,
+  heightPx: 28,
+  zoffset: 5,
+  collision: { startx: 11, starty: 19, width: 19, height: 9 }
+}
     ];
     
   constructor(scene, x, y, typeNum = -1) {

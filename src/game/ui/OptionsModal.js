@@ -2,8 +2,10 @@ import Modal from "./Modal.js";
 import Options from "../utils/Options.js";
 
 class OptionsModal extends Modal {
-  constructor(domElement, scene) {
+  constructor(domElement, scene, body = false) {
     super(domElement, "Options", scene, { showHeader: false });
+    if (body !== false) this.body = body;
+    
     this.categories = this._groupByCategory();
     this._categoriesInfo = {
       general: {

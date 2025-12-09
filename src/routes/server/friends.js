@@ -51,7 +51,7 @@ router.post('/api/friends/list', async (req, res) => {
 
       // Check if online in game servers
       for (const srv of router.app.hawkServers) {
-        const player = Object.values(srv.players).find(p => p.userId === friend.id);
+        const player = Object.values(srv.players).find(p => p.uuid === friend.id);
         if (player && player.loggedIn) {
           online = srv.data.id;
           server = srv.data;

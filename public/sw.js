@@ -3,7 +3,7 @@ self.addEventListener('install', event => {
     caches.open('offline-cache')
       .then(cache => {
         cache.add('offline.html');
-        cache.add('/styles/main.css');
+        cache.add('/main.css');
       })
   );
 });
@@ -21,8 +21,8 @@ self.addEventListener('fetch', event => {
       .catch(() => {
         if (event.request.headers.get('accept').includes('text/html')) {
           return caches.match('offline.html');
-        } else if (event.request.url.includes('/styles/main.css')) {
-          return caches.match('/styles/main.css');
+        } else if (event.request.url.includes('/main.css')) {
+          return caches.match('/main.css');
         } else {
           return Promise.reject('Unable to load resource');
         }

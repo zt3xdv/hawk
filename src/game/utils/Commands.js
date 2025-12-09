@@ -81,7 +81,7 @@ class Commands {
       execute: (scene, chatlog, args) => {
         const text = args.join(' ');
         const msg = text ? `${text} ¯\\_(ツ)_/¯` : '¯\\_(ツ)_/¯';
-        scene.networkManager.send('chat', { message: msg });
+        chatlog.send(msg, true);
       }
     },
     {
@@ -91,7 +91,7 @@ class Commands {
       execute: (scene, chatlog, args) => {
         const text = args.join(' ');
         const msg = text ? `${text} (╯°□°)╯︵ ┻━┻` : '(╯°□°)╯︵ ┻━┻';
-        scene.networkManager.send('chat', { message: msg });
+        chatlog.send(msg, true);
       }
     },
     {
@@ -101,7 +101,7 @@ class Commands {
       execute: (scene, chatlog, args) => {
         const text = args.join(' ');
         const msg = text ? `${text} (╯°□°)╯︵ ┻━┻` : '(╯°□°)╯︵ ┻━┻';
-        scene.networkManager.send('chat', { message: msg });
+        chatlog.send(msg, true);
       }
     },
     {
@@ -111,7 +111,7 @@ class Commands {
       execute: (scene, chatlog, args) => {
         const text = args.join(' ');
         const msg = text ? `${text} ┬─┬ノ( º _ ºノ)` : '┬─┬ノ( º _ ºノ)';
-        scene.networkManager.send('chat', { message: msg });
+        chatlog.send(msg, true);
       }
     },
     {
@@ -121,7 +121,7 @@ class Commands {
       execute: (scene, chatlog, args) => {
         const text = args.join(' ');
         const msg = text ? `${text} ( ͡° ͜ʖ ͡°)` : '( ͡° ͜ʖ ͡°)';
-        scene.networkManager.send('chat', { message: msg });
+        chatlog.send(msg, true);
       }
     },
     {
@@ -150,17 +150,6 @@ class Commands {
       execute: (scene, chatlog, args) => {
         chatlog.clear();
         chatlog.send('Chat cleared!', true);
-      }
-    },
-    {
-      name: 'help',
-      id: '/help',
-      description: 'Show available commands',
-      execute: (scene, chatlog, args) => {
-        chatlog.send('=== Available Commands ===', true);
-        Commands.commands.forEach(cmd => {
-          chatlog.send(`${cmd.id} - ${cmd.description}`, true);
-        });
       }
     }
   ];

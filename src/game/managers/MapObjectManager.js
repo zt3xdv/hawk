@@ -19,7 +19,7 @@ const PAD = 64;
 export default class MapObjectManager {
   static objects = [
     { name: "Campfire", category: "props", create: (scene, x, y, options) => new Campfire(scene, x, y), id: "campfire", getType: () => Campfire.types?.[0], getTexture: () => Campfire.texture },
-    { name: "House 1", category: "building", create: (scene, x, y, options) => new HouseOne(scene, x, y), id: "house_1", getType: () => HouseOne.type, getTexture: () => HouseOne.texture },
+    { name: "Normal House", category: "building", create: (scene, x, y, options) => new HouseOne(scene, x, y), id: "house_1", getType: () => HouseOne.type, getTexture: () => HouseOne.texture },
   
     { name: "Tree Birch 0", category: "plants", create: (scene, x, y, options) => new Tree(scene, x, y, 0), id: "tree_0", getType: () => Tree.types?.[0], getTexture: () => Tree.texture },
     { name: "Tree Birch 1", category: "plants", create: (scene, x, y, options) => new Tree(scene, x, y, 1), id: "tree_1", getType: () => Tree.types?.[1], getTexture: () => Tree.texture },
@@ -31,6 +31,9 @@ export default class MapObjectManager {
     { name: "Autumn Tree Birch 2", category: "plants", create: (scene, x, y, options) => new Tree(scene, x, y, 7), id: "tree_7", getType: () => Tree.types?.[7], getTexture: () => Tree.texture },
     { name: "Autumn Tree Birch 3", category: "plants", create: (scene, x, y, options) => new Tree(scene, x, y, 8), id: "tree_8", getType: () => Tree.types?.[8], getTexture: () => Tree.texture },
     { name: "Autumn Tree Birch 4", category: "plants", create: (scene, x, y, options) => new Tree(scene, x, y, 9), id: "tree_9", getType: () => Tree.types?.[9], getTexture: () => Tree.texture },
+    
+    { name: "Big Oak 1", category: "plants", create: (scene, x, y, options) => new Tree(scene, x, y, 10), id: "tree_10", getType: () => Tree.types?.[10], getTexture: () => Tree.texture },
+    { name: "Big Oak 2", category: "plants", create: (scene, x, y, options) => new Tree(scene, x, y, 11), id: "tree_11", getType: () => Tree.types?.[11], getTexture: () => Tree.texture },
   
     { name: "Rock 0", category: "props", create: (scene, x, y, options) => new Rock(scene, x, y, 0), id: "rock_0", getType: () => Rock.types?.[0], getTexture: () => Rock.texture },
     { name: "Rock 1", category: "props", create: (scene, x, y, options) => new Rock(scene, x, y, 1), id: "rock_1", getType: () => Rock.types?.[1], getTexture: () => Rock.texture },
@@ -77,10 +80,23 @@ export default class MapObjectManager {
     { name: "Cabbage Pallet Crate Horizontal", category: "props", create: (scene, x, y, options) => new Crate(scene, x, y, 12), id: "crate_12", getType: () => Crate.types?.[12], getTexture: () => Crate.texture },
     { name: "Cabbage Pallet Crate Vertical", category: "props", create: (scene, x, y, options) => new Crate(scene, x, y, 13), id: "crate_13", getType: () => Crate.types?.[13], getTexture: () => Crate.texture },
     
+    { name: "Empty Flower Crate Horizontal", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 14), id: "crate_14", getType: () => Crate.types?.[14], getTexture: () => Crate.texture },
+    { name: "Empty Flower Crate Vertical", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 15), id: "crate_15", getType: () => Crate.types?.[15], getTexture: () => Crate.texture },
+    
+    { name: "Flower Crate White Vertical", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 16), id: "crate_16", getType: () => Crate.types?.[16], getTexture: () => Crate.texture },
+    { name: "Flower Crate Yellow Vertical", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 17), id: "crate_17", getType: () => Crate.types?.[17], getTexture: () => Crate.texture },
+    { name: "Flower Crate White Large Vertical", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 18), id: "crate_18", getType: () => Crate.types?.[18], getTexture: () => Crate.texture },
+    { name: "Flower Crate Dirt Vertical", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 19), id: "crate_19", getType: () => Crate.types?.[19], getTexture: () => Crate.texture },
+
+    { name: "Flower Crate White Horizontal", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 20), id: "crate_20", getType: () => Crate.types?.[20], getTexture: () => Crate.texture },
+    { name: "Flower Crate Yellow Horizontal", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 21), id: "crate_21", getType: () => Crate.types?.[21], getTexture: () => Crate.texture },
+    { name: "Flower Crate White Large Horizontal", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 22), id: "crate_22", getType: () => Crate.types?.[22], getTexture: () => Crate.texture },
+    { name: "Flower Crate Dirt Horizontal", category: "outdoor", create: (scene, x, y, options) => new Crate(scene, x, y, 23), id: "crate_23", getType: () => Crate.types?.[23], getTexture: () => Crate.texture },
+
     { name: "Lamp", category: "props", create: (scene, x, y, options) => new Lamp(scene, x, y, options), id: "lamp", getType: () => Lamp.type, getTexture: () => Lamp.texture },
   
-    { name: "Road Lamp Left", category: "props", create: (scene, x, y, options) => new RoadLamp(scene, x, y, 0), id: "roadlamp_left", getType: () => RoadLamp.types?.[0], getTexture: () => RoadLamp.texture },
-    { name: "Road Lamp Right", category: "props", create: (scene, x, y, options) => new RoadLamp(scene, x, y, 1), id: "roadlamp_right", getType: () => RoadLamp.types?.[1], getTexture: () => RoadLamp.texture },
+    { name: "Road Lamp Left", category: "outdoor", create: (scene, x, y, options) => new RoadLamp(scene, x, y, 0), id: "roadlamp_left", getType: () => RoadLamp.types?.[0], getTexture: () => RoadLamp.texture },
+    { name: "Road Lamp Right", category: "outdoor", create: (scene, x, y, options) => new RoadLamp(scene, x, y, 1), id: "roadlamp_right", getType: () => RoadLamp.types?.[1], getTexture: () => RoadLamp.texture },
   
     { name: "Autumn Bush 0", category: "plants", create: (scene, x, y, options) => new Bush(scene, x, y, 0), id: "bush_0", getType: () => Bush.types?.[0], getTexture: () => Bush.texture },
     { name: "Autumn Bush 1", category: "plants", create: (scene, x, y, options) => new Bush(scene, x, y, 1), id: "bush_1", getType: () => Bush.types?.[1], getTexture: () => Bush.texture },
@@ -108,27 +124,49 @@ export default class MapObjectManager {
     { name: "Small Carrot", category: "plants", create: (scene, x, y, options) => new MoreNature(scene, x, y, 8), id: "morenature_8", getType: () => MoreNature.types?.[8], getTexture: () => MoreNature.texture },
   
     { name: "Barrel", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 0), id: "barrel_0", getType: () => Barrel.types?.[0], getTexture: () => Barrel.texture },
-    { name: "Barrel Without Cap", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 1), id: "barrel_1", getType: () => Barrel.types?.[1], getTexture: () => Barrel.texture },
-    { name: "Barrel With Water", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 2), id: "barrel_2", getType: () => Barrel.types?.[2], getTexture: () => Barrel.texture },
-    { name: "Barrel With Plants", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 3), id: "barrel_3", getType: () => Barrel.types?.[3], getTexture: () => Barrel.texture },
-    { name: "Barrel With Props", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 4), id: "barrel_4", getType: () => Barrel.types?.[4], getTexture: () => Barrel.texture },
-    { name: "Barrel Sided", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 5), id: "barrel_5", getType: () => Barrel.types?.[5], getTexture: () => Barrel.texture },
-    { name: "Barrel Pile", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 6), id: "barrel_6", getType: () => Barrel.types?.[6], getTexture: () => Barrel.texture },
+    { name: "Opened Barrel", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 1), id: "barrel_1", getType: () => Barrel.types?.[1], getTexture: () => Barrel.texture },
+    { name: "Barrel with Water", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 2), id: "barrel_2", getType: () => Barrel.types?.[2], getTexture: () => Barrel.texture },
+    { name: "Barrel with Plants", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 3), id: "barrel_3", getType: () => Barrel.types?.[3], getTexture: () => Barrel.texture },
+    { name: "Barrel with Iron Bars", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 4), id: "barrel_4", getType: () => Barrel.types?.[4], getTexture: () => Barrel.texture },
+    { name: "Tipped Barrel", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 5), id: "barrel_5", getType: () => Barrel.types?.[5], getTexture: () => Barrel.texture },
+    { name: "Barrel Stack", category: "props", create: (scene, x, y, options) => new Barrel(scene, x, y, 6), id: "barrel_6", getType: () => Barrel.types?.[6], getTexture: () => Barrel.texture },
     
-    { name: "Bench 1 Horizontal", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 0), id: "outdoor_0", getType: () => Outdoor.types?.[0], getTexture: () => Outdoor.texture },
-    { name: "Bench 1 Vertical 1", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 1), id: "outdoor_1", getType: () => Outdoor.types?.[1], getTexture: () => Outdoor.texture },
-    { name: "Bench 1 Vertical 2", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 2), id: "outdoor_2", getType: () => Outdoor.types?.[2], getTexture: () => Outdoor.texture },
+    { name: "Outdoor lounge Bench", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 0), id: "outdoor_0", getType: () => Outdoor.types?.[0], getTexture: () => Outdoor.texture },
+    { name: "Outdoor lounge Bench Side 1", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 1), id: "outdoor_1", getType: () => Outdoor.types?.[1], getTexture: () => Outdoor.texture },
+    { name: "Outdoor lounge Bench Side 2", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 2), id: "outdoor_2", getType: () => Outdoor.types?.[2], getTexture: () => Outdoor.texture },
     
-    { name: "Bench 2 Horizontal Large", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 3), id: "outdoor_3", getType: () => Outdoor.types?.[3], getTexture: () => Outdoor.texture },
-    { name: "Bench 2 Horizontal Small", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 4), id: "outdoor_4", getType: () => Outdoor.types?.[4], getTexture: () => Outdoor.texture },
-    { name: "Bench 2 Vertical Large", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 5), id: "outdoor_5", getType: () => Outdoor.types?.[5], getTexture: () => Outdoor.texture },
-    { name: "Bench 2 Vertical Small", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 6), id: "outdoor_6", getType: () => Outdoor.types?.[6], getTexture: () => Outdoor.texture },
+    { name: "Outdoor Bench large", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 3), id: "outdoor_3", getType: () => Outdoor.types?.[3], getTexture: () => Outdoor.texture },
+    { name: "Outdoor Bench small", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 4), id: "outdoor_4", getType: () => Outdoor.types?.[4], getTexture: () => Outdoor.texture },
+    { name: "Outdoor Bench Side large", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 5), id: "outdoor_5", getType: () => Outdoor.types?.[5], getTexture: () => Outdoor.texture },
+    { name: "Outdoor Bench Side small", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 6), id: "outdoor_6", getType: () => Outdoor.types?.[6], getTexture: () => Outdoor.texture },
     
-    { name: "Table 1 Horizontal", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 7), id: "outdoor_7", getType: () => Outdoor.types?.[7], getTexture: () => Outdoor.texture },
-    { name: "Table 1 Vertical", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 8), id: "outdoor_8", getType: () => Outdoor.types?.[8], getTexture: () => Outdoor.texture },
+    { name: "Table Horizontal", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 7), id: "outdoor_7", getType: () => Outdoor.types?.[7], getTexture: () => Outdoor.texture },
+    { name: "Table Vertical", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 8), id: "outdoor_8", getType: () => Outdoor.types?.[8], getTexture: () => Outdoor.texture },
     
-    { name: "Table 2 Horizontal", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 9), id: "outdoor_9", getType: () => Outdoor.types?.[9], getTexture: () => Outdoor.texture },
-    { name: "Table 2 Vertical", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 10), id: "outdoor_10", getType: () => Outdoor.types?.[10], getTexture: () => Outdoor.texture },
+    { name: "Table with Tablecloth", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 9), id: "outdoor_9", getType: () => Outdoor.types?.[9], getTexture: () => Outdoor.texture },
+    { name: "Table with Tablecloth Side", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 10), id: "outdoor_10", getType: () => Outdoor.types?.[10], getTexture: () => Outdoor.texture },
+    
+    { name: "Anvil", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 11), id: "outdoor_11", getType: () => Outdoor.types?.[11], getTexture: () => Outdoor.texture },
+    
+    { name: "Bee Hive", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 12), id: "outdoor_12", getType: () => Outdoor.types?.[12], getTexture: () => Outdoor.texture },
+    { name: "Bird House", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 13), id: "outdoor_13", getType: () => Outdoor.types?.[13], getTexture: () => Outdoor.texture },
+    
+    { name: "Haystack 1", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 14), id: "outdoor_14", getType: () => Outdoor.types?.[14], getTexture: () => Outdoor.texture },
+    { name: "Haystack 2", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 15), id: "outdoor_15", getType: () => Outdoor.types?.[15], getTexture: () => Outdoor.texture },
+    { name: "Haystack 3", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 16), id: "outdoor_16", getType: () => Outdoor.types?.[16], getTexture: () => Outdoor.texture },
+    
+    { name: "Hay Bale 1", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 17), id: "outdoor_17", getType: () => Outdoor.types?.[17], getTexture: () => Outdoor.texture },
+    { name: "Hay Bale 2", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 18), id: "outdoor_18", getType: () => Outdoor.types?.[18], getTexture: () => Outdoor.texture },
+    { name: "Wrapped Hay Bale 1", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 19), id: "outdoor_19", getType: () => Outdoor.types?.[19], getTexture: () => Outdoor.texture },
+    { name: "Wrapped Hay Bale 2", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 20), id: "outdoor_20", getType: () => Outdoor.types?.[20], getTexture: () => Outdoor.texture },
+    
+    { name: "Flower Pot Empty", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 21), id: "outdoor_21", getType: () => Outdoor.types?.[21], getTexture: () => Outdoor.texture },
+    { name: "Flower Pot with Dirt", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 22), id: "outdoor_22", getType: () => Outdoor.types?.[22], getTexture: () => Outdoor.texture },
+    { name: "Flower Pot with White flower", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 23), id: "outdoor_23", getType: () => Outdoor.types?.[23], getTexture: () => Outdoor.texture },
+    { name: "Flower Pot with Yellow flower", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 24), id: "outdoor_24", getType: () => Outdoor.types?.[24], getTexture: () => Outdoor.texture },
+    { name: "Flower Pot with White Large flower", category: "outdoor", create: (scene, x, y, options) => new Outdoor(scene, x, y, 25), id: "outdoor_25", getType: () => Outdoor.types?.[25], getTexture: () => Outdoor.texture },
+    
+    { name: "Watering Can", category: "props", create: (scene, x, y, options) => new Outdoor(scene, x, y, 26), id: "outdoor_26", getType: () => Outdoor.types?.[26], getTexture: () => Outdoor.texture },
   ];
 
   constructor(scene, list = []) {

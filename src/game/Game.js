@@ -26,12 +26,8 @@ export default class HawkGame {
         default: 'arcade',
         arcade: {
           debug: Options.get("debug"),
-          fps: isMobile || isLowEnd ? 30 : 60
+          fps: 60
         }
-      },
-      fps: {
-        target: isMobile || isLowEnd ? 30 : 60,
-        forceSetTimeOut: isMobile
       },
       scene: [
         GameScene
@@ -49,8 +45,8 @@ export default class HawkGame {
   
   _onResize() {
     const scale = Math.min(window.devicePixelRatio, 2);
-    const newWidth = (window.innerWidth * scale) / 2;
-    const newHeight = (window.innerHeight * scale) / 2;
+    const newWidth = ((window.visualViewport?.width || window.innerWidth) * scale) / 2;
+    const newHeight = ((window.visualViewport?.height || window.innerHeight) * scale) / 2;
     this.game.scale.resize(newWidth, newHeight);
     this.game.renderer.resize(newWidth, newHeight);
   }

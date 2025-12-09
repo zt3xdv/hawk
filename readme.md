@@ -1,6 +1,6 @@
 # Hawk
 
-![Version](https://img.shields.io/badge/version-0.17.6--beta-blue)
+![Version](https://img.shields.io/badge/version-beta-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green)
 
 **Hawk** is an online multiplayer hangout game built with the Hawk Engine.
@@ -18,7 +18,6 @@
 ## Technologies
 
 - **Backend**: Node.js, Express
-- **Frontend**: Phaser 3
 - **WebSockets**: ws
 - **Authentication**: Passport.js
 - **Bundler**: Rollup
@@ -104,7 +103,3 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 ## Contributing
 
 Contributions, issues and feature requests are welcome.
-
----
-
-Made with Hawk Engine

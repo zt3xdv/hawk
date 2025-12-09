@@ -2,6 +2,7 @@ import nipplejs from '../../nipple/index.js';
 import ChatBoxComponent from '../ui/components/ChatBox/ChatBoxComponent.js';
 import OptionsComponent from '../ui/components/Options/OptionsComponent.js';
 import ZoomComponent from '../ui/components/Zoom/ZoomComponent.js';
+import EditorComponent from '../ui/components/Editor/EditorComponent.js';
 import AccComponent from '../ui/components/Acc/AccComponent.js';
 import Hud from '../ui/hud/Hud.js';
 import Modal from '../ui/Modal.js';
@@ -19,6 +20,7 @@ export default class InputManager {
     this.inputVector = { x: 0, y: 0 };
     this.isRunning = false;
     this.lastJoystickValue = true;
+    this.container = document.getElementById("game-container");
     this.joystickOptions = {
       zone: document.getElementById('game-container'),
       mode: 'dynamic',
@@ -28,13 +30,13 @@ export default class InputManager {
     };
     
     this.categoryConfig = {
-      special: {
-        icon: 'assets/icons/generalinfo.png',
-        description: 'Portals and special items.'
-      },
       plants: {
         icon: 'assets/icons/plant.png',
         description: 'Trees, flowers, and natural things.'
+      },
+      outdoor: {
+        icon: 'assets/icons/night.png',
+        description: 'Bench, Tables, and more things..'
       },
       props: {
         icon: 'assets/icons/fire.png',
@@ -42,20 +44,21 @@ export default class InputManager {
       },
       building: {
         icon: 'assets/icons/generalinfo.png',
-        description: 'Buildings, houses, and moee.'
+        description: 'Buildings, houses, and more.'
       }
     };
 
     this.inputVector = { x: 0, y: 0 };
     this._createJoystick();
     
-    this.optionsModal = new OptionsModal(document.getElementById("game-container"), this.scene);
-    this.editorModal = new Modal(document.getElementById("game-container"), "Editor", this.scene);
-    this.peopleModal = new PeopleModal(document.getElementById("game-container"), this.scene);
-    this.playerInfoModal = new PlayerInfoModal(document.getElementById("game-container"), this.scene);
-    this.setupEditorModal(this.editorModal);
+    this.optionsModal = new OptionsModal(this.container, this.scene);
+    this.peopleModal = new PeopleModal(this.container, this.scene);
+    this.playerInfoModal = new PlayerInfoModal(this.container, this.scene);
+    this.editorUI = document.createElement("div");
+    this.editorUI.className = "editor-ui";
+    this.container.appendChild(this.editorUI);
     
-    this.hud = new Hud(document.getElementById("game-container"), {
+    this.hud = new Hud(this.container, {
       components: [
         { type: ChatBoxComponent, options: { scene, network: scene.networkManager } },
         { type: OptionsComponent, options: { scene } },
@@ -64,9 +67,17 @@ export default class InputManager {
             onZoomOut: () => scene.zoomOut()
           }
         },
+        { type: EditorComponent, options: {
+            onEditor: () => {
+              this.editorUI.style.display = (this.editorUI.style.display == "none") ? "flex" : "none";
+            }
+          }
+        },
         { type: AccComponent, options: { scene } }
       ]
     });
+    
+    this.setupEditorUI(this.editorUI);
     
     setTimeout(() => this.updateEditorVisibility(), 100);
     
@@ -155,7 +166,7 @@ export default class InputManager {
     }
   }
 
-  setupEditorModal(modal) {
+  setupEditorUI(menu) {
     const self = this;
     this.currentEditorMode = 'idle';
     this.selectedElement = null;
@@ -163,13 +174,12 @@ export default class InputManager {
     this.draggedObject = null;
     this.dragOffset = { x: 0, y: 0 };
        
-    modal.body.innerHTML = '';
+    menu.innerHTML = '';
   
     const modesContainer = document.createElement('div');
     modesContainer.className = 'editor-modes-container';
     modesContainer.innerHTML = `
       <div class="editor-section">
-        <h3>Editor Mode</h3>
         <div class="mode-buttons">
           <button class="mode-btn active" data-mode="idle">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -177,13 +187,11 @@ export default class InputManager {
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <span>Idle</span>
           </button>
           <button class="mode-btn" data-mode="move">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"></path>
             </svg>
-            <span>Move</span>
           </button>
           <button class="mode-btn" data-mode="elements">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -191,7 +199,6 @@ export default class InputManager {
               <line x1="12" y1="8" x2="12" y2="16"></line>
               <line x1="8" y1="12" x2="16" y2="12"></line>
             </svg>
-            <span>Elements</span>
           </button>
           <button class="mode-btn" data-mode="tiles">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -200,7 +207,6 @@ export default class InputManager {
               <rect x="14" y="14" width="7" height="7"></rect>
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
-            <span>Tiles</span>
           </button>
           <button class="mode-btn" data-mode="delete">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -209,13 +215,12 @@ export default class InputManager {
               <line x1="10" y1="11" x2="10" y2="17"></line>
               <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
-            <span>Delete</span>
           </button>
         </div>
       </div>
     `;
     
-    modal.body.appendChild(modesContainer);
+    menu.appendChild(modesContainer);
     
     const modeButtons = modesContainer.querySelectorAll('.mode-btn');
     modeButtons.forEach(btn => {
@@ -227,7 +232,7 @@ export default class InputManager {
         btn.classList.add('active');
         
         self.updateEditorCursor();
-        self.updateEditorContent(modal);
+        self.updateEditorContent(menu);
         self.setupMoveMode();
         self.setupDeleteMode();
       });
@@ -235,9 +240,9 @@ export default class InputManager {
     
     const contentContainer = document.createElement('div');
     contentContainer.className = 'editor-content-container';
-    modal.body.appendChild(contentContainer);
+    menu.appendChild(contentContainer);
     
-    this.updateEditorContent(modal);
+    this.updateEditorContent(menu);
   }
   
   updateEditorCursor() {
@@ -383,8 +388,8 @@ export default class InputManager {
     });
   }
   
-  updateEditorContent(modal) {
-    const contentContainer = modal.body.querySelector('.editor-content-container');
+  updateEditorContent(menu) {
+    const contentContainer = menu.querySelector('.editor-content-container');
     if (!contentContainer) return;
     
     contentContainer.innerHTML = '';
@@ -580,7 +585,7 @@ export default class InputManager {
   }
   
   updateEditorVisibility() {
-    const editorBtn = document.querySelector('[data-modal="editor"]');
+    const editorBtn = document.querySelector('.editorbtn-button');
     const canEdit = this.scene.dev || this.scene.canEditMap;
     
     if (editorBtn) {
@@ -588,9 +593,6 @@ export default class InputManager {
         editorBtn.style.display = 'flex';
       } else {
         editorBtn.style.display = 'none';
-        if (this.editorModal.isOpen) {
-          this.editorModal.close();
-        }
       }
     }
     

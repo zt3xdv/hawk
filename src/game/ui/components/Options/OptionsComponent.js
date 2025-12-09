@@ -21,14 +21,6 @@ export default class OptionsComponent extends HudComponent {
       }
     ];
     
-    if (scene.dev) this.options.push({
-      execute: () => {
-        scene.inputManager.editorModal.toggle();
-      },
-      html: "<img src='" + Cache.getBlob('assets/icons/box.png').dataUrl + "'>Map editor",
-      name: "open_editor"
-    });
-    
     this.scene = scene;
     this.headerTime = null;
     

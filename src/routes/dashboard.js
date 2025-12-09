@@ -45,7 +45,9 @@ const html = `
       <div style="color:var(--muted);font-size:13px">#rules</div>
     </div>
 
-    <ul id="ruleList" style="margin:12px 0 0 0;padding:0;list-style:none;display:grid;gap:8px"></ul>
+    <ul id="ruleList" style="margin:12px 0 0 0;padding:0;list-style:none;display:grid;gap:8px">
+      <div style="margin: 0 auto">Loading... <span class="loader"></span></div>
+    </ul>
   </div>
 </div>
 `;
@@ -170,11 +172,11 @@ function render() {
       const s = document.createElement('div');
       s.className = 'item';
       s.innerHTML = `
-        <div class="header">
+        <div class="server-header">
           <span class="name">${escapeHtml(server.name)}</span>
           <span class="players">${server.players} players online</span>
         </div>
-        <div class="content">
+        <div class="server-content">
           <span class="description">${escapeHtml(server.description || '')}</span>
         </div>
       `;

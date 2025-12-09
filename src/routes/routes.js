@@ -12,6 +12,7 @@ import * as notFoundRoute from './404.js';
 import * as pingRoute from './ping.js';
 import * as dmsRoute from './dms.js';
 import * as adminRoute from './admin.js';
+import * as landingRoute from './landing.js';
 
 export const routes = {
   '/auth':             authRoute,
@@ -28,8 +29,7 @@ export const routes = {
   '/termsofservice':   termsofserviceRoute,
   '/404':              notFoundRoute,
   '/ping':             pingRoute,
-  
-  '/':                 { redirect: '/dashboard' },
+  '/':                 landingRoute,
 };
 
 export function getPathFromLocation() {

@@ -11,20 +11,15 @@ class PresenceClient {
     const password = localStorage.getItem('password');
 
     if (!username || !password) {
-      console.log('No credentials found, skipping presence connection');
       return;
     }
 
     this.disconnect();
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/presence`;
-
     try {
-      this.ws = new WebSocket(wsUrl);
+      this.ws = new WebSocket("/ws/presence");
 
       this.ws.onopen = () => {
-        console.log('Presence WebSocket connected');
         this.ws.send(JSON.stringify({
           type: 'auth',
           username,
@@ -37,7 +32,6 @@ class PresenceClient {
           const data = JSON.parse(event.data);
 
           if (data.type === 'auth_success') {
-            console.log('Presence authenticated');
             this.isAuthenticated = true;
             this.startHeartbeat();
           }
@@ -51,11 +45,9 @@ class PresenceClient {
       };
 
       this.ws.onclose = () => {
-        console.log('Presence WebSocket disconnected');
         this.isAuthenticated = false;
         this.stopHeartbeat();
         
-        // Reconnect after 5 seconds
         this.reconnectTimeout = setTimeout(() => {
           if (localStorage.getItem('username')) {
             this.connect();
@@ -103,12 +95,10 @@ class PresenceClient {
 
 const presenceClient = new PresenceClient();
 
-// Auto-connect when logged in
 if (localStorage.getItem('loggedIn') === 'true') {
   presenceClient.connect();
 }
 
-// Connect on login
 window.addEventListener('storage', (e) => {
   if (e.key === 'loggedIn') {
     if (e.newValue === 'true') {
@@ -119,7 +109,6 @@ window.addEventListener('storage', (e) => {
   }
 });
 
-// Disconnect on page unload
 window.addEventListener('beforeunload', () => {
   presenceClient.disconnect();
 });

@@ -132,7 +132,6 @@ export default class LightManager {
           
           float blur = uGlowStrength / uResolution.x;
           
-          // Solo 9 muestras (cruz + diagonales)
           glow += texture2D(uMainSampler, outTexCoord + vec2(-blur, 0.0)) * 0.12;
           glow += texture2D(uMainSampler, outTexCoord + vec2(blur, 0.0)) * 0.12;
           glow += texture2D(uMainSampler, outTexCoord + vec2(0.0, -blur)) * 0.12;

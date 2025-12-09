@@ -53,8 +53,7 @@ export default class PreviewScene extends Scene {
     this.tileManager.create();
     
     this.lightManager = new LightManager(this, {
-      startAtMinutes: 23,
-      timeScale: 0
+      startAtMinutes: 23
     });
     this.lightManager.create();
     
@@ -65,9 +64,9 @@ export default class PreviewScene extends Scene {
     
     (async () => {
       const data = await apiPost(API.check, getAuth());
-      const id = data.id || "000_000000";
+      const id = data.id || "0";
       
-      this.player = new Player(this, id + "_b", id, data.username || "___", "", 64, 82, data.game.avatar || "");
+      this.player = new Player(this, id, id, data.username || "___", "", 64, 82, data.game.avatar || "");
       this.player.sprite.setInteractive({ draggable: true });
       this.player.chat.setTyping(true);
     })();
@@ -75,6 +74,6 @@ export default class PreviewScene extends Scene {
 
   update(time, delta) {
     if (!this.player) return;
-    this.player.update({ x: 0, y: 0 });
+    this.player.update();
   }
 }

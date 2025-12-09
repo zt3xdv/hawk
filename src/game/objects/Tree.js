@@ -83,6 +83,22 @@ export default class Tree extends MapObject {
         zoffset: 10,
         collision: { startx: 46, starty: 163, width: 13, height: 15 }
       },
+{
+  name: '11',
+  uvStartPx: { u: 687, v: 16 },
+  widthPx: 288,
+  heightPx: 248,
+  zoffset: 40,
+  collision: { startx: 92, starty: 200, width: 81, height: 47 }
+},
+{
+  name: '12',
+  uvStartPx: { u: 702, v: 278 },
+  widthPx: 237,
+  heightPx: 208,
+  zoffset: 30,
+  collision: { startx: 78, starty: 166, width: 69, height: 35 }
+}
     ];
     
   constructor(scene, x, y, typeNum = -1) {

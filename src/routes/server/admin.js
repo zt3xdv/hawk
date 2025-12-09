@@ -1,5 +1,6 @@
 import Router from './router.js';
 import UserModel from '../../models/UserModel.js';
+import { ROLES } from '../../utils/Constants.js';
 
 const router = new Router();
 
@@ -61,7 +62,7 @@ router.post('/api/admin/users', async (req, res) => {
             return res.status(403).json({ error: 'Access denied. Superadmin only.' });
         }
 
-        const validRoles = ['moderator', 'admin', 'superadmin'];
+        const validRoles = Object.values(ROLES);
         const invalidRoles = roles.filter(r => !validRoles.includes(r));
         if (invalidRoles.length > 0) {
             return res.status(400).json({ error: `Invalid roles: ${invalidRoles.join(', ')}` });
@@ -130,7 +131,7 @@ router.post('/api/admin/users', async (req, res) => {
         }
 
         if (roles && Array.isArray(roles)) {
-            const validRoles = ['moderator', 'admin', 'superadmin'];
+            const validRoles = Object.values(ROLES);
             const invalidRoles = roles.filter(r => !validRoles.includes(r));
             if (invalidRoles.length > 0) {
                 return res.status(400).json({ error: `Invalid roles: ${invalidRoles.join(', ')}` });

@@ -76,7 +76,7 @@ export function nav() {
           <div class="dropdown-category-title">Customize</div>
           <a href="/avatar" class="dropdown-item">
             <canv-icon id="auth-icon" src="${Cache.getBlob('assets/icons/createemoji.png').dataUrl}"></canv-icon>
-            <span>Avatar</span>
+            <span>In-Game avatar</span>
           </a>
           <a href="/profile-settings" class="dropdown-item">
             <canv-icon id="auth-icon" src="${Cache.getBlob('assets/icons/settings.png').dataUrl}"></canv-icon>

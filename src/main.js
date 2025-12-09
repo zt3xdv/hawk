@@ -8,6 +8,7 @@ import './hawk/scene/index.js';
 import './hawk/time/index.js';
 import './hawk/tweens/index.js';
 import './hawk/physics/index.js';
+
 import './styles/main.scss';
 import { router } from './router.js';
 import Features from './game/device/Features.js';
@@ -52,6 +53,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const loading = document.getElementById("loading");
   loading.querySelector("#tip-title").innerHTML = "DID YOU KNOW";
+  loading.querySelector("#loading-bar-wrapper").style.display = "block";
   
   function randomTip() {
     loading.querySelector("#tip").innerHTML = getRandomFromArray(TIPS);

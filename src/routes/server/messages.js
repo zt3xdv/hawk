@@ -38,10 +38,25 @@ router.post('/api/messages/conversations', async (req, res) => {
     const conversationsWithUsers = await Promise.all(
         conversations.map(async (conv) => {
             const otherUser = UserModel.getUserById(conv.userId);
+            let online = false;
+
+            for (const srv of router.app.hawkServers) {
+              const player = Object.values(srv.players).find(p => p.uuid === otherUser.id);
+              if (player && player.loggedIn) {
+                online = srv.data.id;
+                break;
+              }
+            }
+
+            if (!online && router.app.presenceSocket && router.app.presenceSocket.isUserOnlineWeb(otherUser.id)) {
+              online = 'web';
+            }
+            
             return {
                 userId: conv.userId,
                 username: otherUser?.username || 'Unknown',
                 displayName: otherUser?.displayName || 'Unknown',
+                online,
                 lastMessage: {
                     content: conv.lastMessage.content,
                     timestamp: conv.lastMessage.timestamp,
